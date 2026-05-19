@@ -24,7 +24,7 @@ function isPublicPath(pathname: string): boolean {
   return publicPatterns.some((pattern) => pattern.test(pathname));
 }
 
-export default async function middleware(req: NextRequest) {
+export default async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   // Skip auth for public paths

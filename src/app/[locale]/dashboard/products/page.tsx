@@ -1,12 +1,19 @@
+import { Suspense } from "react";
 import { Metadata } from "next";
 import { ProductsManager } from "@/components/dashboard/products-manager";
 import { getCachedSession as auth } from "@/lib/auth-cache";
 
 export const metadata: Metadata = { title: "Products" };
 
-export default async function ProductsPage() {
+async function ProductsContent() {
   const session = await auth();
-  const businessId = session?.user?.businessId;
+  return <ProductsManager businessId={session?.user?.businessId} />;
+}
 
-  return <ProductsManager businessId={businessId} />;
+export default function ProductsPage() {
+  return (
+    <Suspense>
+      <ProductsContent />
+    </Suspense>
+  );
 }

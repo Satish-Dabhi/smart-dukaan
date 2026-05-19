@@ -1,12 +1,12 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { Inter } from "next/font/google";
-import { headers } from "next/headers";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"),
   title: {
     default: "SmartDukaan — Your Business, Smarter",
     template: "%s | SmartDukaan",
@@ -31,16 +31,18 @@ export const metadata: Metadata = {
     description: "The all-in-one platform for Indian local businesses.",
   },
   manifest: "/manifest.json",
-  themeColor: "#7c3aed",
-  viewport: "width=device-width, initial-scale=1, maximum-scale=1",
 };
 
-export default async function RootLayout({ children }: { children: ReactNode }) {
-  const headersList = await headers();
-  const locale = headersList.get("x-next-intl-locale") ?? "en";
+export const viewport: Viewport = {
+  themeColor: "#7c3aed",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+};
 
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang={locale} suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png" />

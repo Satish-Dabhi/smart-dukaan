@@ -1,12 +1,19 @@
-import { getCachedSession as auth } from "@/lib/auth-cache";
+import { Suspense } from "react";
+import { getCachedSession } from "@/lib/auth-cache";
 import { Metadata } from "next";
 import { POSSystem } from "@/components/pos/pos-system";
 
 export const metadata: Metadata = { title: "POS Billing" };
 
-export default async function POSPage() {
-  const session = await auth();
-  const businessId = session?.user?.businessId;
+async function POSContent() {
+  const session = await getCachedSession();
+  return <POSSystem businessId={session?.user?.businessId} />;
+}
 
-  return <POSSystem businessId={businessId} />;
+export default function POSPage() {
+  return (
+    <Suspense>
+      <POSContent />
+    </Suspense>
+  );
 }

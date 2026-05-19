@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { getCachedSession as auth } from "@/lib/auth-cache";
 import { redirect } from "next/navigation";
 import { connectDB } from "@/lib/db";
@@ -5,13 +6,12 @@ import Business from "@/models/Business";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { ExternalLink, QrCode, Share2 } from "lucide-react";
+import { ExternalLink, QrCode } from "lucide-react";
 import { Metadata } from "next";
 
 export const metadata: Metadata = { title: "Storefront" };
 
-export default async function StorefrontPage({ params }: { params: Promise<{ locale: string }> }) {
-  const { locale } = await params;
+async function StorefrontContent({ locale }: { locale: string }) {
   const session = await auth();
   const businessId = session?.user?.businessId;
 
@@ -96,5 +96,14 @@ export default async function StorefrontPage({ params }: { params: Promise<{ loc
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default async function StorefrontPage({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
+  return (
+    <Suspense>
+      <StorefrontContent locale={locale} />
+    </Suspense>
   );
 }

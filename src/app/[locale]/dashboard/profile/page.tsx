@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { Metadata } from "next";
 import { getCachedSession } from "@/lib/auth-cache";
 import { redirect } from "next/navigation";
@@ -9,12 +10,7 @@ import { Mail, Shield, Building2 } from "lucide-react";
 
 export const metadata: Metadata = { title: "Profile" };
 
-export default async function ProfilePage({
-  params,
-}: {
-  params: Promise<{ locale: string }>;
-}) {
-  const { locale } = await params;
+async function ProfileContent({ locale }: { locale: string }) {
   const session = await getCachedSession();
 
   if (!session?.user) {
@@ -103,5 +99,18 @@ export default async function ProfilePage({
         </CardHeader>
       </Card>
     </div>
+  );
+}
+
+export default async function ProfilePage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  return (
+    <Suspense>
+      <ProfileContent locale={locale} />
+    </Suspense>
   );
 }

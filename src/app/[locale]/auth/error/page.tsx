@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import { AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -20,7 +21,7 @@ const errorMessages: Record<string, string> = {
   Default: "An unexpected error occurred during authentication.",
 };
 
-export default async function AuthErrorPage({
+async function ErrorContent({
   searchParams,
 }: {
   searchParams: Promise<{ error?: string }>;
@@ -46,5 +47,17 @@ export default async function AuthErrorPage({
         </Link>
       </div>
     </div>
+  );
+}
+
+export default function AuthErrorPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
+  return (
+    <Suspense>
+      <ErrorContent searchParams={searchParams} />
+    </Suspense>
   );
 }

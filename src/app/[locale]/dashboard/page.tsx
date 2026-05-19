@@ -1,12 +1,10 @@
+import { Suspense } from "react";
 import { getCachedSession } from "@/lib/auth-cache";
 import { connectDB } from "@/lib/db";
 import { DashboardOverview } from "@/components/dashboard/overview";
 import { Metadata } from "next";
 
 export const metadata: Metadata = { title: "Dashboard" };
-
-// Validates that this route produces an instant static shell for client-side navigation
-export const unstable_instant = { prefetch: "static" };
 
 async function getDashboardData(businessId?: string) {
   if (!businessId) return null;
@@ -136,10 +134,17 @@ async function getDashboardData(businessId?: string) {
   };
 }
 
-export default async function DashboardPage() {
+async function DashboardContent() {
   const session = await getCachedSession();
   const businessId = session?.user?.businessId;
   const data = await getDashboardData(businessId);
-
   return <DashboardOverview data={data} />;
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense>
+      <DashboardContent />
+    </Suspense>
+  );
 }
