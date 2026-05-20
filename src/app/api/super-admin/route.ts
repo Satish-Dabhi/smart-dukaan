@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { FilterQuery } from "mongoose";
 import { auth } from "@/auth";
 import { connectDB } from "@/lib/db";
-import User, { IUserDoc } from "@/models/User";
-import Business, { IBusinessDoc } from "@/models/Business";
+import User from "@/models/User";
+import Business from "@/models/Business";
 
 async function isSuperAdmin() {
   const session = await auth();
@@ -77,7 +76,7 @@ export async function GET(req: NextRequest) {
 
     // 2. Fetch specific list depending on the selected tab
     if (tab === "users") {
-      const query: FilterQuery<IUserDoc> = {};
+      const query: Record<string, any> = {};
       if (q) {
         query.$or = [
           { name: { $regex: q, $options: "i" } },
@@ -104,7 +103,7 @@ export async function GET(req: NextRequest) {
     }
 
     if (tab === "businesses") {
-      const query: FilterQuery<IBusinessDoc> = {};
+      const query: Record<string, any> = {};
       if (q) {
         query.$or = [
           { name: { $regex: q, $options: "i" } },
