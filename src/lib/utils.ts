@@ -97,6 +97,14 @@ export function debounce<T extends (...args: any[]) => any>(
   };
 }
 
+export function getSearchParam(
+  value: string | string[] | undefined,
+  fallback = ""
+): string {
+  if (Array.isArray(value)) return value[0] ?? fallback;
+  return value ?? fallback;
+}
+
 export function buildQueryString(params: Record<string, unknown>): string {
   const query = new URLSearchParams();
   Object.entries(params).forEach(([key, value]) => {

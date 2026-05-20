@@ -11,6 +11,10 @@ export interface IUserDoc extends Document {
   phone?: string;
   isVerified: boolean;
   isActive: boolean;
+  verificationOtp?: string;
+  verificationOtpExpires?: Date;
+  resetPasswordOtp?: string;
+  resetPasswordOtpExpires?: Date;
   lastLoginAt?: Date;
   createdAt: Date;
   updatedAt: Date;
@@ -32,6 +36,10 @@ const UserSchema = new Schema<IUserDoc>(
     phone: { type: String, trim: true },
     isVerified: { type: Boolean, default: false },
     isActive: { type: Boolean, default: true },
+    verificationOtp: { type: String },
+    verificationOtpExpires: { type: Date },
+    resetPasswordOtp: { type: String },
+    resetPasswordOtpExpires: { type: Date },
     lastLoginAt: { type: Date },
   },
   { timestamps: true }

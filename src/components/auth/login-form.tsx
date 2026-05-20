@@ -23,7 +23,8 @@ export function LoginForm() {
       ? rawCallback
       : `/${locale}/dashboard`;
 
-  const [email, setEmail] = useState("");
+  const emailParam = searchParams.get("email") ?? "";
+  const [email, setEmail] = useState(emailParam);
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -49,7 +50,18 @@ export function LoginForm() {
         redirect: false,
       });
       if (result?.error) {
-        toast.error("Invalid email or password");
+        if (result.error.includes("EmailUnverified")) {
+          // Trigger a new OTP email
+          await fetch("/api/auth/send-otp", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email }),
+          });
+          toast.info("Please verify your email address. A new OTP has been sent.");
+          router.push(`/${locale}/auth/verify-email?email=${encodeURIComponent(email)}`);
+        } else {
+          toast.error("Invalid email or password");
+        }
       } else {
         router.push(callbackUrl);
         router.refresh();

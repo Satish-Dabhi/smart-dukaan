@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
@@ -13,7 +13,7 @@ import {
   Search, ShoppingCart, Trash2, Plus, Minus, Printer,
   User, CreditCard, Banknote, Smartphone, X, CheckCircle2
 } from "lucide-react";
-import { formatCurrency, calculateGST, debounce, generateWhatsAppMessage } from "@/lib/utils";
+import { formatCurrency, calculateGST, debounce } from "@/lib/utils";
 import type { CartItem, IProduct } from "@/types";
 import { InvoicePrint } from "@/components/pos/invoice-print";
 import { ProductImageFallback } from "@/components/ui/product-image-fallback";
@@ -49,8 +49,8 @@ export function POSSystem({ businessId }: POSProps) {
 
   const handlePrint = useReactToPrint({ contentRef: printRef });
 
-  const debouncedSearch = useCallback(
-    debounce((q: string) => setDebouncedQuery(q), 300),
+  const debouncedSearch = useMemo(
+    () => debounce((q: string) => setDebouncedQuery(q), 300),
     []
   );
 

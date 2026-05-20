@@ -15,7 +15,7 @@ import {
   Upload, Download, Star, AlertTriangle
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
-import { useDebounce } from "@/lib/hooks";
+import { useDebounce } from "@/hooks";
 import type { IProduct } from "@/types";
 import { ProductDialog } from "@/components/dashboard/product-dialog";
 import { ProductImageFallback } from "@/components/ui/product-image-fallback";

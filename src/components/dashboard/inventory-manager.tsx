@@ -1,116 +1,53 @@
-"use client";
-
-import { useState, useCallback } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { motion } from "framer-motion";
-import { toast } from "sonner";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { getTranslations, getLocale } from "next-intl/server";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Search, AlertTriangle, Plus, Warehouse, TrendingDown } from "lucide-react";
-import { debounce } from "@/lib/utils";
+import { SearchInput } from "@/components/shared/search-input";
+import { Pagination } from "@/components/shared/pagination";
+import { InventoryFilter } from "./inventory-filter";
+import { AdjustStockButton } from "./adjust-stock-button";
+import { getProducts } from "@/services/product.service";
+import { requireBusinessAuth } from "@/lib/require-auth";
 import { ProductImageFallback } from "@/components/ui/product-image-fallback";
-import { useTranslations } from "next-intl";
+import { AlertTriangle, Warehouse, TrendingDown } from "lucide-react";
 
-export function InventoryManager() {
-  const queryClient = useQueryClient();
-  const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [filter, setFilter] = useState<"all" | "low" | "out">("all");
-  const [page, setPage] = useState(1);
-  const [adjustProduct, setAdjustProduct] = useState<{ id: string; name: string; stock: number } | null>(null);
-  const [adjustQty, setAdjustQty] = useState(0);
-  const [adjustNote, setAdjustNote] = useState("");
+interface InventoryManagerProps {
+  page: number;
+  q: string;
+  filter: "all" | "low" | "out";
+}
 
-  const t = useTranslations("inventory");
-  const tCommon = useTranslations("common");
+export async function InventoryManager({ page, q, filter }: InventoryManagerProps) {
+  const { businessId } = await requireBusinessAuth();
+  const [t, locale] = await Promise.all([
+    getTranslations("inventory"),
+    getLocale(),
+  ]);
 
-  const updateSearch = useCallback(
-    debounce((q: string) => { setDebouncedSearch(q); setPage(1); }, 300),
-    []
-  );
-
-  const { data, isLoading } = useQuery({
-    queryKey: ["products-inventory", debouncedSearch, filter, page],
-    queryFn: async () => {
-      const params = new URLSearchParams({ page: String(page), limit: "20" });
-      if (debouncedSearch) params.set("q", debouncedSearch);
-      if (filter === "low") params.set("lowStock", "true");
-      if (filter === "out") params.set("status", "out_of_stock");
-      const res = await fetch(`/api/products?${params}`);
-      return res.json();
-    },
+  const { data: products, meta } = await getProducts({
+    businessId,
+    page,
+    q,
+    lowStock: filter === "low" ? true : undefined,
+    status: filter === "out" ? "out_of_stock" : undefined,
   });
-
-  const adjustMutation = useMutation({
-    mutationFn: async ({ id, quantity, notes }: { id: string; quantity: number; notes: string }) => {
-      const res = await fetch(`/api/inventory/adjust`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ productId: id, quantity, notes, type: "adjustment" }),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error);
-      return json;
-    },
-    onSuccess: () => {
-      toast.success(t("stockAdjustedToast"));
-      queryClient.invalidateQueries({ queryKey: ["products-inventory"] });
-      setAdjustProduct(null);
-      setAdjustQty(0);
-      setAdjustNote("");
-    },
-    onError: (error: Error) => toast.error(error.message),
-  });
-
-  const products = data?.data ?? [];
-  const meta = data?.meta;
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t("title")}</h1>
-          <p className="text-sm text-gray-500 mt-1">{t("productsTracked", { count: meta?.total ?? 0 })}</p>
+          <p className="text-sm text-gray-500 mt-1">{t("productsTracked", { count: meta.total })}</p>
         </div>
       </div>
 
-      {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="flex-1">
-          <Input
-            placeholder={t("searchPlaceholder")}
-            value={search}
-            onChange={(e) => { setSearch(e.target.value); updateSearch(e.target.value); }}
-            startIcon={<Search className="w-4 h-4" />}
-          />
+          <SearchInput placeholder={t("searchPlaceholder")} />
         </div>
-        <div className="flex gap-2 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
-          {(["all", "low", "out"] as const).map((f) => (
-            <button
-              key={f}
-              onClick={() => { setFilter(f); setPage(1); }}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors capitalize ${
-                filter === f
-                  ? "bg-white dark:bg-gray-900 text-gray-900 dark:text-white shadow-sm"
-                  : "text-gray-500 dark:text-gray-400"
-              }`}
-            >
-              {f === "low" ? t("lowStock") : f === "out" ? t("outOfStock") : t("all")}
-            </button>
-          ))}
-        </div>
+        <InventoryFilter currentFilter={filter} />
       </div>
 
-      {isLoading ? (
-        <div className="space-y-2">
-          {[...Array(8)].map((_, i) => (
-            <Skeleton key={i} className="h-16 w-full rounded-lg" />
-          ))}
-        </div>
-      ) : products.length === 0 ? (
+      {products.length === 0 ? (
         <div className="text-center py-16">
           <Warehouse className="w-12 h-12 mx-auto mb-3 text-gray-200 dark:text-gray-700" />
           <p className="text-gray-500">{t("noProducts")}</p>
@@ -131,32 +68,29 @@ export function InventoryManager() {
                     </tr>
                   </thead>
                   <tbody>
-                    {products.map((product: Record<string, unknown>, i: number) => {
-                      const stock = product.stock as number;
-                      const minStock = (product.minStock as number) ?? 5;
+                    {products.map((product) => {
+                      const stock = product.stock;
+                      const minStock = product.minStock ?? 5;
                       const isLow = stock <= minStock && stock > 0;
                       const isOut = stock === 0;
 
                       return (
-                        <motion.tr
-                          key={product._id as string}
-                          initial={{ opacity: 0, y: 5 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: i * 0.02 }}
+                        <tr
+                          key={product._id.toString()}
                           className="border-b border-gray-50 dark:border-gray-800/50 hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors"
                         >
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-3">
-                              {(product.images as string[])?.[0] ? (
+                              {product.images?.[0] ? (
                                 <img
-                                  src={(product.images as string[])[0]}
-                                  alt={product.name as string}
+                                  src={product.images[0]}
+                                  alt={product.name}
                                   className="w-10 h-10 rounded-lg object-cover"
                                 />
                               ) : (
                                 <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0">
                                   <ProductImageFallback
-                                    name={product.name as string}
+                                    name={product.name}
                                     className="w-full h-full"
                                     iconClassName="w-5 h-5"
                                     showOverlay={false}
@@ -165,14 +99,14 @@ export function InventoryManager() {
                               )}
                               <div>
                                 <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                  {product.name as string}
+                                  {product.name}
                                 </p>
-                                <p className="text-xs text-gray-500">{product.unit as string ?? "pcs"}</p>
+                                <p className="text-xs text-gray-500">{product.unit ?? "pcs"}</p>
                               </div>
                             </div>
                           </td>
                           <td className="px-4 py-3 text-sm text-gray-500">
-                            {(product.sku as string) ?? "—"}
+                            {product.sku ?? "—"}
                           </td>
                           <td className="px-4 py-3">
                             <div className={`text-sm font-bold ${isOut ? "text-red-600" : isLow ? "text-amber-600" : "text-emerald-600"}`}>
@@ -202,23 +136,14 @@ export function InventoryManager() {
                             )}
                           </td>
                           <td className="px-4 py-3">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="h-7 text-xs gap-1"
-                              onClick={() =>
-                                setAdjustProduct({
-                                  id: product._id as string,
-                                  name: product.name as string,
-                                  stock,
-                                })
-                              }
-                            >
-                              <Plus className="w-3 h-3" />
-                              {t("restock")}
-                            </Button>
+                            <AdjustStockButton
+                              productId={product._id.toString()}
+                              productName={product.name}
+                              currentStock={stock}
+                              locale={locale}
+                            />
                           </td>
-                        </motion.tr>
+                        </tr>
                       );
                     })}
                   </tbody>
@@ -227,62 +152,8 @@ export function InventoryManager() {
             </CardContent>
           </Card>
 
-          {meta && meta.totalPages > 1 && (
-            <div className="flex items-center justify-center gap-2">
-              <Button variant="outline" size="sm" disabled={!meta.hasPrev} onClick={() => setPage((p) => p - 1)}>
-                {tCommon("previous")}
-              </Button>
-              <span className="text-sm text-gray-500">
-                {tCommon("pageInfo", { page: meta.page, totalPages: meta.totalPages })}
-              </span>
-              <Button variant="outline" size="sm" disabled={!meta.hasNext} onClick={() => setPage((p) => p + 1)}>
-                {tCommon("next")}
-              </Button>
-            </div>
-          )}
+          <Pagination meta={meta} />
         </>
-      )}
-
-      {/* Adjust Stock Modal */}
-      {adjustProduct && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl p-6 w-full max-w-sm">
-            <h3 className="font-bold text-lg mb-1">{adjustProduct.name}</h3>
-            <p className="text-sm text-gray-500 mb-4">{t("currentStock", { count: adjustProduct.stock })}</p>
-            <div className="space-y-3">
-              <div>
-                <label className="text-sm font-medium mb-1.5 block">{t("addStockQty")}</label>
-                <Input
-                  type="number"
-                  value={adjustQty}
-                  onChange={(e) => setAdjustQty(Number(e.target.value))}
-                  placeholder={t("enterQtyPlaceholder")}
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-1.5 block">{t("notes")}</label>
-                <Input
-                  value={adjustNote}
-                  onChange={(e) => setAdjustNote(e.target.value)}
-                  placeholder={t("notesPlaceholder")}
-                />
-              </div>
-            </div>
-            <div className="flex gap-3 mt-6">
-              <Button variant="outline" className="flex-1" onClick={() => setAdjustProduct(null)}>
-                {tCommon("cancel")}
-              </Button>
-              <Button
-                variant="gradient"
-                className="flex-1"
-                loading={adjustMutation.isPending}
-                onClick={() => adjustMutation.mutate({ id: adjustProduct.id, quantity: adjustQty, notes: adjustNote })}
-              >
-                {t("updateStock")}
-              </Button>
-            </div>
-          </div>
-        </div>
       )}
     </div>
   );

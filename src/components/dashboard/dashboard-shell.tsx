@@ -16,7 +16,12 @@ export function DashboardShell({ children, locale, session }: DashboardShellProp
 
   return (
     <div className="flex h-screen bg-muted/30 overflow-hidden relative w-full">
-      <DashboardSidebar locale={locale} isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
+      <DashboardSidebar
+        locale={locale}
+        isOpen={sidebarOpen}
+        setIsOpen={setSidebarOpen}
+        role={session.user.role}
+      />
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <DashboardHeader
           session={session}

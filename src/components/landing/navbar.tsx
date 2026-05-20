@@ -18,6 +18,7 @@ export function Navbar() {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
     const handler = () => setIsScrolled(window.scrollY > 20);
     window.addEventListener("scroll", handler);

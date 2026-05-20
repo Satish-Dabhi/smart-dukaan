@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard, Package, Tag, ShoppingCart, FileText,
   Users, Warehouse, BarChart3, Settings, Zap, QrCode,
-  ChevronLeft, ChevronRight, ShoppingBag, Store, X
+  ChevronLeft, ChevronRight, ShoppingBag, Store, X, ShieldAlert
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "next-intl";
@@ -16,6 +16,7 @@ interface SidebarProps {
   locale: string;
   isOpen?: boolean;
   setIsOpen?: (open: boolean) => void;
+  role?: string;
 }
 
 const getNavItems = (locale: string, t: any) => [
@@ -60,11 +61,23 @@ const getNavItems = (locale: string, t: any) => [
 
 
 
-export function DashboardSidebar({ locale, isOpen, setIsOpen }: SidebarProps) {
+export function DashboardSidebar({ locale, isOpen, setIsOpen, role }: SidebarProps) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const t = useTranslations();
-  const navItems = getNavItems(locale, t);
+
+  const baseItems = getNavItems(locale, t);
+  const navItems = role === "super_admin"
+    ? [
+        ...baseItems,
+        {
+          group: t("nav.admin") || "Admin Console",
+          items: [
+            { icon: ShieldAlert, label: t("nav.superAdmin") || "Super Admin", href: `/${locale}/dashboard/super-admin` }
+          ]
+        }
+      ]
+    : baseItems;
 
   return (
     <>

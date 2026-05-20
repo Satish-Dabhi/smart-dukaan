@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import {
   TrendingUp, TrendingDown, ShoppingCart, Package,
-  Users, IndianRupee, AlertTriangle, ArrowRight
+  Users, IndianRupee, AlertTriangle, ArrowRight, Store, CheckCircle2
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -84,13 +84,13 @@ export function BlankChartState({
 
       {/* Content Overlay */}
       <div className="relative z-10 flex flex-col items-center max-w-xs animate-in fade-in zoom-in-95 duration-500">
-        {Icon ? (
-          <div className="w-10 h-10 rounded-full bg-violet-50 dark:bg-violet-950/50 flex items-center justify-center text-violet-600 dark:text-violet-400 mb-2.5 shadow-sm border border-violet-100 dark:border-violet-900/30">
+        <div className="w-10 h-10 rounded-full bg-violet-50 dark:bg-violet-950/50 flex items-center justify-center text-violet-600 dark:text-violet-400 mb-2.5 shadow-sm border border-violet-100 dark:border-violet-900/30">
+          {Icon ? (
             <Icon className="w-5 h-5 animate-pulse" />
-          </div>
-        ) : (
-          <span className="text-3xl mb-2.5">📈</span>
-        )}
+          ) : (
+            <TrendingUp className="w-5 h-5 animate-pulse" />
+          )}
+        </div>
         <h4 className="font-semibold text-sm text-gray-900 dark:text-white mb-1">
           {title}
         </h4>
@@ -474,9 +474,14 @@ export function DashboardOverview({ data }: Props) {
                   </div>
                 ))}
                 {data.lowStockProducts.length === 0 && (
-                  <p className="text-sm text-gray-500 text-center py-4">
-                    ✅ {t("allProductsStocked")}
-                  </p>
+                  <div className="flex flex-col items-center justify-center py-6 text-center w-full">
+                    <div className="w-10 h-10 rounded-full bg-emerald-50 dark:bg-emerald-950/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 mb-2 border border-emerald-100 dark:border-emerald-900/30">
+                      <CheckCircle2 className="w-5 h-5" />
+                    </div>
+                    <p className="text-xs text-gray-500 max-w-[200px]">
+                      {t("allProductsStocked")}
+                    </p>
+                  </div>
                 )}
               </div>
             </CardContent>
@@ -496,7 +501,11 @@ function OnboardingCard({ locale }: { locale: string }) {
         animate={{ opacity: 1, scale: 1 }}
         className="max-w-md text-center"
       >
-        <div className="text-6xl mb-4">🏪</div>
+        <div className="relative mx-auto w-24 h-24 mb-6 flex items-center justify-center rounded-3xl bg-gradient-to-br from-violet-500/10 via-purple-500/5 to-pink-500/5 dark:from-violet-500/20 dark:via-purple-500/10 dark:to-pink-500/10 border border-violet-500/20 dark:border-violet-500/30 shadow-xl shadow-violet-500/5 group overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-violet-500 to-purple-600 opacity-0 group-hover:opacity-10 transition-opacity duration-500" />
+          <div className="absolute -inset-10 bg-gradient-to-tr from-violet-600 via-purple-600 to-pink-500 rounded-full opacity-30 blur-2xl group-hover:scale-125 transition-transform duration-700 -z-10 animate-pulse" />
+          <Store className="w-12 h-12 text-violet-600 dark:text-violet-400 group-hover:scale-110 transition-all duration-300 group-hover:rotate-3" />
+        </div>
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
           {t("setupStore")}
         </h2>

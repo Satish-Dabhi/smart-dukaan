@@ -30,6 +30,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const isValid = await bcrypt.compare(credentials.password as string, user.password);
         if (!isValid) return null;
 
+        if (user.isVerified === false) {
+          throw new Error("EmailUnverified");
+        }
+
         return {
           id: user._id.toString(),
           email: user.email,
@@ -37,6 +41,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           image: user.image,
           role: user.role,
           businessId: user.businessId?.toString(),
+          isVerified: user.isVerified,
         };
       },
     }),
@@ -46,6 +51,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (user) {
         token.role = (user as { role?: string }).role ?? "business_owner";
         token.businessId = (user as { businessId?: string }).businessId;
+        token.isVerified = (user as { isVerified?: boolean }).isVerified ?? false;
       }
       if (account?.provider === "google") {
         await connectDB();
@@ -53,14 +59,20 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (dbUser) {
           token.role = dbUser.role;
           token.businessId = dbUser.businessId?.toString();
+          token.isVerified = dbUser.isVerified;
+        } else {
+          token.isVerified = true;
         }
       }
       // Re-fetch businessId if not in token (e.g. business created after sign-in)
       if (!token.businessId && token.sub) {
         await connectDB();
-        const dbUser = await User.findById(token.sub).select("businessId");
-        if (dbUser?.businessId) {
-          token.businessId = dbUser.businessId.toString();
+        const dbUser = await User.findById(token.sub).select("businessId isVerified");
+        if (dbUser) {
+          if (dbUser.businessId) {
+            token.businessId = dbUser.businessId.toString();
+          }
+          token.isVerified = dbUser.isVerified;
         }
       }
       return token;
@@ -70,6 +82,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.id = token.sub!;
         (session.user as { role?: string }).role = token.role as string;
         (session.user as { businessId?: string }).businessId = token.businessId as string;
+        (session.user as { isVerified?: boolean }).isVerified = token.isVerified as boolean;
       }
       return session;
     },

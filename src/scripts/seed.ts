@@ -30,9 +30,21 @@ async function seed() {
     Product.deleteMany({}),
   ]);
 
+  // Create super admin
+  console.log("🔑 Creating super admin...");
+  const hashedPw = await bcrypt.hash("demo1234", 12);
+  await User.create({
+    name: "Super Admin",
+    email: "admin@smartdukaan.com",
+    password: hashedPw,
+    role: "super_admin",
+    phone: "+91 9000000000",
+    isVerified: true,
+    isActive: true,
+  });
+
   // Create demo user
   console.log("👤 Creating demo user...");
-  const hashedPw = await bcrypt.hash("demo1234", 12);
   const user = await User.create({
     name: "Rajesh Patel",
     email: "demo@smartdukaan.com",
@@ -40,6 +52,7 @@ async function seed() {
     role: "business_owner",
     phone: "+91 9876543210",
     isVerified: true,
+    isActive: true,
   });
 
   // Create demo business
@@ -141,6 +154,7 @@ async function seed() {
     role: "business_owner",
     phone: "+91 9865432100",
     isVerified: true,
+    isActive: true,
   });
 
   const cafeBusiness = await Business.create({
@@ -198,6 +212,7 @@ async function seed() {
 
   console.log("\n✅ Seed data created successfully!\n");
   console.log("Demo accounts:");
+  console.log("  Super Admin:   admin@smartdukaan.com / demo1234");
   console.log("  Grocery Store: demo@smartdukaan.com / demo1234");
   console.log("  Cafe:          cafe@smartdukaan.com / demo1234\n");
   console.log("Demo storefronts:");

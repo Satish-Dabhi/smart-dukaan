@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Building2, Phone, MapPin, Receipt, Palette, Globe } from "lucide-react";
+import { Building2, Phone, MapPin, Receipt, Palette, Globe, Store } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 const schema = z.object({
@@ -122,7 +122,11 @@ export function BusinessSettings({ userId }: Props) {
           animate={{ opacity: 1, scale: 1 }}
           className="max-w-md text-center"
         >
-          <div className="text-6xl mb-4">🏪</div>
+          <div className="relative mx-auto w-24 h-24 mb-6 flex items-center justify-center rounded-3xl bg-gradient-to-br from-violet-500/10 via-purple-500/5 to-pink-500/5 dark:from-violet-500/20 dark:via-purple-500/10 dark:to-pink-500/10 border border-violet-500/20 dark:border-violet-500/30 shadow-xl shadow-violet-500/5 group overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-violet-500 to-purple-600 opacity-0 group-hover:opacity-10 transition-opacity duration-500" />
+            <div className="absolute -inset-10 bg-gradient-to-tr from-violet-600 via-purple-600 to-pink-500 rounded-full opacity-30 blur-2xl group-hover:scale-125 transition-transform duration-700 -z-10 animate-pulse" />
+            <Store className="w-12 h-12 text-violet-600 dark:text-violet-400 group-hover:scale-110 transition-all duration-300 group-hover:rotate-3" />
+          </div>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
             {t("setupStore")}
           </h2>

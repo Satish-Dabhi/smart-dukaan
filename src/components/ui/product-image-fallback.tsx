@@ -3,30 +3,19 @@
 import React from "react";
 import {
   Carrot,
-  Apple,
   Milk,
-  Egg,
   Coffee,
   Cookie,
-  Cake,
   Pill,
   Shirt,
   Scissors,
   Sparkles,
   Package,
-  Tag,
-  ShoppingBag,
-  HeartPulse,
-  Flame,
-  Leaf,
-  GlassWater,
-  Activity,
-  User,
-  Coffee as TeaIcon
+  Leaf
 } from "lucide-react";
 
 interface FallbackConfig {
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<{ className?: string }>;
   themeClasses: string; // Tailored HSL gradient & text colors
 }
 

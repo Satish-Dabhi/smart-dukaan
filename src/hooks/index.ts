@@ -2,10 +2,6 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 
-/**
- * Debounces a rapidly-changing value.
- * Returns the debounced value after `delay` ms of no updates.
- */
 export function useDebounce<T>(value: T, delay: number = 300): T {
   const [debounced, setDebounced] = useState<T>(value);
 
@@ -17,10 +13,6 @@ export function useDebounce<T>(value: T, delay: number = 300): T {
   return debounced;
 }
 
-/**
- * Returns a stable debounced callback that won't change between renders.
- * The inner function always gets the latest version of the callback via ref.
- */
 export function useDebouncedCallback<Args extends unknown[]>(
   fn: (...args: Args) => void,
   delay: number = 300
@@ -39,9 +31,6 @@ export function useDebouncedCallback<Args extends unknown[]>(
   );
 }
 
-/**
- * Returns the previous value of any reactive variable.
- */
 export function usePrevious<T>(value: T): T | undefined {
   const ref = useRef<T | undefined>(undefined);
   useEffect(() => {
@@ -50,9 +39,6 @@ export function usePrevious<T>(value: T): T | undefined {
   return ref.current;
 }
 
-/**
- * Tracks whether a component is mounted to guard async state updates.
- */
 export function useIsMounted(): () => boolean {
   const isMounted = useRef(false);
   useEffect(() => {

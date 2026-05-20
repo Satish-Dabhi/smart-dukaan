@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -10,12 +10,12 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
   Phone, MapPin, Share2, QrCode, MessageCircle,
-  Search, Star, ShoppingCart, X, ChevronDown,
-  Clock, CheckCircle, Truck, Shield, Sun, Moon
+  Search, Star, ShoppingCart, X,
+  CheckCircle, Truck, Shield, Sun, Moon, Store, Loader2
 } from "lucide-react";
 import { useTheme } from "next-themes";
-import { formatCurrency, generateWhatsAppMessage, debounce } from "@/lib/utils";
-import type { IBusiness, IProduct, ICategory, CartItem } from "@/types";
+import { formatCurrency, debounce } from "@/lib/utils";
+import type { IBusiness, IProduct, ICategory, CartItem, IOrder } from "@/types";
 import { QRCodeCanvas } from "qrcode.react";
 import { ProductImageFallback } from "@/components/ui/product-image-fallback";
 
@@ -55,9 +55,96 @@ export function StorefrontPage({
   const { resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
+  // Checkout and Order states
+  const [showCheckoutModal, setShowCheckoutModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [checkoutForm, setCheckoutForm] = useState({
+    customerName: "",
+    customerPhone: "",
+    notes: "",
+    paymentMethod: "cod",
+  });
+  const [placedOrder, setPlacedOrder] = useState<IOrder | null>(null);
+
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
+
+  const handlePlaceOrder = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!checkoutForm.customerName || !checkoutForm.customerPhone) {
+      alert(t("Please enter your name and phone number.", "કૃપા કરીને તમારું નામ અને ફોન નંબર દાખલ કરો."));
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+      const discount = cart.reduce((sum, item) => sum + (item.price * (item.discount / 100)) * item.quantity, 0);
+      const taxAmount = cart.reduce((sum, item) => {
+        const priceAfterDiscount = item.price * (1 - item.discount / 100);
+        return sum + (priceAfterDiscount * (item.gst / 100)) * item.quantity;
+      }, 0);
+      const total = subtotal - discount + taxAmount;
+
+      const orderPayload = {
+        businessId: business._id,
+        items: cart.map(item => ({
+          productId: item.productId,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+          discount: item.discount,
+          gst: item.gst,
+        })),
+        customerName: checkoutForm.customerName,
+        customerPhone: checkoutForm.customerPhone,
+        subtotal,
+        discount,
+        taxAmount,
+        total,
+        notes: checkoutForm.notes,
+        paymentMethod: checkoutForm.paymentMethod,
+      };
+
+      const res = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(orderPayload),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Order placement failed");
+      }
+
+      setPlacedOrder(data.data);
+      setCart([]);
+      setShowCheckoutModal(false);
+      setShowSuccessModal(true);
+    } catch (err) {
+      console.error(err);
+      const errMsg = err instanceof Error ? err.message : String(err);
+      alert(errMsg || t("Something went wrong. Please try again.", "કાંઈક ખોટું થયું. કૃપા કરીને ફરી પ્રયાસ કરો."));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleSuccessWhatsApp = () => {
+    if (!business.whatsappNumber || !placedOrder) return;
+    const itemsList = placedOrder.items
+      .map((item) => `${item.quantity}x ${item.name} - ₹${item.price * item.quantity}`)
+      .join("\n");
+    const message = `Hello ${business.name},\n\nI just placed an order on your site! 😍\n\n*Order Number:* ${placedOrder.orderNumber}\n\n*Items Ordered:*\n${itemsList}\n\n*Total Amount:* ₹${placedOrder.total}\n*Payment Method:* ${placedOrder.paymentMethod ? placedOrder.paymentMethod.toUpperCase() : ""}\n\n*Customer Details:*\nName: ${placedOrder.customerName}\nPhone: ${placedOrder.customerPhone}\n${placedOrder.notes ? `Notes: ${placedOrder.notes}\n` : ""}\nPlease process my order. Thank you!`;
+    window.open(
+      `https://wa.me/${business.whatsappNumber.replace(/\D/g, "")}?text=${encodeURIComponent(message)}`,
+      "_blank"
+    );
+  };
 
   const toggleTheme = () => {
     setTheme(resolvedTheme === "dark" ? "light" : "dark");
@@ -81,8 +168,8 @@ export function StorefrontPage({
     [filters, pathname, router]
   );
 
-  const debouncedSearch = useCallback(
-    debounce((q: string) => updateFilters({ q: q || undefined }), 400),
+  const debouncedSearch = useMemo(
+    () => debounce((q: string) => updateFilters({ q: q || undefined }), 400),
     [updateFilters]
   );
 
@@ -116,10 +203,6 @@ export function StorefrontPage({
     });
   };
 
-  const removeFromCart = (productId: string) => {
-    setCart((prev) => prev.filter((i) => i.productId !== productId));
-  };
-
   const updateQuantity = (productId: string, delta: number) => {
     setCart((prev) =>
       prev
@@ -133,23 +216,6 @@ export function StorefrontPage({
     0
   );
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
-
-  const handleWhatsApp = () => {
-    if (!business.whatsappNumber) return;
-    const message = generateWhatsAppMessage(
-      business.name,
-      cart.map((item) => ({
-        name: locale === "gu" ? item.nameGu ?? item.name : item.name,
-        quantity: item.quantity,
-        price: item.price,
-      })),
-      cartTotal
-    );
-    window.open(
-      `https://wa.me/${business.whatsappNumber.replace(/\D/g, "")}?text=${encodeURIComponent(message)}`,
-      "_blank"
-    );
-  };
 
   const featuredProducts = products.filter((p) => p.isFeatured).slice(0, 6);
   const displayProducts = products;
@@ -185,8 +251,8 @@ export function StorefrontPage({
                     />
                   </div>
                 ) : (
-                  <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-3xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-5xl border-2 border-white/30 shadow-2xl">
-                    🏪
+                  <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-3xl bg-white/20 backdrop-blur-sm flex items-center justify-center border-2 border-white/30 shadow-2xl group overflow-hidden">
+                    <Store className="w-12 h-12 text-white group-hover:scale-110 transition-transform duration-300" />
                   </div>
                 )}
               </Link>
@@ -618,21 +684,21 @@ export function StorefrontPage({
                     {formatCurrency(cartTotal)}
                   </span>
                 </div>
-                {business.whatsappNumber ? (
+                {cartCount > 0 ? (
                   <Button
                     variant="gradient"
                     className="w-full gap-2 h-12 text-base font-bold shadow-lg shadow-violet-200 dark:shadow-violet-900/30"
                     onClick={() => {
-                      handleWhatsApp();
                       setShowCart(false);
+                      setShowCheckoutModal(true);
                     }}
                   >
-                    <MessageCircle className="w-5 h-5" />
-                    {t("Order on WhatsApp", "WhatsApp પર ઓર્ડર")}
+                    <ShoppingCart className="w-5 h-5" />
+                    {t("Proceed to Checkout", "ચેકઆઉટ કરવા આગળ વધો")}
                   </Button>
                 ) : (
                   <Button variant="outline" className="w-full" disabled>
-                    {t("Contact us to order", "ઓર્ડર માટે સંપર્ક કરો")}
+                    {t("Your cart is empty", "તમારો કાર્ટ ખાલી છે")}
                   </Button>
                 )}
                 <button
@@ -674,6 +740,223 @@ export function StorefrontPage({
               <Button variant="outline" className="mt-5 w-full" onClick={() => setShowQR(false)}>
                 {t("Close", "બંધ")}
               </Button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ─── Checkout Modal ────────────────────────────────────────────────── */}
+      <AnimatePresence>
+        {showCheckoutModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setShowCheckoutModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 20 }}
+              className="bg-white dark:bg-gray-900 rounded-3xl p-6 sm:p-8 shadow-2xl max-w-lg w-full overflow-hidden border border-gray-100 dark:border-gray-800"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h3 className="font-extrabold text-2xl text-foreground bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent">
+                    {t("Complete Your Order", "તમારો ઓર્ડર પૂર્ણ કરો")}
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {t("Enter your details to finalize the purchase", "ખરીદી પૂર્ણ કરવા માટે વિગતો દાખલ કરો")}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowCheckoutModal(false)}
+                  className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <form onSubmit={handlePlaceOrder} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
+                    {t("Full Name", "પૂરું નામ")} <span className="text-destructive">*</span>
+                  </label>
+                  <Input
+                    required
+                    placeholder={t("Enter your name", "તમારું નામ દાખલ કરો")}
+                    value={checkoutForm.customerName}
+                    onChange={(e) => setCheckoutForm(prev => ({ ...prev, customerName: e.target.value }))}
+                    className="h-11 rounded-xl focus-visible:ring-violet-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
+                    {t("Phone Number", "ફોન નંબર")} <span className="text-destructive">*</span>
+                  </label>
+                  <Input
+                    type="tel"
+                    required
+                    placeholder={t("Enter 10-digit mobile number", "10-અંકનો મોબાઇલ નંબર")}
+                    value={checkoutForm.customerPhone}
+                    onChange={(e) => setCheckoutForm(prev => ({ ...prev, customerPhone: e.target.value }))}
+                    className="h-11 rounded-xl focus-visible:ring-violet-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
+                    {t("Delivery Address or Special Notes", "સરનામું અથવા વિશેષ નોંધો")}
+                  </label>
+                  <textarea
+                    rows={3}
+                    placeholder={t("E.g., Table 4, Home Delivery Address, or special requests...", "દા.ત., ટેબલ 4, ડિલિવરી સરનામું...")}
+                    value={checkoutForm.notes}
+                    onChange={(e) => setCheckoutForm(prev => ({ ...prev, notes: e.target.value }))}
+                    className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
+                    {t("Payment Method", "ચુકવણી પદ્ધતિ")}
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setCheckoutForm(prev => ({ ...prev, paymentMethod: "cod" }))}
+                      className={`flex flex-col items-center justify-center p-3 rounded-2xl border text-sm font-semibold transition-all ${
+                        checkoutForm.paymentMethod === "cod"
+                          ? "border-violet-600 bg-violet-50/50 dark:bg-violet-950/20 text-violet-600"
+                          : "border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 text-muted-foreground"
+                      }`}
+                    >
+                      <Truck className="w-5 h-5 mb-1 text-violet-500" />
+                      {t("Cash on Delivery", "કેશ ઓન ડિલિવરી")}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCheckoutForm(prev => ({ ...prev, paymentMethod: "pay_at_store" }))}
+                      className={`flex flex-col items-center justify-center p-3 rounded-2xl border text-sm font-semibold transition-all ${
+                        checkoutForm.paymentMethod === "pay_at_store"
+                          ? "border-violet-600 bg-violet-50/50 dark:bg-violet-950/20 text-violet-600"
+                          : "border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 text-muted-foreground"
+                      }`}
+                    >
+                      <Store className="w-5 h-5 mb-1 text-violet-500" />
+                      {t("Pay at Store", "દુકાન પર ચૂકવો")}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-4 mt-2 space-y-2">
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>{t("Total Items", "કુલ આઇટમ")}</span>
+                    <span className="font-semibold text-foreground">
+                      {cart.reduce((sum, item) => sum + item.quantity, 0)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm font-bold text-foreground border-t border-gray-200/50 dark:border-gray-700/50 pt-2">
+                    <span>{t("Amount Payable", "ચૂકવવાપાત્ર રકમ")}</span>
+                    <span className="text-violet-600 dark:text-violet-400">
+                      {formatCurrency(cartTotal)}
+                    </span>
+                  </div>
+                </div>
+
+                <Button
+                  type="submit"
+                  disabled={isSubmitting}
+                  variant="gradient"
+                  className="w-full h-12 text-base font-bold rounded-2xl shadow-xl shadow-violet-200 dark:shadow-violet-900/30 transition-transform active:scale-[0.98]"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                      {t("Placing Order...", "ઓર્ડર થઈ રહ્યો છે...")}
+                    </>
+                  ) : (
+                    t(`Place Order - ${formatCurrency(cartTotal)}`, `ઓર્ડર સબમિટ કરો - ${formatCurrency(cartTotal)}`)
+                  )}
+                </Button>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ─── Success Modal ─────────────────────────────────────────────────── */}
+      <AnimatePresence>
+        {showSuccessModal && placedOrder && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white dark:bg-gray-900 rounded-3xl p-6 sm:p-8 text-center shadow-2xl max-w-md w-full border border-gray-100 dark:border-gray-800"
+            >
+              <div className="w-16 h-16 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4 border border-emerald-100 dark:border-emerald-900/30 shadow-inner">
+                <CheckCircle className="w-10 h-10 animate-bounce" />
+              </div>
+
+              <h3 className="font-extrabold text-2xl text-foreground mb-1">
+                {t("Order Placed!", "ઓર્ડર સફળતાપૂર્વક મૂકાયો!")}
+              </h3>
+              <p className="text-sm text-emerald-600 dark:text-emerald-400 font-semibold mb-4">
+                {t(`Order Number: ${placedOrder.orderNumber}`, `ઓર્ડર નંબર: ${placedOrder.orderNumber}`)}
+              </p>
+
+              <div className="text-left bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-4 mb-6 space-y-2 border border-gray-100 dark:border-gray-800">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                  {t("Order Details", "ઓર્ડર વિગતો")}
+                </p>
+                <div className="max-h-32 overflow-y-auto space-y-1.5 pr-1">
+                  {placedOrder.items.map((item, i: number) => (
+                    <div key={i} className="flex justify-between text-xs text-foreground">
+                      <span className="truncate max-w-[200px]">
+                        {item.quantity}x {item.name}
+                      </span>
+                      <span className="font-medium">{formatCurrency(item.price * item.quantity)}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="border-t border-gray-200 dark:border-gray-700 pt-2 flex justify-between text-sm font-bold text-foreground">
+                  <span>{t("Total Paid", "કુલ ચૂકવેલ")}</span>
+                  <span className="text-violet-600 dark:text-violet-400">{formatCurrency(placedOrder.total)}</span>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                {business.whatsappNumber && (
+                  <Button
+                    variant="gradient"
+                    onClick={handleSuccessWhatsApp}
+                    className="w-full gap-2 h-12 text-base font-bold rounded-2xl shadow-lg shadow-violet-200 dark:shadow-violet-900/30"
+                  >
+                    <MessageCircle className="w-5 h-5" />
+                    {t("Send WhatsApp Confirmation", "WhatsApp પર કન્ફર્મેશન મોકલો")}
+                  </Button>
+                )}
+
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowSuccessModal(false);
+                    setPlacedOrder(null);
+                  }}
+                  className="w-full h-12 text-base font-bold rounded-2xl border-gray-200 dark:border-gray-800"
+                >
+                  {t("Continue Shopping", "ખરીદી ચાલુ રાખો")}
+                </Button>
+              </div>
             </motion.div>
           </motion.div>
         )}

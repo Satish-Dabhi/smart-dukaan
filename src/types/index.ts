@@ -124,6 +124,8 @@ export interface IOrder {
   businessId: string;
   orderNumber: string;
   customerId?: string;
+  customerName?: string;
+  customerPhone?: string;
   customer?: ICustomer;
   items: OrderItem[];
   subtotal: number;
@@ -136,6 +138,7 @@ export interface IOrder {
   notes?: string;
   whatsappOrder: boolean;
   tableNumber?: string;
+  source?: "pos" | "online" | "whatsapp" | "qr";
   createdAt: string;
   updatedAt: string;
 }
@@ -157,6 +160,9 @@ export interface IInvoice {
   invoiceNumber: string;
   orderId?: string;
   customerId?: string;
+  customerName?: string;
+  customerPhone?: string;
+  customerAddress?: string;
   customer?: ICustomer;
   business?: IBusiness;
   items: InvoiceItem[];
@@ -298,4 +304,35 @@ export interface SearchFilters {
   sortOrder?: "asc" | "desc";
   page?: number;
   limit?: number;
+}
+
+export interface SuperAdminStats {
+  totalUsers: number;
+  totalVerifiedUsers: number;
+  totalBusinesses: number;
+  statusBreakdown: {
+    active: number;
+    suspended: number;
+  };
+  subscriptionsBreakdown: {
+    free: number;
+    starter: number;
+    pro: number;
+    enterprise: number;
+  };
+}
+
+export interface SuperAdminRecent {
+  users: IUser[];
+  businesses: IBusiness[];
+}
+
+export interface INotification {
+  _id: string;
+  title: string;
+  message: string;
+  type: "order" | "inventory" | "system";
+  read: boolean;
+  link?: string;
+  createdAt: string;
 }

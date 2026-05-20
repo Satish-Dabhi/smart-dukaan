@@ -6,6 +6,7 @@ export interface IOrderDoc extends Document {
   customerId?: mongoose.Types.ObjectId;
   customerName?: string;
   customerPhone?: string;
+  customerEmail?: string;
   items: Array<{
     productId: mongoose.Types.ObjectId;
     name: string;
@@ -37,6 +38,7 @@ const OrderSchema = new Schema<IOrderDoc>(
     customerId: { type: Schema.Types.ObjectId, ref: "Customer" },
     customerName: { type: String },
     customerPhone: { type: String },
+    customerEmail: { type: String },
     items: [
       {
         productId: { type: Schema.Types.ObjectId, ref: "Product", required: true },
