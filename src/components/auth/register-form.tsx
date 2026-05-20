@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
@@ -12,6 +12,7 @@ import { User, Mail, Lock, Eye, EyeOff, Phone } from "lucide-react";
 
 export function RegisterForm() {
   const locale = useLocale();
+  const t = useTranslations("auth");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -30,7 +31,7 @@ export function RegisterForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (form.password.length < 8) {
-      toast.error("Password must be at least 8 characters");
+      toast.error(t("passwordMinLength") || "Password must be at least 8 characters");
       return;
     }
     setLoading(true);
@@ -62,13 +63,13 @@ export function RegisterForm() {
       className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-800 p-8"
     >
       <div className="mb-6 text-center">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Create Account</h1>
-        <p className="text-gray-500 text-sm mt-1">Join thousands of businesses on SmartDukaan</p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t("register")}</h1>
+        <p className="text-gray-500 text-sm mt-1">{t("registerSubtitle")}</p>
       </div>
 
       <Button
         variant="outline"
-        className="w-full gap-3 h-11 mb-6 border-gray-200 hover:bg-gray-50 text-white hover:text-black"
+        className="w-full gap-3 h-11 mb-6 border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
         onClick={handleGoogle}
         loading={googleLoading}
       >
@@ -78,7 +79,7 @@ export function RegisterForm() {
           <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
           <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
         </svg>
-        Continue with Google
+        {t("continueWithGoogle")}
       </Button>
 
       <div className="relative mb-6">
@@ -86,15 +87,15 @@ export function RegisterForm() {
           <div className="w-full border-t border-gray-200 dark:border-gray-700" />
         </div>
         <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-white dark:bg-gray-900 px-2 text-gray-500">Or sign up with email</span>
+          <span className="bg-white dark:bg-gray-900 px-2 text-gray-500">{t("orSignUpWith")}</span>
         </div>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block">Full Name</label>
+          <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block">{t("fullName")}</label>
           <Input
-            placeholder="Your full name"
+            placeholder={t("fullNamePlaceholder")}
             value={form.name}
             onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
             required
@@ -102,10 +103,10 @@ export function RegisterForm() {
           />
         </div>
         <div>
-          <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block">Email</label>
+          <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block">{t("email")}</label>
           <Input
             type="email"
-            placeholder="your@email.com"
+            placeholder={t("emailPlaceholder")}
             value={form.email}
             onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
             required
@@ -113,20 +114,20 @@ export function RegisterForm() {
           />
         </div>
         <div>
-          <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block">Phone</label>
+          <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block">{t("phone")}</label>
           <Input
             type="tel"
-            placeholder="+91 9876543210"
+            placeholder={t("phonePlaceholder")}
             value={form.phone}
             onChange={(e) => setForm((p) => ({ ...p, phone: e.target.value }))}
             startIcon={<Phone className="w-4 h-4" />}
           />
         </div>
         <div>
-          <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block">Password</label>
+          <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block">{t("password")}</label>
           <Input
             type={showPassword ? "text" : "password"}
-            placeholder="Minimum 8 characters"
+            placeholder={t("passwordMinLength")}
             value={form.password}
             onChange={(e) => setForm((p) => ({ ...p, password: e.target.value }))}
             required
@@ -140,14 +141,14 @@ export function RegisterForm() {
         </div>
 
         <Button type="submit" className="w-full h-11" loading={loading} variant="gradient">
-          Create Account
+          {t("register")}
         </Button>
       </form>
 
       <p className="text-center text-sm text-gray-500 mt-6">
-        Already have an account?{" "}
+        {t("haveAccount")}{" "}
         <Link href={`/${locale}/auth/login`} className="text-violet-600 font-semibold hover:underline">
-          Sign in
+          {t("signIn")}
         </Link>
       </p>
     </motion.div>

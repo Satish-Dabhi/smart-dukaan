@@ -6,30 +6,48 @@ import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getInitials } from "@/lib/utils";
-import { Bell, Sun, Moon, LogOut, Settings, User, ChevronDown, Globe } from "lucide-react";
+import { Bell, Sun, Moon, LogOut, Settings, User, ChevronDown, Globe, Menu, ShoppingBag } from "lucide-react";
 import { useState } from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 
 interface HeaderProps {
   session: Session;
   locale: string;
+  onMenuClick?: () => void;
 }
 
-export function DashboardHeader({ session, locale }: HeaderProps) {
+export function DashboardHeader({ session, locale, onMenuClick }: HeaderProps) {
   const { theme, setTheme } = useTheme();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const currentLocale = useLocale();
+  const t = useTranslations("header");
   const otherLocale = currentLocale === "en" ? "gu" : "en";
   const otherLocalePath = `/${otherLocale}/dashboard`;
   const user = session.user;
 
   return (
     <header className="h-16 bg-card border-b border-border flex items-center justify-between px-4 sm:px-6 shrink-0">
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2">
+        {/* Mobile menu toggle */}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onMenuClick}
+          className="md:hidden rounded-lg mr-1 shrink-0"
+        >
+          <Menu className="w-5 h-5" />
+        </Button>
         {/* Mobile logo */}
-        <div className="md:hidden font-bold text-lg gradient-text">SmartDukaan</div>
+        <Link href={`/${locale}/dashboard`} className="flex items-center gap-2 md:hidden">
+          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-600 to-pink-600 flex items-center justify-center shrink-0">
+            <ShoppingBag className="w-4 h-4 text-white" />
+          </div>
+          <span className="font-bold text-base gradient-text whitespace-nowrap">
+            SmartDukaan
+          </span>
+        </Link>
       </div>
 
       <div className="flex items-center gap-2">
@@ -96,7 +114,7 @@ export function DashboardHeader({ session, locale }: HeaderProps) {
                     onClick={() => setDropdownOpen(false)}
                   >
                     <User className="w-4 h-4" />
-                    Profile
+                    {t("profile")}
                   </Link>
                   <Link
                     href={`/${locale}/dashboard/settings`}
@@ -104,7 +122,7 @@ export function DashboardHeader({ session, locale }: HeaderProps) {
                     onClick={() => setDropdownOpen(false)}
                   >
                     <Settings className="w-4 h-4" />
-                    Settings
+                    {t("settings")}
                   </Link>
                 </div>
                 <div className="border-t border-gray-100 dark:border-gray-800 py-1">
@@ -113,7 +131,7 @@ export function DashboardHeader({ session, locale }: HeaderProps) {
                     onClick={() => signOut({ callbackUrl: `/${locale}/auth/login` })}
                   >
                     <LogOut className="w-4 h-4" />
-                    Sign out
+                    {t("signOut")}
                   </button>
                 </div>
               </div>

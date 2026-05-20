@@ -55,6 +55,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           token.businessId = dbUser.businessId?.toString();
         }
       }
+      // Re-fetch businessId if not in token (e.g. business created after sign-in)
+      if (!token.businessId && token.sub) {
+        await connectDB();
+        const dbUser = await User.findById(token.sub).select("businessId");
+        if (dbUser?.businessId) {
+          token.businessId = dbUser.businessId.toString();
+        }
+      }
       return token;
     },
     async session({ session, token }) {

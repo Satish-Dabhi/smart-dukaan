@@ -123,7 +123,6 @@ const BusinessSchema = new Schema<IBusinessDoc>(
   { timestamps: true }
 );
 
-BusinessSchema.index({ slug: 1 });
 BusinessSchema.index({ ownerId: 1 });
 BusinessSchema.index({ status: 1 });
 

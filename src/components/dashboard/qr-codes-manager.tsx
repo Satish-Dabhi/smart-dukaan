@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Download, Store, Package, QrCode } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 interface Props {
   businessId?: string;
@@ -15,6 +16,7 @@ interface Props {
 
 export function QRCodesManager({ businessId }: Props) {
   const [tableNumber, setTableNumber] = useState("");
+  const t = useTranslations("qrCodes");
 
   const { data: businessData } = useQuery({
     queryKey: ["business"],
@@ -44,16 +46,16 @@ export function QRCodesManager({ businessId }: Props) {
   const qrItems = [
     {
       id: "store-qr",
-      title: "Store QR Code",
-      description: "Scan to visit your online store",
+      title: t("storeQrTitle"),
+      description: t("storeQrDesc"),
       icon: Store,
       value: storeUrl,
       gradient: "from-violet-500 to-purple-600",
     },
     {
       id: "menu-qr",
-      title: "Digital Menu QR",
-      description: "Perfect for tables, windows, or banners",
+      title: t("menuQrTitle"),
+      description: t("menuQrDesc"),
       icon: Package,
       value: storeUrl,
       gradient: "from-pink-500 to-rose-600",
@@ -65,8 +67,8 @@ export function QRCodesManager({ businessId }: Props) {
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
           <QrCode className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Set up your business first</h2>
-          <p className="text-gray-500">Create your business profile to generate QR codes</p>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{t("setupBusinessFirst")}</h2>
+          <p className="text-gray-500">{t("setupBusinessFirstSub")}</p>
         </div>
       </div>
     );
@@ -75,9 +77,9 @@ export function QRCodesManager({ businessId }: Props) {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">QR Codes</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t("title")}</h1>
         <p className="text-sm text-gray-500 mt-1">
-          Generate and download QR codes for your store
+          {t("subtitle")}
         </p>
       </div>
 
@@ -104,12 +106,12 @@ export function QRCodesManager({ businessId }: Props) {
                     <QRCodeCanvas value={item.value} size={160} />
                   ) : (
                     <div className="w-40 h-40 bg-gray-100 rounded flex items-center justify-center text-gray-400 text-sm">
-                      Configure business first
+                      {t("configureFirst")}
                     </div>
                   )}
                 </div>
                 <p className="text-xs text-gray-500 text-center max-w-[180px] break-all">
-                  {item.value || "Set up your store URL"}
+                  {item.value || t("setupStoreUrl")}
                 </p>
                 <Button
                   variant="outline"
@@ -119,7 +121,7 @@ export function QRCodesManager({ businessId }: Props) {
                   onClick={() => downloadQR(item.id, item.title.toLowerCase().replace(/ /g, "-"))}
                 >
                   <Download className="w-4 h-4" />
-                  Download QR
+                  {t("downloadQr")}
                 </Button>
               </CardContent>
             </Card>
@@ -138,14 +140,14 @@ export function QRCodesManager({ businessId }: Props) {
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center mb-2">
                 <QrCode className="w-5 h-5 text-white" />
               </div>
-              <CardTitle className="text-base">Table QR Code</CardTitle>
-              <CardDescription>For cafes & restaurants — customer scans to order</CardDescription>
+              <CardTitle className="text-base">{t("tableQrTitle")}</CardTitle>
+              <CardDescription>{t("tableQrDesc")}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <label className="text-sm font-medium mb-1.5 block">Table Number</label>
+                <label className="text-sm font-medium mb-1.5 block">{t("tableNumber")}</label>
                 <Input
-                  placeholder="e.g. Table 1, T-5"
+                  placeholder={t("tableNumberPlaceholder")}
                   value={tableNumber}
                   onChange={(e) => setTableNumber(e.target.value)}
                 />
@@ -165,7 +167,7 @@ export function QRCodesManager({ businessId }: Props) {
                 onClick={() => downloadQR("table-qr", `table-${tableNumber}-qr`)}
               >
                 <Download className="w-4 h-4" />
-                Download Table QR
+                {t("downloadTableQr")}
               </Button>
             </CardContent>
           </Card>

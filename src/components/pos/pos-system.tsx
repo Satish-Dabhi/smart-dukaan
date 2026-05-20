@@ -16,6 +16,7 @@ import {
 import { formatCurrency, calculateGST, debounce, generateWhatsAppMessage } from "@/lib/utils";
 import type { CartItem, IProduct } from "@/types";
 import { InvoicePrint } from "@/components/pos/invoice-print";
+import { ProductImageFallback } from "@/components/ui/product-image-fallback";
 
 interface POSProps {
   businessId?: string;
@@ -209,9 +210,11 @@ export function POSSystem({ businessId }: POSProps) {
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-2xl">
-                      🏷️
-                    </div>
+                    <ProductImageFallback
+                      name={product.name}
+                      className="w-full h-full"
+                      iconClassName="w-8 h-8"
+                    />
                   )}
                 </div>
                 <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">

@@ -27,6 +27,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 
 interface Category {
   _id: string;
@@ -56,6 +57,9 @@ export function CategoriesManager({ businessId }: Props) {
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const queryClient = useQueryClient();
+
+  const t = useTranslations("categories");
+  const tCommon = useTranslations("common");
 
   const { data, isLoading } = useQuery({
     queryKey: ["categories", businessId],
@@ -110,7 +114,7 @@ export function CategoriesManager({ businessId }: Props) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["categories"] });
-      toast.success(editingCategory ? "Category updated" : "Category created");
+      toast.success(editingCategory ? t("categoryUpdatedToast") : t("categoryCreatedToast"));
       setDialogOpen(false);
     },
     onError: (err: Error) => toast.error(err.message),
@@ -138,7 +142,7 @@ export function CategoriesManager({ businessId }: Props) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["categories"] });
-      toast.success("Category deleted");
+      toast.success(t("categoryDeletedToast"));
       setDeleteId(null);
     },
     onError: (err: Error) => {
@@ -152,7 +156,7 @@ export function CategoriesManager({ businessId }: Props) {
       <Card>
         <CardContent className="py-12 text-center text-gray-500">
           <FolderOpen className="w-10 h-10 mx-auto mb-3 opacity-40" />
-          <p>Set up your business first to manage categories.</p>
+          <p>{t("setupBusinessFirst")}</p>
         </CardContent>
       </Card>
     );
@@ -162,14 +166,14 @@ export function CategoriesManager({ businessId }: Props) {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Categories</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t("title")}</h1>
           <p className="text-sm text-gray-500 mt-1">
-            Organise your products into categories
+            {t("organiseProducts")}
           </p>
         </div>
         <Button variant="gradient" onClick={openCreate} className="gap-2">
           <Plus className="w-4 h-4" />
-          Add Category
+          {t("addCategory")}
         </Button>
       </div>
 
@@ -183,13 +187,13 @@ export function CategoriesManager({ businessId }: Props) {
         <Card>
           <CardContent className="py-16 text-center">
             <FolderOpen className="w-12 h-12 mx-auto mb-4 text-gray-300 dark:text-gray-600" />
-            <p className="text-gray-500 font-medium">No categories yet</p>
+            <p className="text-gray-500 font-medium">{t("noCategoriesYet")}</p>
             <p className="text-sm text-gray-400 mt-1">
-              Create your first category to organise your products
+              {t("createFirstCategorySub")}
             </p>
             <Button variant="gradient" onClick={openCreate} className="mt-4 gap-2">
               <Plus className="w-4 h-4" />
-              Add Category
+              {t("addCategory")}
             </Button>
           </CardContent>
         </Card>
@@ -228,10 +232,10 @@ export function CategoriesManager({ businessId }: Props) {
 
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <Badge variant={cat.isActive ? "success" : "secondary"}>
-                    {cat.isActive ? "Active" : "Inactive"}
+                    {cat.isActive ? tCommon("active") : tCommon("inactive")}
                   </Badge>
                   <span className="text-xs text-gray-400 hidden sm:block">
-                    Order: {cat.sortOrder}
+                    {t("orderLabel", { count: cat.sortOrder })}
                   </span>
                 </div>
 
@@ -239,7 +243,7 @@ export function CategoriesManager({ businessId }: Props) {
                   <button
                     onClick={() => toggleMutation.mutate(cat)}
                     className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 hover:text-gray-600 transition-colors"
-                    title={cat.isActive ? "Deactivate" : "Activate"}
+                    title={cat.isActive ? t("deactivate") : t("activate")}
                   >
                     {cat.isActive ? (
                       <ToggleRight className="w-4 h-4 text-emerald-500" />
@@ -271,7 +275,7 @@ export function CategoriesManager({ businessId }: Props) {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {editingCategory ? "Edit Category" : "New Category"}
+              {editingCategory ? t("editCategory") : t("newCategory")}
             </DialogTitle>
           </DialogHeader>
           <form
@@ -280,31 +284,31 @@ export function CategoriesManager({ businessId }: Props) {
           >
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Name (English) *
+                {t("nameEnglish")}
               </label>
               <Input placeholder="e.g. Fruits & Vegetables" {...register("name")} />
               {errors.name && (
-                <p className="text-xs text-red-500">{errors.name.message}</p>
+                <p className="text-xs text-red-500">{t("nameRequiredError")}</p>
               )}
             </div>
 
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Name (Gujarati)
+                {t("nameGujarati")}
               </label>
               <Input placeholder="e.g. ફળ અને શાકભાજી" {...register("nameGu")} />
             </div>
 
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Description
+                {t("description")}
               </label>
               <Input placeholder="Optional short description" {...register("description")} />
             </div>
 
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Sort Order
+                {t("sortOrder")}
               </label>
               <Input
                 type="number"
@@ -312,7 +316,7 @@ export function CategoriesManager({ businessId }: Props) {
                 placeholder="0"
                 {...register("sortOrder", { valueAsNumber: true })}
               />
-              <p className="text-xs text-gray-400">Lower numbers appear first</p>
+              <p className="text-xs text-gray-400">{t("lowerNumbersFirst")}</p>
             </div>
 
             <DialogFooter className="pt-2">
@@ -321,14 +325,14 @@ export function CategoriesManager({ businessId }: Props) {
                 variant="outline"
                 onClick={() => setDialogOpen(false)}
               >
-                Cancel
+                {tCommon("cancel")}
               </Button>
               <Button
                 type="submit"
                 variant="gradient"
                 loading={isSubmitting || saveMutation.isPending}
               >
-                {editingCategory ? "Save Changes" : "Create Category"}
+                {editingCategory ? tCommon("save") : t("addCategory")}
               </Button>
             </DialogFooter>
           </form>
@@ -339,21 +343,21 @@ export function CategoriesManager({ businessId }: Props) {
       <Dialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete Category?</DialogTitle>
+            <DialogTitle>{t("deleteCategoryTitle")}</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-gray-600 dark:text-gray-400 py-2">
-            This action cannot be undone. Categories with products cannot be deleted.
+            {t("deleteCategoryDesc")}
           </p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteId(null)}>
-              Cancel
+              {tCommon("cancel")}
             </Button>
             <Button
               variant="destructive"
               loading={deleteMutation.isPending}
               onClick={() => deleteId && deleteMutation.mutate(deleteId)}
             >
-              Delete
+              {tCommon("delete")}
             </Button>
           </DialogFooter>
         </DialogContent>

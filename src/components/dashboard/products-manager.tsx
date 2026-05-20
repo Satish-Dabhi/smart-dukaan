@@ -18,6 +18,8 @@ import { formatCurrency } from "@/lib/utils";
 import { useDebounce } from "@/lib/hooks";
 import type { IProduct } from "@/types";
 import { ProductDialog } from "@/components/dashboard/product-dialog";
+import { ProductImageFallback } from "@/components/ui/product-image-fallback";
+import { useTranslations } from "next-intl";
 
 interface Props {
   businessId?: string;
@@ -32,6 +34,9 @@ export function ProductsManager({ businessId }: Props) {
   const [editingProduct, setEditingProduct] = useState<IProduct | null>(null);
   const [page, setPage] = useState(1);
   const [confirmDelete, setConfirmDelete] = useState<{ id: string; name: string } | null>(null);
+
+  const t = useTranslations("products");
+  const tCommon = useTranslations("common");
 
   const debouncedSearch = useDebounce(search, 300);
 
@@ -61,7 +66,7 @@ export function ProductsManager({ businessId }: Props) {
       return json;
     },
     onSuccess: () => {
-      toast.success("Product deleted");
+      toast.success(t("productDeletedToast"));
       queryClient.invalidateQueries({ queryKey: ["products"] });
     },
     onError: (error: Error) => toast.error(error.message),
@@ -85,19 +90,19 @@ export function ProductsManager({ businessId }: Props) {
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Products</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t("title")}</h1>
           <p className="text-sm text-gray-500 mt-1">
-            {meta?.total ?? 0} products in your catalog
+            {t("productsInCatalog", { count: meta?.total ?? 0 })}
           </p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" className="gap-2">
             <Upload className="w-4 h-4" />
-            Import
+            {t("import")}
           </Button>
           <Button variant="outline" size="sm" className="gap-2">
             <Download className="w-4 h-4" />
-            Export
+            {t("export")}
           </Button>
           <Button
             variant="gradient"
@@ -109,7 +114,7 @@ export function ProductsManager({ businessId }: Props) {
             }}
           >
             <Plus className="w-4 h-4" />
-            Add Product
+            {t("addProduct")}
           </Button>
         </div>
       </div>
@@ -118,7 +123,7 @@ export function ProductsManager({ businessId }: Props) {
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="flex-1">
           <Input
-            placeholder="Search products..."
+            placeholder={t("searchPlaceholder")}
             value={search}
             onChange={handleSearch}
             startIcon={<Search className="w-4 h-4" />}
@@ -129,10 +134,10 @@ export function ProductsManager({ businessId }: Props) {
           value={selectedStatus}
           onChange={(e) => { setSelectedStatus(e.target.value); setPage(1); }}
         >
-          <option value="">All Status</option>
-          <option value="active">Active</option>
-          <option value="inactive">Inactive</option>
-          <option value="out_of_stock">Out of Stock</option>
+          <option value="">{t("allStatus")}</option>
+          <option value="active">{t("activeOption")}</option>
+          <option value="inactive">{t("inactiveOption")}</option>
+          <option value="out_of_stock">{t("outOfStockOption")}</option>
         </select>
       </div>
 
@@ -152,8 +157,8 @@ export function ProductsManager({ businessId }: Props) {
       ) : products.length === 0 ? (
         <div className="text-center py-16">
           <Package className="w-16 h-16 mx-auto mb-4 text-gray-200 dark:text-gray-700" />
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No products yet</h3>
-          <p className="text-gray-500 mb-4">Add your first product to get started</p>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">{t("noProductsYet")}</h3>
+          <p className="text-gray-500 mb-4">{t("addFirstProductSub")}</p>
           <Button
             variant="gradient"
             onClick={() => {
@@ -161,7 +166,7 @@ export function ProductsManager({ businessId }: Props) {
               setShowDialog(true);
             }}
           >
-            Add Product
+            {t("addProduct")}
           </Button>
         </div>
       ) : (
@@ -183,20 +188,22 @@ export function ProductsManager({ businessId }: Props) {
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-4xl text-gray-300">
-                        📦
-                      </div>
+                      <ProductImageFallback
+                        name={product.name}
+                        className="w-full h-full"
+                        iconClassName="w-10 h-10"
+                      />
                     )}
                     {product.isFeatured && (
                       <div className="absolute top-2 left-2 bg-amber-500 text-white text-xs font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
                         <Star className="w-3 h-3" />
-                        Featured
+                        {t("featuredLabel")}
                       </div>
                     )}
                     {product.stock <= (product.minStock ?? 5) && product.stock > 0 && (
                       <div className="absolute bottom-2 left-2 bg-amber-500/90 text-white text-xs font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
                         <AlertTriangle className="w-3 h-3" />
-                        Low Stock
+                        {t("lowStockLabel")}
                       </div>
                     )}
 
@@ -229,10 +236,10 @@ export function ProductsManager({ businessId }: Props) {
                         {formatCurrency(product.price)}
                       </span>
                       <Badge variant={statusColor[product.status] ?? "secondary"} className="text-xs">
-                        {product.status === "out_of_stock" ? "OOS" : product.status}
+                        {product.status === "out_of_stock" ? "OOS" : t(product.status === "active" ? "activeOption" : "inactiveOption")}
                       </Badge>
                     </div>
-                    <div className="text-xs text-gray-400 mt-1">Stock: {product.stock}</div>
+                    <div className="text-xs text-gray-400 mt-1">{t("stockCount", { count: product.stock })}</div>
                   </CardContent>
                 </Card>
               </motion.div>
@@ -248,10 +255,10 @@ export function ProductsManager({ businessId }: Props) {
                 disabled={!meta.hasPrev}
                 onClick={() => setPage((p) => p - 1)}
               >
-                Previous
+                {tCommon("previous")}
               </Button>
               <span className="text-sm text-gray-500">
-                Page {meta.page} of {meta.totalPages}
+                {t("pageInfo", { page: meta.page, totalPages: meta.totalPages })}
               </span>
               <Button
                 variant="outline"
@@ -259,7 +266,7 @@ export function ProductsManager({ businessId }: Props) {
                 disabled={!meta.hasNext}
                 onClick={() => setPage((p) => p + 1)}
               >
-                Next
+                {tCommon("next")}
               </Button>
             </div>
           )}
@@ -283,9 +290,9 @@ export function ProductsManager({ businessId }: Props) {
       <ConfirmDialog
         open={!!confirmDelete}
         onOpenChange={(open) => !open && setConfirmDelete(null)}
-        title={`Delete "${confirmDelete?.name}"?`}
-        description="This action cannot be undone. The product will be permanently removed from your catalog."
-        confirmLabel="Delete Product"
+        title={confirmDelete ? t("deleteProductTitle", { name: confirmDelete.name }) : ""}
+        description={t("deleteProductDesc")}
+        confirmLabel={t("deleteProduct")}
         loading={deleteMutation.isPending}
         onConfirm={() => {
           if (confirmDelete) {

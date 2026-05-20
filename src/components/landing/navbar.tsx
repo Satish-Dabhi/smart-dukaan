@@ -5,16 +5,20 @@ import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Menu, X, ShoppingBag, Globe } from "lucide-react";
+import { Menu, X, ShoppingBag, Globe, Sun, Moon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTheme } from "next-themes";
 
 export function Navbar() {
   const t = useTranslations("nav");
   const locale = useLocale();
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     const handler = () => setIsScrolled(window.scrollY > 20);
     window.addEventListener("scroll", handler);
     return () => window.removeEventListener("scroll", handler);
@@ -74,6 +78,16 @@ export function Navbar() {
                 {otherLocale === "gu" ? "ગુ" : "EN"}
               </Button>
             </Link>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="w-9 h-9 rounded-lg"
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              aria-label="Toggle theme"
+            >
+              {mounted && (theme === "dark" ? <Sun className="w-4 h-4 text-amber-500" /> : <Moon className="w-4 h-4 text-violet-600" />)}
+              {!mounted && <div className="w-4 h-4" />}
+            </Button>
             <Link href={`/${locale}/auth/login`}>
               <Button variant="ghost" size="sm">
                 {t("login")}
@@ -123,6 +137,31 @@ export function Navbar() {
                     {otherLocale === "gu" ? "ગુજરાતી" : "English"}
                   </Button>
                 </Link>
+                <Button
+                  variant="outline"
+                  className="w-full gap-2 justify-center"
+                  onClick={() => {
+                    setTheme(theme === "dark" ? "light" : "dark");
+                    setIsMobileOpen(false);
+                  }}
+                >
+                  {mounted && (
+                    <>
+                      {theme === "dark" ? (
+                        <>
+                          <Sun className="w-4 h-4 text-amber-500" />
+                          <span>{t("lightMode")}</span>
+                        </>
+                      ) : (
+                        <>
+                          <Moon className="w-4 h-4 text-violet-600" />
+                          <span>{t("darkMode")}</span>
+                        </>
+                      )}
+                    </>
+                  )}
+                  {!mounted && <div className="h-4 w-4" />}
+                </Button>
                 <Link href={`/${locale}/auth/login`}>
                   <Button variant="outline" className="w-full">
                     {t("login")}

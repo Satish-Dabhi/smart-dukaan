@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Search, Download, FileText, Printer, Eye } from "lucide-react";
 import { formatCurrency, formatDateTime, debounce } from "@/lib/utils";
 import { useCallback } from "react";
+import { useTranslations } from "next-intl";
 
 const statusVariant: Record<string, "success" | "destructive" | "warning" | "secondary" | "info"> = {
   paid: "success",
@@ -25,6 +26,9 @@ export function InvoicesManager() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [status, setStatus] = useState("");
   const [page, setPage] = useState(1);
+
+  const t = useTranslations("invoices");
+  const tCommon = useTranslations("common");
 
   const updateSearch = useCallback(
     debounce((q: string) => { setDebouncedSearch(q); setPage(1); }, 300),
@@ -70,12 +74,12 @@ export function InvoicesManager() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Invoices</h1>
-          <p className="text-sm text-gray-500 mt-1">{meta?.total ?? 0} total invoices</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t("title")}</h1>
+          <p className="text-sm text-gray-500 mt-1">{t("totalInvoices", { count: meta?.total ?? 0 })}</p>
         </div>
         <Button variant="outline" size="sm" className="gap-2" onClick={exportCSV}>
           <Download className="w-4 h-4" />
-          Export CSV
+          {t("exportCsv")}
         </Button>
       </div>
 
@@ -83,7 +87,7 @@ export function InvoicesManager() {
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="flex-1">
           <Input
-            placeholder="Search by invoice # or customer..."
+            placeholder={t("searchPlaceholder")}
             value={search}
             onChange={(e) => { setSearch(e.target.value); updateSearch(e.target.value); }}
             startIcon={<Search className="w-4 h-4" />}
@@ -94,11 +98,11 @@ export function InvoicesManager() {
           value={status}
           onChange={(e) => { setStatus(e.target.value); setPage(1); }}
         >
-          <option value="">All Status</option>
-          <option value="paid">Paid</option>
-          <option value="unpaid">Unpaid</option>
-          <option value="cancelled">Cancelled</option>
-          <option value="draft">Draft</option>
+          <option value="">{t("allStatus")}</option>
+          <option value="paid">{t("paid")}</option>
+          <option value="unpaid">{t("unpaid")}</option>
+          <option value="cancelled">{t("cancelled")}</option>
+          <option value="draft">{t("draft")}</option>
         </select>
       </div>
 
@@ -114,8 +118,8 @@ export function InvoicesManager() {
           ) : invoices.length === 0 ? (
             <div className="text-center py-16">
               <FileText className="w-12 h-12 mx-auto mb-3 text-gray-200 dark:text-gray-700" />
-              <p className="text-gray-500">No invoices found</p>
-              <p className="text-sm text-gray-400 mt-1">Bills will appear here after you use POS</p>
+              <p className="text-gray-500">{t("noInvoices")}</p>
+              <p className="text-sm text-gray-400 mt-1">{t("noInvoicesSub")}</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -123,22 +127,22 @@ export function InvoicesManager() {
                 <thead>
                   <tr className="border-b border-gray-100 dark:border-gray-800">
                     <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-6 py-3">
-                      Invoice
+                      {t("thInvoice")}
                     </th>
                     <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-6 py-3">
-                      Customer
+                      {t("thCustomer")}
                     </th>
                     <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-6 py-3">
-                      Date
+                      {t("thDate")}
                     </th>
                     <th className="text-right text-xs font-semibold text-gray-500 uppercase tracking-wider px-6 py-3">
-                      Amount
+                      {t("thAmount")}
                     </th>
                     <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-6 py-3">
-                      Status
+                      {t("thStatus")}
                     </th>
                     <th className="text-right text-xs font-semibold text-gray-500 uppercase tracking-wider px-6 py-3">
-                      Actions
+                      {t("thActions")}
                     </th>
                   </tr>
                 </thead>
@@ -161,7 +165,7 @@ export function InvoicesManager() {
                       </td>
                       <td className="px-6 py-4">
                         <div className="text-sm text-gray-900 dark:text-white">
-                          {(invoice.customerName as string) ?? "Walk-in Customer"}
+                          {(invoice.customerName as string) ?? t("walkInCustomer")}
                         </div>
                         {!!invoice.customerPhone && (
                           <div className="text-xs text-gray-400">{invoice.customerPhone as string}</div>
@@ -177,7 +181,7 @@ export function InvoicesManager() {
                       </td>
                       <td className="px-6 py-4">
                         <Badge variant={statusVariant[invoice.status as string] ?? "secondary"}>
-                          {invoice.status as string}
+                          {t(invoice.status as string)}
                         </Badge>
                       </td>
                       <td className="px-6 py-4">
@@ -206,11 +210,13 @@ export function InvoicesManager() {
       {meta && meta.totalPages > 1 && (
         <div className="flex items-center justify-center gap-2">
           <Button variant="outline" size="sm" disabled={!meta.hasPrev} onClick={() => setPage((p) => p - 1)}>
-            Previous
+            {tCommon("previous")}
           </Button>
-          <span className="text-sm text-gray-500">Page {meta.page} of {meta.totalPages}</span>
+          <span className="text-sm text-gray-500">
+            {tCommon("pageInfo", { page: meta.page, totalPages: meta.totalPages })}
+          </span>
           <Button variant="outline" size="sm" disabled={!meta.hasNext} onClick={() => setPage((p) => p + 1)}>
-            Next
+            {tCommon("next")}
           </Button>
         </div>
       )}

@@ -1,7 +1,15 @@
 import { ShoppingBag } from "lucide-react";
 import Link from "next/link";
 
-export default function AuthLayout({ children }: { children: React.ReactNode }) {
+export default async function AuthLayout({
+  children,
+  params,
+}: {
+  children: React.ReactNode;
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-violet-50 via-white to-pink-50 dark:from-gray-950 dark:via-gray-900 dark:to-violet-950 flex items-center justify-center p-4">
       {/* Background orbs */}
@@ -11,7 +19,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       <div className="w-full max-w-md relative">
         {/* Logo */}
         <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center gap-2">
+          <Link href={`/${locale}`} className="inline-flex items-center gap-2">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 to-pink-600 flex items-center justify-center shadow-lg">
               <ShoppingBag className="w-6 h-6 text-white" />
             </div>

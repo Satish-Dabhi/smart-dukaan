@@ -1,20 +1,23 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
   Phone, MapPin, Share2, QrCode, MessageCircle,
   Search, Star, ShoppingCart, X, ChevronDown,
-  Clock, CheckCircle, Truck, Shield
+  Clock, CheckCircle, Truck, Shield, Sun, Moon
 } from "lucide-react";
+import { useTheme } from "next-themes";
 import { formatCurrency, generateWhatsAppMessage, debounce } from "@/lib/utils";
 import type { IBusiness, IProduct, ICategory, CartItem } from "@/types";
 import { QRCodeCanvas } from "qrcode.react";
+import { ProductImageFallback } from "@/components/ui/product-image-fallback";
 
 interface StorefrontProps {
   business: IBusiness;
@@ -48,6 +51,17 @@ export function StorefrontPage({
   const [showCart, setShowCart] = useState(false);
   const [showQR, setShowQR] = useState(false);
   const [searchValue, setSearchValue] = useState(filters.q ?? "");
+
+  const { resolvedTheme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const toggleTheme = () => {
+    setTheme(resolvedTheme === "dark" ? "light" : "dark");
+  };
 
   const theme = themeMap[business.theme ?? ""] ?? themeMap.minimal;
   const storeUrl = typeof window !== "undefined" ? window.location.href : "";
@@ -159,21 +173,23 @@ export function StorefrontPage({
           <div className="flex flex-col sm:flex-row items-start sm:items-end gap-6">
             {/* Logo */}
             <div className="shrink-0">
-              {business.logo ? (
-                <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-3xl bg-white/20 backdrop-blur-sm overflow-hidden border-2 border-white/30 shadow-2xl">
-                  <Image
-                    src={business.logo}
-                    alt={business.name}
-                    width={128}
-                    height={128}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              ) : (
-                <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-3xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-5xl border-2 border-white/30 shadow-2xl">
-                  🏪
-                </div>
-              )}
+              <Link href={`/${locale}`} className="block hover:scale-[1.02] active:scale-95 transition-all">
+                {business.logo ? (
+                  <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-3xl bg-white/20 backdrop-blur-sm overflow-hidden border-2 border-white/30 shadow-2xl">
+                    <Image
+                      src={business.logo}
+                      alt={business.name}
+                      width={128}
+                      height={128}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                ) : (
+                  <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-3xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-5xl border-2 border-white/30 shadow-2xl">
+                    🏪
+                  </div>
+                )}
+              </Link>
             </div>
 
             {/* Business info */}
@@ -244,6 +260,21 @@ export function StorefrontPage({
                 >
                   <Share2 className="w-3.5 h-3.5" />
                   {t("Share", "શેર")}
+                </button>
+                <button
+                  onClick={toggleTheme}
+                  className="flex items-center gap-1.5 bg-white/15 hover:bg-white/25 backdrop-blur-sm px-4 py-2 rounded-full text-sm font-medium transition-all border border-white/20"
+                >
+                  {mounted && resolvedTheme === "dark" ? (
+                    <Sun className="w-3.5 h-3.5" />
+                  ) : (
+                    <Moon className="w-3.5 h-3.5" />
+                  )}
+                  <span>
+                    {mounted && resolvedTheme === "dark"
+                      ? t("Light Mode", "લાઇટ મોડ")
+                      : t("Dark Mode", "ડાર્ક મોડ")}
+                  </span>
                 </button>
               </div>
             </div>
@@ -529,7 +560,7 @@ export function StorefrontPage({
                     exit={{ opacity: 0, x: 50 }}
                     className="flex items-center gap-3 bg-gray-50 dark:bg-gray-800 rounded-2xl p-3"
                   >
-                    {item.image && (
+                    {item.image ? (
                       <div className="w-14 h-14 rounded-xl overflow-hidden shrink-0 bg-gray-100 dark:bg-gray-700">
                         <Image
                           src={item.image}
@@ -537,6 +568,15 @@ export function StorefrontPage({
                           width={56}
                           height={56}
                           className="w-full h-full object-cover"
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-14 h-14 rounded-xl overflow-hidden shrink-0">
+                        <ProductImageFallback
+                          name={item.name}
+                          className="w-full h-full"
+                          iconClassName="w-5 h-5"
+                          showOverlay={false}
                         />
                       </div>
                     )}
@@ -674,9 +714,11 @@ function ProductCard({ product, locale, index, onAdd, compact = false }: Product
             className="object-cover group-hover:scale-105 transition-transform duration-500"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-3xl opacity-40">
-            🏷️
-          </div>
+          <ProductImageFallback
+            name={product.name}
+            className="w-full h-full"
+            iconClassName={compact ? "w-8 h-8" : "w-10 h-10"}
+          />
         )}
         {/* Badges */}
         {hasDiscount && (

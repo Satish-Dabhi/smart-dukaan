@@ -10,11 +10,15 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Search, Users, Phone, Mail, Star } from "lucide-react";
 import { formatCurrency, formatDate, getInitials, debounce } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 export function CustomersManager() {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(1);
+
+  const t = useTranslations("customers");
+  const tCommon = useTranslations("common");
 
   const updateSearch = useCallback(
     debounce((q: string) => { setDebouncedSearch(q); setPage(1); }, 300),
@@ -38,13 +42,13 @@ export function CustomersManager() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Customers</h1>
-          <p className="text-sm text-gray-500 mt-1">{meta?.total ?? 0} customers</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t("title")}</h1>
+          <p className="text-sm text-gray-500 mt-1">{t("customersCount", { count: meta?.total ?? 0 })}</p>
         </div>
       </div>
 
       <Input
-        placeholder="Search by name, phone, or email..."
+        placeholder={t("searchPlaceholder")}
         value={search}
         onChange={(e) => { setSearch(e.target.value); updateSearch(e.target.value); }}
         startIcon={<Search className="w-4 h-4" />}
@@ -66,8 +70,8 @@ export function CustomersManager() {
       ) : customers.length === 0 ? (
         <div className="text-center py-16">
           <Users className="w-12 h-12 mx-auto mb-3 text-gray-200 dark:text-gray-700" />
-          <p className="text-gray-500">No customers yet</p>
-          <p className="text-sm text-gray-400 mt-1">Customers are added automatically when you add phone numbers during billing</p>
+          <p className="text-gray-500">{t("noCustomers")}</p>
+          <p className="text-sm text-gray-400 mt-1">{t("noCustomersSub")}</p>
         </div>
       ) : (
         <>
@@ -107,26 +111,26 @@ export function CustomersManager() {
                         <div className="text-sm font-bold text-gray-900 dark:text-white">
                           {customer.totalOrders as number}
                         </div>
-                        <div className="text-xs text-gray-500">Orders</div>
+                        <div className="text-xs text-gray-500">{t("orders")}</div>
                       </div>
                       <div className="text-center">
                         <div className="text-sm font-bold text-gray-900 dark:text-white">
                           {formatCurrency(customer.totalSpent as number)}
                         </div>
-                        <div className="text-xs text-gray-500">Spent</div>
+                        <div className="text-xs text-gray-500">{t("spent")}</div>
                       </div>
                       <div className="text-center">
                         <div className="text-sm font-bold text-amber-600 flex items-center justify-center gap-1">
                           <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
                           {customer.loyaltyPoints as number}
                         </div>
-                        <div className="text-xs text-gray-500">Points</div>
+                        <div className="text-xs text-gray-500">{t("points")}</div>
                       </div>
                     </div>
 
                     {!!customer.lastOrderAt && (
                       <div className="text-xs text-gray-400 mt-3">
-                        Last order: {formatDate(customer.lastOrderAt as string)}
+                        {t("lastOrder", { date: formatDate(customer.lastOrderAt as string) })}
                       </div>
                     )}
                   </CardContent>
@@ -138,11 +142,13 @@ export function CustomersManager() {
           {meta && meta.totalPages > 1 && (
             <div className="flex items-center justify-center gap-2">
               <Button variant="outline" size="sm" disabled={!meta.hasPrev} onClick={() => setPage((p) => p - 1)}>
-                Previous
+                {tCommon("previous")}
               </Button>
-              <span className="text-sm text-gray-500">Page {meta.page} of {meta.totalPages}</span>
+              <span className="text-sm text-gray-500">
+                {tCommon("pageInfo", { page: meta.page, totalPages: meta.totalPages })}
+              </span>
               <Button variant="outline" size="sm" disabled={!meta.hasNext} onClick={() => setPage((p) => p + 1)}>
-                Next
+                {tCommon("next")}
               </Button>
             </div>
           )}

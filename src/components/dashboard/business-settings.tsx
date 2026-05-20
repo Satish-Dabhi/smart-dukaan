@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Building2, Phone, MapPin, Receipt, Palette, Globe } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 const schema = z.object({
   name: z.string().min(2),
@@ -48,6 +49,7 @@ interface Props {
 export function BusinessSettings({ userId }: Props) {
   const queryClient = useQueryClient();
   const [isCreating, setIsCreating] = useState(false);
+  const t = useTranslations("settings");
 
   const { data: businessData, isLoading } = useQuery({
     queryKey: ["business"],
@@ -95,7 +97,7 @@ export function BusinessSettings({ userId }: Props) {
       return json;
     },
     onSuccess: () => {
-      toast.success(business ? "Settings saved!" : "Business created!");
+      toast.success(business ? t("settingsSavedToast") : t("businessCreatedToast"));
       queryClient.invalidateQueries({ queryKey: ["business"] });
       setIsCreating(false);
     },
@@ -122,13 +124,13 @@ export function BusinessSettings({ userId }: Props) {
         >
           <div className="text-6xl mb-4">🏪</div>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-            Set up your business
+            {t("setupStore")}
           </h2>
           <p className="text-gray-500 mb-6">
-            Create your business profile to start using SmartDukaan.
+            {t("setupStoreSub")}
           </p>
           <Button variant="gradient" size="lg" onClick={() => setIsCreating(true)}>
-            Create Business
+            {t("createBusinessBtn")}
           </Button>
         </motion.div>
       </div>
@@ -139,10 +141,10 @@ export function BusinessSettings({ userId }: Props) {
     <div className="space-y-6 max-w-3xl">
       <div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-          {business ? "Business Settings" : "Create Your Business"}
+          {business ? t("businessSettings") : t("createBusiness")}
         </h1>
         <p className="text-sm text-gray-500 mt-1">
-          {business ? `Manage settings for ${business.name}` : "Fill in your business details to get started"}
+          {business ? t("manageSettingsFor", { name: business.name }) : t("fillDetailsToGetStarted")}
         </p>
       </div>
 
@@ -151,17 +153,17 @@ export function BusinessSettings({ userId }: Props) {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
-              <Building2 className="w-4 h-4" /> Basic Information
+              <Building2 className="w-4 h-4" /> {t("basicInformation")}
             </CardTitle>
           </CardHeader>
           <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {[
-              { name: "name" as const, label: "Business Name *", placeholder: "Fresh Mart" },
-              { name: "email" as const, label: "Email *", placeholder: "hello@freshmart.com", type: "email" },
-              { name: "phone" as const, label: "Phone *", placeholder: "+91 9876543210" },
-              { name: "whatsappNumber" as const, label: "WhatsApp Number", placeholder: "+91 9876543210" },
-              { name: "gstNumber" as const, label: "GST Number", placeholder: "22AAAAA0000A1Z5" },
-              { name: "tagline" as const, label: "Tagline", placeholder: "Fresh groceries delivered!" },
+              { name: "name" as const, label: t("businessName"), placeholder: "Fresh Mart" },
+              { name: "email" as const, label: t("emailRequired"), placeholder: "hello@freshmart.com", type: "email" },
+              { name: "phone" as const, label: t("phoneRequired"), placeholder: "+91 9876543210" },
+              { name: "whatsappNumber" as const, label: t("whatsappNumber"), placeholder: "+91 9876543210" },
+              { name: "gstNumber" as const, label: t("gstNumber"), placeholder: "22AAAAA0000A1Z5" },
+              { name: "tagline" as const, label: t("tagline"), placeholder: "Fresh groceries delivered!" },
             ].map((field) => (
               <div key={field.name} className={field.name === "tagline" ? "sm:col-span-2" : ""}>
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block">
@@ -181,12 +183,12 @@ export function BusinessSettings({ userId }: Props) {
 
             <div className="sm:col-span-2">
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block">
-                Description
+                {t("description")}
               </label>
               <textarea
                 {...register("description")}
                 rows={3}
-                placeholder="Tell customers about your business..."
+                placeholder={t("tellCustomersAbout")}
                 className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
@@ -197,15 +199,15 @@ export function BusinessSettings({ userId }: Props) {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
-              <MapPin className="w-4 h-4" /> Address
+              <MapPin className="w-4 h-4" /> {t("address")}
             </CardTitle>
           </CardHeader>
           <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {[
-              { name: "address" as const, label: "Street Address *", placeholder: "123, Main Street", span: true },
-              { name: "city" as const, label: "City *", placeholder: "Ahmedabad" },
-              { name: "state" as const, label: "State *", placeholder: "Gujarat" },
-              { name: "pincode" as const, label: "Pincode *", placeholder: "380001" },
+              { name: "address" as const, label: t("streetAddress"), placeholder: "123, Main Street", span: true },
+              { name: "city" as const, label: t("cityRequired"), placeholder: "Ahmedabad" },
+              { name: "state" as const, label: t("stateRequired"), placeholder: "Gujarat" },
+              { name: "pincode" as const, label: t("pincodeRequired"), placeholder: "380001" },
             ].map((field) => (
               <div key={field.name} className={field.span ? "sm:col-span-2" : ""}>
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block">
@@ -225,9 +227,9 @@ export function BusinessSettings({ userId }: Props) {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
-              <Palette className="w-4 h-4" /> Storefront Theme
+              <Palette className="w-4 h-4" /> {t("storefrontTheme")}
             </CardTitle>
-            <CardDescription>Choose the look and feel of your public store</CardDescription>
+            <CardDescription>{t("chooseLookFeel")}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -255,7 +257,7 @@ export function BusinessSettings({ userId }: Props) {
 
         <div className="flex justify-end">
           <Button type="submit" variant="gradient" size="lg" loading={mutation.isPending}>
-            {business ? "Save Changes" : "Create Business"}
+            {business ? t("saveChanges") : t("createBusinessBtn")}
           </Button>
         </div>
       </form>

@@ -11,6 +11,8 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Search, AlertTriangle, Plus, Warehouse, TrendingDown } from "lucide-react";
 import { debounce } from "@/lib/utils";
+import { ProductImageFallback } from "@/components/ui/product-image-fallback";
+import { useTranslations } from "next-intl";
 
 export function InventoryManager() {
   const queryClient = useQueryClient();
@@ -21,6 +23,9 @@ export function InventoryManager() {
   const [adjustProduct, setAdjustProduct] = useState<{ id: string; name: string; stock: number } | null>(null);
   const [adjustQty, setAdjustQty] = useState(0);
   const [adjustNote, setAdjustNote] = useState("");
+
+  const t = useTranslations("inventory");
+  const tCommon = useTranslations("common");
 
   const updateSearch = useCallback(
     debounce((q: string) => { setDebouncedSearch(q); setPage(1); }, 300),
@@ -51,7 +56,7 @@ export function InventoryManager() {
       return json;
     },
     onSuccess: () => {
-      toast.success("Stock adjusted!");
+      toast.success(t("stockAdjustedToast"));
       queryClient.invalidateQueries({ queryKey: ["products-inventory"] });
       setAdjustProduct(null);
       setAdjustQty(0);
@@ -67,8 +72,8 @@ export function InventoryManager() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Inventory</h1>
-          <p className="text-sm text-gray-500 mt-1">{meta?.total ?? 0} products tracked</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t("title")}</h1>
+          <p className="text-sm text-gray-500 mt-1">{t("productsTracked", { count: meta?.total ?? 0 })}</p>
         </div>
       </div>
 
@@ -76,7 +81,7 @@ export function InventoryManager() {
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="flex-1">
           <Input
-            placeholder="Search products..."
+            placeholder={t("searchPlaceholder")}
             value={search}
             onChange={(e) => { setSearch(e.target.value); updateSearch(e.target.value); }}
             startIcon={<Search className="w-4 h-4" />}
@@ -93,7 +98,7 @@ export function InventoryManager() {
                   : "text-gray-500 dark:text-gray-400"
               }`}
             >
-              {f === "low" ? "Low Stock" : f === "out" ? "Out of Stock" : "All"}
+              {f === "low" ? t("lowStock") : f === "out" ? t("outOfStock") : t("all")}
             </button>
           ))}
         </div>
@@ -108,7 +113,7 @@ export function InventoryManager() {
       ) : products.length === 0 ? (
         <div className="text-center py-16">
           <Warehouse className="w-12 h-12 mx-auto mb-3 text-gray-200 dark:text-gray-700" />
-          <p className="text-gray-500">No products to manage</p>
+          <p className="text-gray-500">{t("noProducts")}</p>
         </div>
       ) : (
         <>
@@ -118,7 +123,7 @@ export function InventoryManager() {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-gray-100 dark:border-gray-800">
-                      {["Product", "SKU", "Stock", "Min Stock", "Status", "Actions"].map((h) => (
+                      {[t("thProduct"), t("thSku"), t("thStock"), t("thMinStock"), t("thStatus"), t("thActions")].map((h) => (
                         <th key={h} className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-4 py-3">
                           {h}
                         </th>
@@ -149,8 +154,13 @@ export function InventoryManager() {
                                   className="w-10 h-10 rounded-lg object-cover"
                                 />
                               ) : (
-                                <div className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-lg">
-                                  📦
+                                <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0">
+                                  <ProductImageFallback
+                                    name={product.name as string}
+                                    className="w-full h-full"
+                                    iconClassName="w-5 h-5"
+                                    showOverlay={false}
+                                  />
                                 </div>
                               )}
                               <div>
@@ -180,15 +190,15 @@ export function InventoryManager() {
                             {isOut ? (
                               <Badge variant="destructive" className="gap-1">
                                 <TrendingDown className="w-3 h-3" />
-                                Out of Stock
+                                {t("outOfStock")}
                               </Badge>
                             ) : isLow ? (
                               <Badge variant="warning" className="gap-1">
                                 <AlertTriangle className="w-3 h-3" />
-                                Low Stock
+                                {t("lowStock")}
                               </Badge>
                             ) : (
-                              <Badge variant="success">In Stock</Badge>
+                              <Badge variant="success">{t("inStock")}</Badge>
                             )}
                           </td>
                           <td className="px-4 py-3">
@@ -205,7 +215,7 @@ export function InventoryManager() {
                               }
                             >
                               <Plus className="w-3 h-3" />
-                              Restock
+                              {t("restock")}
                             </Button>
                           </td>
                         </motion.tr>
@@ -220,11 +230,13 @@ export function InventoryManager() {
           {meta && meta.totalPages > 1 && (
             <div className="flex items-center justify-center gap-2">
               <Button variant="outline" size="sm" disabled={!meta.hasPrev} onClick={() => setPage((p) => p - 1)}>
-                Previous
+                {tCommon("previous")}
               </Button>
-              <span className="text-sm text-gray-500">Page {meta.page} of {meta.totalPages}</span>
+              <span className="text-sm text-gray-500">
+                {tCommon("pageInfo", { page: meta.page, totalPages: meta.totalPages })}
+              </span>
               <Button variant="outline" size="sm" disabled={!meta.hasNext} onClick={() => setPage((p) => p + 1)}>
-                Next
+                {tCommon("next")}
               </Button>
             </div>
           )}
@@ -236,29 +248,29 @@ export function InventoryManager() {
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl p-6 w-full max-w-sm">
             <h3 className="font-bold text-lg mb-1">{adjustProduct.name}</h3>
-            <p className="text-sm text-gray-500 mb-4">Current stock: {adjustProduct.stock}</p>
+            <p className="text-sm text-gray-500 mb-4">{t("currentStock", { count: adjustProduct.stock })}</p>
             <div className="space-y-3">
               <div>
-                <label className="text-sm font-medium mb-1.5 block">Add Stock Quantity</label>
+                <label className="text-sm font-medium mb-1.5 block">{t("addStockQty")}</label>
                 <Input
                   type="number"
                   value={adjustQty}
                   onChange={(e) => setAdjustQty(Number(e.target.value))}
-                  placeholder="Enter quantity to add"
+                  placeholder={t("enterQtyPlaceholder")}
                 />
               </div>
               <div>
-                <label className="text-sm font-medium mb-1.5 block">Notes (optional)</label>
+                <label className="text-sm font-medium mb-1.5 block">{t("notes")}</label>
                 <Input
                   value={adjustNote}
                   onChange={(e) => setAdjustNote(e.target.value)}
-                  placeholder="e.g. Purchase from supplier"
+                  placeholder={t("notesPlaceholder")}
                 />
               </div>
             </div>
             <div className="flex gap-3 mt-6">
               <Button variant="outline" className="flex-1" onClick={() => setAdjustProduct(null)}>
-                Cancel
+                {tCommon("cancel")}
               </Button>
               <Button
                 variant="gradient"
@@ -266,7 +278,7 @@ export function InventoryManager() {
                 loading={adjustMutation.isPending}
                 onClick={() => adjustMutation.mutate({ id: adjustProduct.id, quantity: adjustQty, notes: adjustNote })}
               >
-                Update Stock
+                {t("updateStock")}
               </Button>
             </div>
           </div>

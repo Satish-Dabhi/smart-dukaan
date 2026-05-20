@@ -75,7 +75,7 @@ export function LoginForm() {
       {/* Google OAuth */}
       <Button
         variant="outline"
-        className="w-full gap-3 h-11 mb-6 border-gray-200 hover:bg-gray-50 text-white hover:text-black"
+        className="w-full gap-3 h-11 mb-6 border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
         onClick={handleGoogleSignIn}
         loading={googleLoading}
       >

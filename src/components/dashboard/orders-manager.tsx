@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Search, ShoppingCart, Eye, RefreshCw } from "lucide-react";
 import { formatCurrency, formatDateTime, debounce } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 const statusColors: Record<string, "success" | "warning" | "info" | "destructive" | "secondary"> = {
   pending: "warning",
@@ -34,6 +35,9 @@ export function OrdersManager() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [status, setStatus] = useState("");
   const [page, setPage] = useState(1);
+
+  const t = useTranslations("orders");
+  const tCommon = useTranslations("common");
 
   const updateSearch = useCallback(
     debounce((q: string) => { setDebouncedSearch(q); setPage(1); }, 300),
@@ -63,7 +67,7 @@ export function OrdersManager() {
       return json;
     },
     onSuccess: () => {
-      toast.success("Order status updated!");
+      toast.success(t("orderStatusUpdatedToast"));
       queryClient.invalidateQueries({ queryKey: ["orders"] });
     },
     onError: (error: Error) => toast.error(error.message),
@@ -76,15 +80,15 @@ export function OrdersManager() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Orders</h1>
-          <p className="text-sm text-gray-500 mt-1">{meta?.total ?? 0} total orders</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t("title")}</h1>
+          <p className="text-sm text-gray-500 mt-1">{t("totalOrders", { count: meta?.total ?? 0 })}</p>
         </div>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="flex-1">
           <Input
-            placeholder="Search by order number or customer..."
+            placeholder={t("searchPlaceholder")}
             value={search}
             onChange={(e) => { setSearch(e.target.value); updateSearch(e.target.value); }}
             startIcon={<Search className="w-4 h-4" />}
@@ -95,13 +99,13 @@ export function OrdersManager() {
           value={status}
           onChange={(e) => { setStatus(e.target.value); setPage(1); }}
         >
-          <option value="">All Status</option>
-          <option value="pending">Pending</option>
-          <option value="confirmed">Confirmed</option>
-          <option value="preparing">Preparing</option>
-          <option value="ready">Ready</option>
-          <option value="delivered">Delivered</option>
-          <option value="cancelled">Cancelled</option>
+          <option value="">{t("allStatus")}</option>
+          <option value="pending">{t("pending")}</option>
+          <option value="confirmed">{t("confirmed")}</option>
+          <option value="preparing">{t("preparing")}</option>
+          <option value="ready">{t("ready")}</option>
+          <option value="delivered">{t("delivered")}</option>
+          <option value="cancelled">{t("cancelled")}</option>
         </select>
       </div>
 
@@ -116,15 +120,15 @@ export function OrdersManager() {
           ) : orders.length === 0 ? (
             <div className="text-center py-16">
               <ShoppingCart className="w-12 h-12 mx-auto mb-3 text-gray-200 dark:text-gray-700" />
-              <p className="text-gray-500">No orders found</p>
-              <p className="text-sm text-gray-400 mt-1">Orders will appear here after billing</p>
+              <p className="text-gray-500">{t("noOrders")}</p>
+              <p className="text-sm text-gray-400 mt-1">{t("noOrdersSub")}</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-gray-100 dark:border-gray-800">
-                    {["Order", "Customer", "Items", "Total", "Status", "Date", "Actions"].map((h) => (
+                    {[t("thOrder"), t("thCustomer"), t("thItems"), t("thTotal"), t("thStatus"), t("thDate"), t("thActions")].map((h) => (
                       <th key={h} className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-4 py-3">
                         {h}
                       </th>
@@ -150,7 +154,7 @@ export function OrdersManager() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="text-sm text-gray-900 dark:text-white">
-                          {(order.customerName as string) ?? "Walk-in"}
+                          {(order.customerName as string) ?? t("walkIn")}
                         </div>
                         {!!order.customerPhone && (
                           <div className="text-xs text-gray-400">{order.customerPhone as string}</div>
@@ -158,7 +162,7 @@ export function OrdersManager() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="text-sm text-gray-500">
-                          {(order.items as unknown[])?.length ?? 0} items
+                          {t("itemsCount", { count: (order.items as unknown[])?.length ?? 0 })}
                         </div>
                       </td>
                       <td className="px-4 py-3">
@@ -168,7 +172,7 @@ export function OrdersManager() {
                       </td>
                       <td className="px-4 py-3">
                         <Badge variant={statusColors[order.status as string] ?? "secondary"}>
-                          {order.status as string}
+                          {t(order.status as string)}
                         </Badge>
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-500">
@@ -189,7 +193,7 @@ export function OrdersManager() {
                               }
                             >
                               <RefreshCw className="w-3 h-3" />
-                              {nextStatus[order.status as string]}
+                              {t(nextStatus[order.status as string])}
                             </Button>
                           )}
                         </div>
@@ -206,11 +210,13 @@ export function OrdersManager() {
       {meta && meta.totalPages > 1 && (
         <div className="flex items-center justify-center gap-2">
           <Button variant="outline" size="sm" disabled={!meta.hasPrev} onClick={() => setPage((p) => p - 1)}>
-            Previous
+            {tCommon("previous")}
           </Button>
-          <span className="text-sm text-gray-500">Page {meta.page} of {meta.totalPages}</span>
+          <span className="text-sm text-gray-500">
+            {tCommon("pageInfo", { page: meta.page, totalPages: meta.totalPages })}
+          </span>
           <Button variant="outline" size="sm" disabled={!meta.hasNext} onClick={() => setPage((p) => p + 1)}>
-            Next
+            {tCommon("next")}
           </Button>
         </div>
       )}
