@@ -1,17 +1,16 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useLocale, useTranslations } from "next-intl";
-import Link from "next/link";
-import { motion } from "framer-motion";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Mail, ArrowLeft, ShieldCheck, RefreshCw } from "lucide-react";
+import { motion } from "framer-motion";
+import { ArrowLeft, RefreshCw, ShieldCheck } from "lucide-react";
+import { useLocale } from "next-intl";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 
 export function VerifyEmailForm() {
   const locale = useLocale();
-  const t = useTranslations("auth");
   const router = useRouter();
   const searchParams = useSearchParams();
   const email = searchParams.get("email") ?? "";
@@ -31,7 +30,7 @@ export function VerifyEmailForm() {
 
   const handleChange = (index: number, value: string) => {
     if (isNaN(Number(value))) return;
-    
+
     const newOtp = [...otp];
     newOtp[index] = value.slice(-1); // Only take last digit
     setOtp(newOtp);
@@ -45,6 +44,23 @@ export function VerifyEmailForm() {
   const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Backspace" && !otp[index] && index > 0) {
       inputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const pasteData = e.clipboardData.getData("text");
+    const digits = pasteData.replace(/\D/g, "").slice(0, 6);
+    if (digits) {
+      const newOtp = [...otp];
+      for (let i = 0; i < 6; i++) {
+        if (digits[i] !== undefined) {
+          newOtp[i] = digits[i];
+        }
+      }
+      setOtp(newOtp);
+      const focusIndex = Math.min(digits.length, 5);
+      inputRefs.current[focusIndex]?.focus();
     }
   };
 
@@ -85,7 +101,7 @@ export function VerifyEmailForm() {
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error);
-      
+
       toast.success("Email verified successfully! You can now log in.");
       router.push(`/${locale}/auth/login?email=${encodeURIComponent(email)}`);
     } catch (err) {
@@ -107,7 +123,8 @@ export function VerifyEmailForm() {
         </div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Verify Your Email</h1>
         <p className="text-gray-500 text-sm mt-2">
-          We have sent a 6-digit OTP to <strong className="text-gray-800 dark:text-gray-200">{email}</strong>
+          We have sent a 6-digit OTP to{" "}
+          <strong className="text-gray-800 dark:text-gray-200">{email}</strong>
         </p>
       </div>
 
@@ -120,10 +137,13 @@ export function VerifyEmailForm() {
               pattern="[0-9]*"
               inputMode="numeric"
               maxLength={1}
-              ref={(el) => { if (el) inputRefs.current[index] = el; }}
+              ref={(el) => {
+                if (el) inputRefs.current[index] = el;
+              }}
               value={digit}
               onChange={(e) => handleChange(index, e.target.value)}
               onKeyDown={(e) => handleKeyDown(index, e)}
+              onPaste={handlePaste}
               className="w-11 h-12 text-center text-lg font-bold border border-gray-200 dark:border-gray-800 rounded-xl bg-gray-50 dark:bg-gray-850 text-foreground focus:border-violet-600 focus:ring-1 focus:ring-violet-600 transition-all focus:scale-105"
               required
             />
@@ -137,7 +157,7 @@ export function VerifyEmailForm() {
 
       <div className="mt-6 text-center space-y-4">
         <p className="text-sm text-gray-500">
-          Didn't receive the code?{" "}
+          Didn&apos;t receive the code?{" "}
           {countdown > 0 ? (
             <span className="font-semibold text-gray-600 dark:text-gray-400">
               Resend in {countdown}s

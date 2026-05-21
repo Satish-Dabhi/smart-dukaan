@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { connectDB } from "@/lib/db";
 import User from "@/models/User";
 import Business from "@/models/Business";
+import { sendBusinessSuspendedEmail } from "@/lib/email";
 
 async function isSuperAdmin() {
   const session = await auth();
@@ -12,7 +13,10 @@ async function isSuperAdmin() {
 export async function GET(req: NextRequest) {
   try {
     if (!(await isSuperAdmin())) {
-      return NextResponse.json({ success: false, error: "Forbidden: Super Admin access required" }, { status: 403 });
+      return NextResponse.json(
+        { success: false, error: "Forbidden: Super Admin access required" },
+        { status: 403 }
+      );
     }
 
     const { searchParams } = req.nextUrl;
@@ -25,23 +29,14 @@ export async function GET(req: NextRequest) {
     await connectDB();
 
     // 1. Gather Overview Stats always
-    const [
-      totalUsers,
-      totalVerifiedUsers,
-      totalBusinesses,
-      planStats,
-      statusStats,
-    ] = await Promise.all([
-      User.countDocuments(),
-      User.countDocuments({ isVerified: true }),
-      Business.countDocuments(),
-      Business.aggregate([
-        { $group: { _id: "$subscriptionPlan", count: { $sum: 1 } } }
-      ]),
-      Business.aggregate([
-        { $group: { _id: "$status", count: { $sum: 1 } } }
-      ]),
-    ]);
+    const [totalUsers, totalVerifiedUsers, totalBusinesses, planStats, statusStats] =
+      await Promise.all([
+        User.countDocuments(),
+        User.countDocuments({ isVerified: true }),
+        Business.countDocuments(),
+        Business.aggregate([{ $group: { _id: "$subscriptionPlan", count: { $sum: 1 } } }]),
+        Business.aggregate([{ $group: { _id: "$status", count: { $sum: 1 } } }]),
+      ]);
 
     const subscriptionsBreakdown = {
       free: 0,
@@ -76,7 +71,7 @@ export async function GET(req: NextRequest) {
 
     // 2. Fetch specific list depending on the selected tab
     if (tab === "users") {
-      const query: Record<string, any> = {};
+      const query: Record<string, unknown> = {};
       if (q) {
         query.$or = [
           { name: { $regex: q, $options: "i" } },
@@ -103,7 +98,7 @@ export async function GET(req: NextRequest) {
     }
 
     if (tab === "businesses") {
-      const query: Record<string, any> = {};
+      const query: Record<string, unknown> = {};
       if (q) {
         query.$or = [
           { name: { $regex: q, $options: "i" } },
@@ -158,35 +153,45 @@ export async function GET(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   try {
     if (!(await isSuperAdmin())) {
-      return NextResponse.json({ success: false, error: "Forbidden: Super Admin access required" }, { status: 403 });
+      return NextResponse.json(
+        { success: false, error: "Forbidden: Super Admin access required" },
+        { status: 403 }
+      );
     }
 
     const body = await req.json();
-    const { action, userId, businessId, role, subscriptionPlan, subscriptionExpiresAt, status } = body;
+    const { action, userId, businessId, role, subscriptionPlan, subscriptionExpiresAt, status } =
+      body;
 
     await connectDB();
 
     if (action === "update_user_role") {
       if (!userId || !role) {
-        return NextResponse.json({ success: false, error: "Missing required parameters" }, { status: 400 });
+        return NextResponse.json(
+          { success: false, error: "Missing required parameters" },
+          { status: 400 }
+        );
       }
 
-      const user = await User.findByIdAndUpdate(
-        userId,
-        { $set: { role } },
-        { new: true }
-      );
+      const user = await User.findByIdAndUpdate(userId, { $set: { role } }, { new: true });
 
       if (!user) {
         return NextResponse.json({ success: false, error: "User not found" }, { status: 404 });
       }
 
-      return NextResponse.json({ success: true, message: "User role updated successfully", data: user });
+      return NextResponse.json({
+        success: true,
+        message: "User role updated successfully",
+        data: user,
+      });
     }
 
     if (action === "update_subscription") {
       if (!businessId || !subscriptionPlan) {
-        return NextResponse.json({ success: false, error: "Missing required parameters" }, { status: 400 });
+        return NextResponse.json(
+          { success: false, error: "Missing required parameters" },
+          { status: 400 }
+        );
       }
 
       const business = await Business.findByIdAndUpdate(
@@ -194,7 +199,9 @@ export async function PATCH(req: NextRequest) {
         {
           $set: {
             subscriptionPlan,
-            subscriptionExpiresAt: subscriptionExpiresAt ? new Date(subscriptionExpiresAt) : undefined,
+            subscriptionExpiresAt: subscriptionExpiresAt
+              ? new Date(subscriptionExpiresAt)
+              : undefined,
           },
         },
         { new: true }
@@ -204,12 +211,19 @@ export async function PATCH(req: NextRequest) {
         return NextResponse.json({ success: false, error: "Business not found" }, { status: 404 });
       }
 
-      return NextResponse.json({ success: true, message: "Subscription plan updated successfully", data: business });
+      return NextResponse.json({
+        success: true,
+        message: "Subscription plan updated successfully",
+        data: business,
+      });
     }
 
     if (action === "update_business_status") {
       if (!businessId || !status) {
-        return NextResponse.json({ success: false, error: "Missing required parameters" }, { status: 400 });
+        return NextResponse.json(
+          { success: false, error: "Missing required parameters" },
+          { status: 400 }
+        );
       }
 
       const business = await Business.findByIdAndUpdate(
@@ -222,7 +236,27 @@ export async function PATCH(req: NextRequest) {
         return NextResponse.json({ success: false, error: "Business not found" }, { status: 404 });
       }
 
-      return NextResponse.json({ success: true, message: "Business status updated successfully", data: business });
+      // Trigger suspension email alert asynchronously
+      if (status === "suspended") {
+        try {
+          const owner = await User.findById(business.ownerId);
+          if (owner && owner.email) {
+            await sendBusinessSuspendedEmail(
+              owner.email,
+              owner.name || "Store Owner",
+              business.name
+            );
+          }
+        } catch (emailErr) {
+          console.error("[SUPER_ADMIN_PATCH] Failed to send business suspended email:", emailErr);
+        }
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: "Business status updated successfully",
+        data: business,
+      });
     }
 
     return NextResponse.json({ success: false, error: "Invalid action" }, { status: 400 });

@@ -18,10 +18,7 @@ interface InventoryManagerProps {
 
 export async function InventoryManager({ page, q, filter }: InventoryManagerProps) {
   const { businessId } = await requireBusinessAuth();
-  const [t, locale] = await Promise.all([
-    getTranslations("inventory"),
-    getLocale(),
-  ]);
+  const [t, locale] = await Promise.all([getTranslations("inventory"), getLocale()]);
 
   const { data: products, meta } = await getProducts({
     businessId,
@@ -36,7 +33,9 @@ export async function InventoryManager({ page, q, filter }: InventoryManagerProp
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t("title")}</h1>
-          <p className="text-sm text-gray-500 mt-1">{t("productsTracked", { count: meta.total })}</p>
+          <p className="text-sm text-gray-500 mt-1">
+            {t("productsTracked", { count: meta.total })}
+          </p>
         </div>
       </div>
 
@@ -60,8 +59,18 @@ export async function InventoryManager({ page, q, filter }: InventoryManagerProp
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-gray-100 dark:border-gray-800">
-                      {[t("thProduct"), t("thSku"), t("thStock"), t("thMinStock"), t("thStatus"), t("thActions")].map((h) => (
-                        <th key={h} className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-4 py-3">
+                      {[
+                        t("thProduct"),
+                        t("thSku"),
+                        t("thStock"),
+                        t("thMinStock"),
+                        t("thStatus"),
+                        t("thActions"),
+                      ].map((h) => (
+                        <th
+                          key={h}
+                          className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-4 py-3"
+                        >
                           {h}
                         </th>
                       ))}
@@ -82,6 +91,7 @@ export async function InventoryManager({ page, q, filter }: InventoryManagerProp
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-3">
                               {product.images?.[0] ? (
+                                /* eslint-disable-next-line @next/next/no-img-element */
                                 <img
                                   src={product.images[0]}
                                   alt={product.name}
@@ -105,17 +115,19 @@ export async function InventoryManager({ page, q, filter }: InventoryManagerProp
                               </div>
                             </div>
                           </td>
-                          <td className="px-4 py-3 text-sm text-gray-500">
-                            {product.sku ?? "—"}
-                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-500">{product.sku ?? "—"}</td>
                           <td className="px-4 py-3">
-                            <div className={`text-sm font-bold ${isOut ? "text-red-600" : isLow ? "text-amber-600" : "text-emerald-600"}`}>
+                            <div
+                              className={`text-sm font-bold ${isOut ? "text-red-600" : isLow ? "text-amber-600" : "text-emerald-600"}`}
+                            >
                               {stock}
                             </div>
                             <div className="w-24 mt-1 bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
                               <div
                                 className={`h-1.5 rounded-full ${isOut ? "bg-red-500" : isLow ? "bg-amber-500" : "bg-emerald-500"}`}
-                                style={{ width: `${Math.min((stock / (minStock * 3)) * 100, 100)}%` }}
+                                style={{
+                                  width: `${Math.min((stock / (minStock * 3)) * 100, 100)}%`,
+                                }}
                               />
                             </div>
                           </td>

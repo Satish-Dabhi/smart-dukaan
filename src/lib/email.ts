@@ -89,7 +89,11 @@ export async function sendOtpEmail(email: string, name: string, otp: string): Pr
 
 // ─── Forgot Password OTP ───────────────────────────────────────────────────
 
-export async function sendForgotPasswordEmail(email: string, name: string, otp: string): Promise<MailResult> {
+export async function sendForgotPasswordEmail(
+  email: string,
+  name: string,
+  otp: string
+): Promise<MailResult> {
   console.log(`[EMAIL] Sending forgot-password OTP to ${email}`);
 
   if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
@@ -215,4 +219,144 @@ export async function sendOrderConfirmationEmail(
   `);
 
   return sendMail(email, `Order Confirmed: ${data.orderNumber} — SmartDukaan`, html);
+}
+
+// ─── Welcome Email ──────────────────────────────────────────────────────────
+
+export async function sendWelcomeEmail(email: string, name: string): Promise<MailResult> {
+  console.log(`[EMAIL] Sending welcome email to ${email}`);
+
+  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+    console.warn("==========================================================");
+    console.warn(`[SMTP NOT CONFIGURED] Welcome Email for ${email}`);
+    console.warn("==========================================================");
+    return { success: true, mocked: true };
+  }
+
+  const html = baseLayout(`
+    <h3 style="color:#1f2937;font-size:18px;font-weight:700;margin-bottom:8px;">Welcome to SmartDukaan, ${name}!</h3>
+    <p style="color:#4b5563;font-size:14px;line-height:1.7;margin-bottom:20px;">
+      We're absolutely thrilled to have you on board! SmartDukaan is designed to help you create a stunning, fully-functional online storefront and manage your products and orders with ultimate ease.
+    </p>
+    
+    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:20px;margin-bottom:24px;">
+      <h4 style="margin:0 0 12px;color:#0f172a;font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Your Onboarding Checklist</h4>
+      <table style="width:100%;border-collapse:collapse;font-size:13px;color:#334155;">
+        <tr>
+          <td style="padding:6px 0;width:24px;vertical-align:top;font-weight:bold;color:#7c3aed;">1.</td>
+          <td style="padding:6px 0;"><strong>Setup Your Business Profile</strong><br/><span style="color:#64748b;font-size:12px;">Fill in your business name, description, and contact info to create your store.</span></td>
+        </tr>
+        <tr>
+          <td style="padding:6px 0;width:24px;vertical-align:top;font-weight:bold;color:#7c3aed;">2.</td>
+          <td style="padding:6px 0;"><strong>Add Your First Product</strong><br/><span style="color:#64748b;font-size:12px;">Upload product details, pricing, and stock status in the dashboard.</span></td>
+        </tr>
+        <tr>
+          <td style="padding:6px 0;width:24px;vertical-align:top;font-weight:bold;color:#7c3aed;">3.</td>
+          <td style="padding:6px 0;"><strong>Preview & Launch Your Storefront</strong><br/><span style="color:#64748b;font-size:12px;">Visit your dynamic store link, copy it, and share it with your customers!</span></td>
+        </tr>
+      </table>
+    </div>
+
+    <p style="color:#4b5563;font-size:14px;line-height:1.7;margin-bottom:24px;">
+      Our guided step-by-step assistant will walk you through these actions the moment you log in, unlocking your dashboard menus as you complete each task.
+    </p>
+
+    <div style="text-align:center;margin:28px 0 20px;">
+      <a href="${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}" style="display:inline-block;padding:12px 28px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;font-weight:700;text-decoration:none;border-radius:10px;font-size:14px;box-shadow:0 4px 6px rgba(124,58,237,0.2);">Go to Dashboard</a>
+    </div>
+  `);
+
+  return sendMail(email, "Welcome to SmartDukaan — Let's build your store!", html);
+}
+
+// ─── Business Created Congratulations Email ───────────────────────────────────
+
+export async function sendBusinessCreatedEmail(
+  email: string,
+  ownerName: string,
+  businessName: string,
+  storeUrl: string
+): Promise<MailResult> {
+  console.log(`[EMAIL] Sending business created email to ${email}`);
+
+  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+    console.warn("==========================================================");
+    console.warn(`[SMTP NOT CONFIGURED] Business Created Email for ${email}`);
+    console.warn("==========================================================");
+    return { success: true, mocked: true };
+  }
+
+  const html = baseLayout(`
+    <h3 style="color:#1f2937;font-size:18px;font-weight:700;margin-bottom:8px;">Congratulations, ${ownerName}!</h3>
+    <p style="color:#4b5563;font-size:14px;line-height:1.7;margin-bottom:20px;">
+      Your business <strong>${businessName}</strong> has been successfully created and your custom storefront is now active! 🚀
+    </p>
+    
+    <div style="background:#f5f3ff;border:1px dashed #7c3aed;border-radius:12px;padding:20px;text-align:center;margin-bottom:24px;">
+      <p style="margin:0 0 8px;color:#4b5563;font-size:13px;font-weight:600;">Your Live Storefront URL:</p>
+      <a href="${storeUrl}" style="font-size:16px;font-weight:700;color:#7c3aed;word-break:break-all;text-decoration:underline;">${storeUrl}</a>
+    </div>
+
+    <p style="color:#4b5563;font-size:14px;line-height:1.7;margin-bottom:20px;">
+      <strong>What's next?</strong>
+      <ul style="color:#4b5563;font-size:13px;line-height:1.7;padding-left:20px;margin-top:8px;">
+        <li>Add products to display them on your dynamic storefront.</li>
+        <li>Share your storefront link with your customer base on WhatsApp, social media, or flyers.</li>
+        <li>Receive order alerts directly, and manage full order statuses seamlessly right from your dashboard!</li>
+      </ul>
+    </p>
+
+    <div style="text-align:center;margin:28px 0 20px;">
+      <a href="${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/dashboard" style="display:inline-block;padding:12px 28px;background:#7c3aed;color:#fff;font-weight:700;text-decoration:none;border-radius:10px;font-size:14px;">Go to Dashboard</a>
+    </div>
+  `);
+
+  return sendMail(email, `Your store is live: ${businessName} — SmartDukaan`, html);
+}
+
+// ─── Business Suspended Email ───────────────────────────────────────────────
+
+export async function sendBusinessSuspendedEmail(
+  email: string,
+  ownerName: string,
+  businessName: string
+): Promise<MailResult> {
+  console.log(`[EMAIL] Sending business suspended email to ${email}`);
+
+  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+    console.warn("==========================================================");
+    console.warn(`[SMTP NOT CONFIGURED] Business Suspended Email for ${email}`);
+    console.warn("==========================================================");
+    return { success: true, mocked: true };
+  }
+
+  const adminEmail = process.env.SMTP_USER || "admin@smartdukaan.com";
+
+  const html = baseLayout(`
+    <div style="background:#fee2e2;border:1px solid #fca5a5;border-radius:12px;padding:16px;text-align:center;margin-bottom:24px;">
+      <h3 style="margin:0;color:#b91c1c;font-size:18px;font-weight:800;">⚠️ Shop Suspended</h3>
+    </div>
+    
+    <h3 style="color:#1f2937;font-size:16px;font-weight:700;margin-bottom:8px;">Hello ${ownerName},</h3>
+    <p style="color:#4b5563;font-size:14px;line-height:1.7;margin-bottom:20px;">
+      This email is to notify you that your SmartDukaan store <strong>${businessName}</strong> has been suspended by the administration.
+    </p>
+    
+    <p style="color:#4b5563;font-size:14px;line-height:1.7;margin-bottom:20px;">
+      During the suspension period, your storefront will not be accessible to customers, and your shop dashboard is locked.
+    </p>
+
+    <div style="background:#f8fafc;border-left:4px solid #94a3b8;padding:14px;margin-bottom:24px;border-radius:0 8px 8px 0;">
+      <p style="margin:0;color:#475569;font-size:13px;line-height:1.6;">
+        <strong>How to resolve this:</strong><br/>
+        Please get in touch with our system administrator immediately to discuss the reasons for suspension and steps to reinstate your account.
+      </p>
+    </div>
+
+    <div style="text-align:center;margin:28px 0 20px;">
+      <a href="mailto:${adminEmail}?subject=Suspension Appeal — ${encodeURIComponent(businessName)}" style="display:inline-block;padding:12px 28px;background:#ef4444;color:#fff;font-weight:700;text-decoration:none;border-radius:10px;font-size:14px;">Contact Support</a>
+    </div>
+  `);
+
+  return sendMail(email, `Urgent: Your SmartDukaan store has been suspended`, html);
 }

@@ -6,6 +6,7 @@ import User from "@/models/User";
 import { slugify } from "@/lib/utils";
 import { z } from "zod";
 import { BusinessSchema, BusinessUpdateSchema } from "@/lib/schemas";
+import { sendBusinessCreatedEmail } from "@/lib/email";
 
 export async function GET() {
   try {
@@ -59,6 +60,36 @@ export async function POST(req: NextRequest) {
 
     // Link business to user
     await User.findByIdAndUpdate(session.user.id, { businessId: business._id });
+
+    // Trigger congratulations / business creation email asynchronously
+    try {
+      const user = await User.findById(session.user.id);
+      const email = user?.email || session.user.email;
+      const ownerName = user?.name || session.user.name || "Store Owner";
+
+      if (email) {
+        const referer = req.headers.get("referer") || "";
+        let locale = "en";
+        try {
+          if (referer) {
+            const urlObj = new URL(referer);
+            const pathParts = urlObj.pathname.split("/").filter(Boolean);
+            if (pathParts[0] && pathParts[0].length === 2) {
+              locale = pathParts[0];
+            }
+          }
+        } catch (urlErr) {
+          console.error("[BUSINESS_POST] Failed to parse referer URL:", urlErr);
+        }
+
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+        const storeUrl = `${appUrl}/${locale}/business/${business.slug}`;
+
+        await sendBusinessCreatedEmail(email, ownerName, business.name, storeUrl);
+      }
+    } catch (emailErr) {
+      console.error("[BUSINESS_POST] Failed to send business created email:", emailErr);
+    }
 
     return NextResponse.json({ success: true, data: business }, { status: 201 });
   } catch (error) {

@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { connectDB } from "@/lib/db";
 import Invoice from "@/models/Invoice";
-import Order from "@/models/Order";
 import Product from "@/models/Product";
 import Business from "@/models/Business";
 import Customer from "@/models/Customer";
@@ -19,7 +18,10 @@ export async function POST(req: NextRequest) {
     // Use businessId from the authenticated session — never trust a client-supplied value
     const sessionBusinessId = (session.user as { businessId?: string })?.businessId;
     if (!sessionBusinessId) {
-      return NextResponse.json({ success: false, error: "No business associated with this account" }, { status: 403 });
+      return NextResponse.json(
+        { success: false, error: "No business associated with this account" },
+        { status: 403 }
+      );
     }
 
     const {
@@ -92,24 +94,26 @@ export async function POST(req: NextRequest) {
     ).padStart(5, "0")}`;
 
     // Create invoice items
-    const invoiceItems = items.map((item: {
-      productId: string;
-      name: string;
-      nameGu?: string;
-      price: number;
-      quantity: number;
-      discount: number;
-      gst: number;
-    }) => ({
-      productId: item.productId,
-      name: item.name,
-      nameGu: item.nameGu,
-      quantity: item.quantity,
-      price: item.price * (1 - item.discount / 100),
-      discount: item.discount,
-      gstPercentage: item.gst,
-      total: item.price * (1 - item.discount / 100) * item.quantity,
-    }));
+    const invoiceItems = items.map(
+      (item: {
+        productId: string;
+        name: string;
+        nameGu?: string;
+        price: number;
+        quantity: number;
+        discount: number;
+        gst: number;
+      }) => ({
+        productId: item.productId,
+        name: item.name,
+        nameGu: item.nameGu,
+        quantity: item.quantity,
+        price: item.price * (1 - item.discount / 100),
+        discount: item.discount,
+        gstPercentage: item.gst,
+        total: item.price * (1 - item.discount / 100) * item.quantity,
+      })
+    );
 
     // Create invoice
     const invoice = await Invoice.create({

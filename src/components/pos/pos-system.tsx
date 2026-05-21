@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback, useMemo } from "react";
+import { useState, useRef, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
@@ -10,8 +10,18 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  Search, ShoppingCart, Trash2, Plus, Minus, Printer,
-  User, CreditCard, Banknote, Smartphone, X, CheckCircle2
+  Search,
+  ShoppingCart,
+  Trash2,
+  Plus,
+  Minus,
+  Printer,
+  User,
+  CreditCard,
+  Banknote,
+  Smartphone,
+  X,
+  CheckCircle2,
 } from "lucide-react";
 import { formatCurrency, calculateGST, debounce } from "@/lib/utils";
 import type { CartItem, IProduct } from "@/types";
@@ -49,10 +59,7 @@ export function POSSystem({ businessId }: POSProps) {
 
   const handlePrint = useReactToPrint({ contentRef: printRef });
 
-  const debouncedSearch = useMemo(
-    () => debounce((q: string) => setDebouncedQuery(q), 300),
-    []
-  );
+  const debouncedSearch = useMemo(() => debounce((q: string) => setDebouncedQuery(q), 300), []);
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
@@ -204,6 +211,7 @@ export function POSSystem({ businessId }: POSProps) {
               >
                 <div className="aspect-square w-full bg-gray-100 dark:bg-gray-800 rounded-lg mb-2 overflow-hidden">
                   {product.images?.[0] ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
                     <img
                       src={product.images[0]}
                       alt={product.name}
@@ -225,7 +233,9 @@ export function POSSystem({ businessId }: POSProps) {
                 </p>
                 <p className="text-xs text-gray-400 mt-0.5">Stock: {product.stock}</p>
                 {product.stock === 0 && (
-                  <Badge variant="destructive" className="mt-1 text-xs">Out of Stock</Badge>
+                  <Badge variant="destructive" className="mt-1 text-xs">
+                    Out of Stock
+                  </Badge>
                 )}
               </motion.button>
             ))}
@@ -289,9 +299,7 @@ export function POSSystem({ businessId }: POSProps) {
                       >
                         <Minus className="w-3 h-3" />
                       </button>
-                      <span className="w-6 text-center text-sm font-semibold">
-                        {item.quantity}
-                      </span>
+                      <span className="w-6 text-center text-sm font-semibold">{item.quantity}</span>
                       <button
                         onClick={() => updateQuantity(item.productId, 1)}
                         className="w-6 h-6 rounded-md bg-violet-100 dark:bg-violet-900/30 text-violet-600 flex items-center justify-center hover:bg-violet-200 transition-colors"
@@ -411,9 +419,7 @@ export function POSSystem({ businessId }: POSProps) {
                       {(["cash", "upi", "card"] as PaymentMethod[]).map((method) => (
                         <button
                           key={method}
-                          onClick={() =>
-                            setCheckoutData((p) => ({ ...p, paymentMethod: method }))
-                          }
+                          onClick={() => setCheckoutData((p) => ({ ...p, paymentMethod: method }))}
                           className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all ${
                             checkoutData.paymentMethod === method
                               ? "border-violet-500 bg-violet-50 dark:bg-violet-900/20"
@@ -517,7 +523,8 @@ export function POSSystem({ businessId }: POSProps) {
                 Order Placed!
               </h2>
               <p className="text-gray-500 mb-6">
-                Invoice #{(lastInvoice as { invoiceNumber?: string })?.invoiceNumber} created successfully
+                Invoice #{(lastInvoice as { invoiceNumber?: string })?.invoiceNumber} created
+                successfully
               </p>
               <div className="flex gap-3">
                 <Button

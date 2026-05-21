@@ -10,8 +10,8 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Building2, Phone, MapPin, Receipt, Palette, Globe, Store } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { Building2, MapPin, Palette, Store } from "lucide-react";
+import { useTranslations, useLocale } from "next-intl";
 
 const schema = z.object({
   name: z.string().min(2),
@@ -46,7 +46,7 @@ interface Props {
   userId?: string;
 }
 
-export function BusinessSettings({ userId }: Props) {
+export function BusinessSettings(_props: Props) {
   const queryClient = useQueryClient();
   const [isCreating, setIsCreating] = useState(false);
   const t = useTranslations("settings");
@@ -61,7 +61,13 @@ export function BusinessSettings({ userId }: Props) {
 
   const business = businessData?.data;
 
-  const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<FormData>({
+  const {
+    register,
+    handleSubmit,
+    watch,
+    setValue,
+    formState: { errors },
+  } = useForm<FormData>({
     resolver: zodResolver(schema),
     values: business
       ? {
@@ -82,7 +88,10 @@ export function BusinessSettings({ userId }: Props) {
       : undefined,
   });
 
+  // eslint-disable-next-line react-hooks/incompatible-library
   const selectedTheme = watch("theme");
+
+  const locale = useLocale();
 
   const mutation = useMutation({
     mutationFn: async (data: FormData) => {
@@ -100,6 +109,14 @@ export function BusinessSettings({ userId }: Props) {
       toast.success(business ? t("settingsSavedToast") : t("businessCreatedToast"));
       queryClient.invalidateQueries({ queryKey: ["business"] });
       setIsCreating(false);
+
+      if (!business) {
+        // Milestone step progression: Move to adding product
+        localStorage.setItem("smartdukaan_onboarding_step", "add_product");
+        window.dispatchEvent(new Event("onboarding_step_change"));
+        // Force router navigation or hard refresh to ensure layout and API reload business info
+        window.location.href = `/${locale}/dashboard/products`;
+      }
     },
     onError: (error: Error) => toast.error(error.message),
   });
@@ -130,9 +147,7 @@ export function BusinessSettings({ userId }: Props) {
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
             {t("setupStore")}
           </h2>
-          <p className="text-gray-500 mb-6">
-            {t("setupStoreSub")}
-          </p>
+          <p className="text-gray-500 mb-6">{t("setupStoreSub")}</p>
           <Button variant="gradient" size="lg" onClick={() => setIsCreating(true)}>
             {t("createBusinessBtn")}
           </Button>
@@ -148,7 +163,9 @@ export function BusinessSettings({ userId }: Props) {
           {business ? t("businessSettings") : t("createBusiness")}
         </h1>
         <p className="text-sm text-gray-500 mt-1">
-          {business ? t("manageSettingsFor", { name: business.name }) : t("fillDetailsToGetStarted")}
+          {business
+            ? t("manageSettingsFor", { name: business.name })
+            : t("fillDetailsToGetStarted")}
         </p>
       </div>
 
@@ -163,11 +180,24 @@ export function BusinessSettings({ userId }: Props) {
           <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {[
               { name: "name" as const, label: t("businessName"), placeholder: "Fresh Mart" },
-              { name: "email" as const, label: t("emailRequired"), placeholder: "hello@freshmart.com", type: "email" },
+              {
+                name: "email" as const,
+                label: t("emailRequired"),
+                placeholder: "hello@freshmart.com",
+                type: "email",
+              },
               { name: "phone" as const, label: t("phoneRequired"), placeholder: "+91 9876543210" },
-              { name: "whatsappNumber" as const, label: t("whatsappNumber"), placeholder: "+91 9876543210" },
+              {
+                name: "whatsappNumber" as const,
+                label: t("whatsappNumber"),
+                placeholder: "+91 9876543210",
+              },
               { name: "gstNumber" as const, label: t("gstNumber"), placeholder: "22AAAAA0000A1Z5" },
-              { name: "tagline" as const, label: t("tagline"), placeholder: "Fresh groceries delivered!" },
+              {
+                name: "tagline" as const,
+                label: t("tagline"),
+                placeholder: "Fresh groceries delivered!",
+              },
             ].map((field) => (
               <div key={field.name} className={field.name === "tagline" ? "sm:col-span-2" : ""}>
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block">
@@ -180,7 +210,9 @@ export function BusinessSettings({ userId }: Props) {
                   className={errors[field.name] ? "border-red-500" : ""}
                 />
                 {errors[field.name] && (
-                  <p className="text-xs text-red-500 mt-1">{errors[field.name]?.message as string}</p>
+                  <p className="text-xs text-red-500 mt-1">
+                    {errors[field.name]?.message as string}
+                  </p>
                 )}
               </div>
             ))}
@@ -208,7 +240,12 @@ export function BusinessSettings({ userId }: Props) {
           </CardHeader>
           <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {[
-              { name: "address" as const, label: t("streetAddress"), placeholder: "123, Main Street", span: true },
+              {
+                name: "address" as const,
+                label: t("streetAddress"),
+                placeholder: "123, Main Street",
+                span: true,
+              },
               { name: "city" as const, label: t("cityRequired"), placeholder: "Ahmedabad" },
               { name: "state" as const, label: t("stateRequired"), placeholder: "Gujarat" },
               { name: "pincode" as const, label: t("pincodeRequired"), placeholder: "380001" },

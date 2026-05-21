@@ -4,7 +4,6 @@ import { connectDB } from "@/lib/db";
 import Invoice from "@/models/Invoice";
 import Order from "@/models/Order";
 import Customer from "@/models/Customer";
-import Product from "@/models/Product";
 
 export async function GET(req: NextRequest) {
   try {

@@ -2,12 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { connectDB } from "@/lib/db";
 import User from "@/models/User";
+import { sendWelcomeEmail } from "@/lib/email";
 
 export async function POST(req: NextRequest) {
   try {
     const { email, otp } = await req.json();
     if (!email || !otp) {
-      return NextResponse.json({ success: false, error: "Email and OTP are required" }, { status: 400 });
+      return NextResponse.json(
+        { success: false, error: "Email and OTP are required" },
+        { status: 400 }
+      );
     }
 
     await connectDB();
@@ -35,6 +39,13 @@ export async function POST(req: NextRequest) {
     user.verificationOtp = undefined;
     user.verificationOtpExpires = undefined;
     await user.save();
+
+    // Trigger welcome email asynchronously (errors caught internally or logged)
+    try {
+      await sendWelcomeEmail(user.email, user.name || "Store Owner");
+    } catch (emailErr) {
+      console.error("[VERIFY_OTP] Failed to send welcome email:", emailErr);
+    }
 
     return NextResponse.json({ success: true, message: "Email verified successfully" });
   } catch (error) {

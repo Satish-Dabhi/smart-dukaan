@@ -1,20 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { QRCodeCanvas } from "qrcode.react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Download, Store, Package, QrCode } from "lucide-react";
+import { Download, Package, QrCode, Store } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { QRCodeCanvas } from "qrcode.react";
+import { useState } from "react";
 
 interface Props {
   businessId?: string;
 }
 
-export function QRCodesManager({ businessId }: Props) {
+export function QRCodesManager(_props: Props) {
   const [tableNumber, setTableNumber] = useState("");
   const t = useTranslations("qrCodes");
 
@@ -29,9 +29,8 @@ export function QRCodesManager({ businessId }: Props) {
   const business = businessData?.data;
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
   const storeUrl = business ? `${appUrl}/en/business/${business.slug}` : "";
-  const tableUrl = business && tableNumber
-    ? `${appUrl}/en/business/${business.slug}?table=${tableNumber}`
-    : "";
+  const tableUrl =
+    business && tableNumber ? `${appUrl}/en/business/${business.slug}?table=${tableNumber}` : "";
 
   const downloadQR = (id: string, filename: string) => {
     const canvas = document.querySelector(`#${id} canvas`) as HTMLCanvasElement;
@@ -67,7 +66,9 @@ export function QRCodesManager({ businessId }: Props) {
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
           <QrCode className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{t("setupBusinessFirst")}</h2>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+            {t("setupBusinessFirst")}
+          </h2>
           <p className="text-gray-500">{t("setupBusinessFirstSub")}</p>
         </div>
       </div>
@@ -78,9 +79,7 @@ export function QRCodesManager({ businessId }: Props) {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t("title")}</h1>
-        <p className="text-sm text-gray-500 mt-1">
-          {t("subtitle")}
-        </p>
+        <p className="text-sm text-gray-500 mt-1">{t("subtitle")}</p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -94,14 +93,19 @@ export function QRCodesManager({ businessId }: Props) {
             <Card className="overflow-hidden">
               <div className={`h-2 bg-gradient-to-r ${item.gradient}`} />
               <CardHeader>
-                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${item.gradient} flex items-center justify-center mb-2`}>
+                <div
+                  className={`w-10 h-10 rounded-xl bg-gradient-to-br ${item.gradient} flex items-center justify-center mb-2`}
+                >
                   <item.icon className="w-5 h-5 text-white" />
                 </div>
                 <CardTitle className="text-base">{item.title}</CardTitle>
                 <CardDescription>{item.description}</CardDescription>
               </CardHeader>
               <CardContent className="flex flex-col items-center gap-4">
-                <div id={item.id} className="p-4 bg-white rounded-xl shadow-sm border border-gray-100">
+                <div
+                  id={item.id}
+                  className="p-4 bg-white rounded-xl shadow-sm border border-gray-100"
+                >
                   {item.value ? (
                     <QRCodeCanvas value={item.value} size={160} />
                   ) : (
@@ -154,7 +158,10 @@ export function QRCodesManager({ businessId }: Props) {
               </div>
 
               {tableUrl && (
-                <div id="table-qr" className="flex justify-center p-4 bg-white rounded-xl border border-gray-100 shadow-sm">
+                <div
+                  id="table-qr"
+                  className="flex justify-center p-4 bg-white rounded-xl border border-gray-100 shadow-sm"
+                >
                   <QRCodeCanvas value={tableUrl} size={160} />
                 </div>
               )}

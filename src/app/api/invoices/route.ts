@@ -11,6 +11,8 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
 
+    await connectDB();
+
     const { searchParams } = req.nextUrl;
     const page = parseInt(searchParams.get("page") ?? "1");
     const limit = parseInt(searchParams.get("limit") ?? "20");
@@ -35,7 +37,8 @@ export async function GET(req: NextRequest) {
     if (startDate || endDate) {
       query.createdAt = {};
       if (startDate) (query.createdAt as Record<string, unknown>).$gte = new Date(startDate);
-      if (endDate) (query.createdAt as Record<string, unknown>).$lte = new Date(endDate + "T23:59:59");
+      if (endDate)
+        (query.createdAt as Record<string, unknown>).$lte = new Date(endDate + "T23:59:59");
     }
 
     const [invoices, total] = await Promise.all([

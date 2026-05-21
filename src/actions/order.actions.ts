@@ -16,12 +16,8 @@ export async function updateOrderStatus(id: string, status: OrderStatus, locale:
     }
 
     await connectDB();
-    
-    const order = await Order.findOneAndUpdate(
-      { _id: id, businessId },
-      { status },
-      { new: true }
-    );
+
+    const order = await Order.findOneAndUpdate({ _id: id, businessId }, { status }, { new: true });
 
     if (!order) {
       throw new Error("Order not found or unauthorized");
@@ -29,9 +25,10 @@ export async function updateOrderStatus(id: string, status: OrderStatus, locale:
 
     // Revalidate the orders page to refresh the Server Component data
     revalidatePath(`/${locale}/dashboard/orders`);
-    
+
     return { success: true };
-  } catch (error: any) {
-    return { success: false, error: error.message || "Failed to update order status" };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : "Failed to update order status";
+    return { success: false, error: errorMessage };
   }
 }

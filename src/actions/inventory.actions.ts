@@ -49,9 +49,10 @@ export async function adjustInventoryStock(
     });
 
     revalidatePath(`/${locale}/dashboard/inventory`);
-    
+
     return { success: true };
-  } catch (error: any) {
-    return { success: false, error: error.message || "Failed to adjust stock" };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : "Failed to adjust stock";
+    return { success: false, error: errorMessage };
   }
 }

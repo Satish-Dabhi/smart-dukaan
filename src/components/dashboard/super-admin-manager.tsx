@@ -4,27 +4,50 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Users, Building2, ShieldAlert, BadgePercent, CheckCircle,
-  Clock, X, Search, Loader2, ArrowRight, Ban, Calendar, Award
+  Users,
+  Building2,
+  ShieldAlert,
+  BadgePercent,
+  X,
+  Search,
+  Loader2,
+  Calendar,
+  Award,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { formatDate } from "@/lib/utils";
 
 interface SuperAdminManagerProps {
   locale: string;
 }
 
 const planColors: Record<string, { bg: string; text: string; border: string }> = {
-  free: { bg: "bg-gray-100 dark:bg-gray-800", text: "text-gray-600 dark:text-gray-400", border: "border-gray-200 dark:border-gray-700" },
-  starter: { bg: "bg-blue-50 dark:bg-blue-950/30", text: "text-blue-600 dark:text-blue-400", border: "border-blue-100 dark:border-blue-900/30" },
-  pro: { bg: "bg-violet-50 dark:bg-violet-950/30", text: "text-violet-600 dark:text-violet-400", border: "border-violet-100 dark:border-violet-900/30" },
-  enterprise: { bg: "bg-amber-50 dark:bg-amber-950/30", text: "text-amber-600 dark:text-amber-400", border: "border-amber-100 dark:border-amber-900/30" },
+  free: {
+    bg: "bg-gray-100 dark:bg-gray-800",
+    text: "text-gray-600 dark:text-gray-400",
+    border: "border-gray-200 dark:border-gray-700",
+  },
+  starter: {
+    bg: "bg-blue-50 dark:bg-blue-950/30",
+    text: "text-blue-600 dark:text-blue-400",
+    border: "border-blue-100 dark:border-blue-900/30",
+  },
+  pro: {
+    bg: "bg-violet-50 dark:bg-violet-950/30",
+    text: "text-violet-600 dark:text-violet-400",
+    border: "border-violet-100 dark:border-violet-900/30",
+  },
+  enterprise: {
+    bg: "bg-amber-50 dark:bg-amber-950/30",
+    text: "text-amber-600 dark:text-amber-400",
+    border: "border-amber-100 dark:border-amber-900/30",
+  },
 };
 
-export function SuperAdminManager({ locale }: SuperAdminManagerProps) {
+export function SuperAdminManager(_props: SuperAdminManagerProps) {
   const [activeTab, setActiveTab] = useState<"overview" | "users" | "businesses">("overview");
   const [isLoading, setIsLoading] = useState(true);
   const [stats, setStats] = useState<any>(null);
@@ -43,7 +66,9 @@ export function SuperAdminManager({ locale }: SuperAdminManagerProps) {
   const [updatingAction, setUpdatingAction] = useState(false);
 
   // Subscription form fields
-  const [selectedPlan, setSelectedPlan] = useState<"free" | "starter" | "pro" | "enterprise">("free");
+  const [selectedPlan, setSelectedPlan] = useState<"free" | "starter" | "pro" | "enterprise">(
+    "free"
+  );
   const [expiresAt, setExpiresAt] = useState("");
 
   const fetchData = useCallback(async () => {
@@ -77,12 +102,14 @@ export function SuperAdminManager({ locale }: SuperAdminManagerProps) {
   useEffect(() => {
     setPage(1);
     fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
 
   useEffect(() => {
     if (activeTab !== "overview") {
       fetchData();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
@@ -143,7 +170,11 @@ export function SuperAdminManager({ locale }: SuperAdminManagerProps) {
 
   const handleToggleBusinessStatus = async (businessId: string, currentStatus: string) => {
     const nextStatus = currentStatus === "active" ? "suspended" : "active";
-    if (!confirm(`Are you sure you want to ${nextStatus === "suspended" ? "suspend" : "activate"} this business store?`)) {
+    if (
+      !confirm(
+        `Are you sure you want to ${nextStatus === "suspended" ? "suspend" : "activate"} this business store?`
+      )
+    ) {
       return;
     }
 
@@ -208,40 +239,60 @@ export function SuperAdminManager({ locale }: SuperAdminManagerProps) {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <Card className="rounded-2xl border-border bg-card shadow-sm hover:shadow-md transition-shadow">
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-semibold text-muted-foreground">Total Users</CardTitle>
+                    <CardTitle className="text-sm font-semibold text-muted-foreground">
+                      Total Users
+                    </CardTitle>
                     <Users className="w-4 h-4 text-violet-600" />
                   </CardHeader>
                   <CardContent>
                     <div className="text-3xl font-black text-foreground">{stats.totalUsers}</div>
                     <p className="text-xs text-muted-foreground mt-1">
-                      <span className="text-emerald-500 font-bold">{stats.totalVerifiedUsers} verified</span> • {stats.totalUsers - stats.totalVerifiedUsers} pending
+                      <span className="text-emerald-500 font-bold">
+                        {stats.totalVerifiedUsers} verified
+                      </span>{" "}
+                      • {stats.totalUsers - stats.totalVerifiedUsers} pending
                     </p>
                   </CardContent>
                 </Card>
 
                 <Card className="rounded-2xl border-border bg-card shadow-sm hover:shadow-md transition-shadow">
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-semibold text-muted-foreground">Total Stores / Businesses</CardTitle>
+                    <CardTitle className="text-sm font-semibold text-muted-foreground">
+                      Total Stores / Businesses
+                    </CardTitle>
                     <Building2 className="w-4 h-4 text-pink-600" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-3xl font-black text-foreground">{stats.totalBusinesses}</div>
+                    <div className="text-3xl font-black text-foreground">
+                      {stats.totalBusinesses}
+                    </div>
                     <p className="text-xs text-muted-foreground mt-1">
-                      <span className="text-emerald-500 font-bold">{stats.statusBreakdown.active} active</span> • {stats.statusBreakdown.suspended} suspended
+                      <span className="text-emerald-500 font-bold">
+                        {stats.statusBreakdown.active} active
+                      </span>{" "}
+                      • {stats.statusBreakdown.suspended} suspended
                     </p>
                   </CardContent>
                 </Card>
 
                 <Card className="rounded-2xl border-border bg-card shadow-sm hover:shadow-md transition-shadow sm:col-span-1">
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-semibold text-muted-foreground">Active Subscriptions</CardTitle>
+                    <CardTitle className="text-sm font-semibold text-muted-foreground">
+                      Active Subscriptions
+                    </CardTitle>
                     <Award className="w-4 h-4 text-amber-500" />
                   </CardHeader>
                   <CardContent>
                     <div className="flex gap-2 items-center flex-wrap mt-0.5">
-                      <Badge className="bg-violet-500/10 text-violet-600 dark:text-violet-400 border-none font-bold">Pro: {stats.subscriptionsBreakdown.pro}</Badge>
-                      <Badge className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border-none font-bold">Starter: {stats.subscriptionsBreakdown.starter}</Badge>
-                      <Badge className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-none font-bold">Enterprise: {stats.subscriptionsBreakdown.enterprise}</Badge>
+                      <Badge className="bg-violet-500/10 text-violet-600 dark:text-violet-400 border-none font-bold">
+                        Pro: {stats.subscriptionsBreakdown.pro}
+                      </Badge>
+                      <Badge className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border-none font-bold">
+                        Starter: {stats.subscriptionsBreakdown.starter}
+                      </Badge>
+                      <Badge className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-none font-bold">
+                        Enterprise: {stats.subscriptionsBreakdown.enterprise}
+                      </Badge>
                     </div>
                   </CardContent>
                 </Card>
@@ -263,11 +314,17 @@ export function SuperAdminManager({ locale }: SuperAdminManagerProps) {
                             <p className="text-xs text-muted-foreground">{u.email}</p>
                           </div>
                           <div className="flex gap-2">
-                            <Badge className="capitalize font-semibold" variant="outline">{u.role}</Badge>
+                            <Badge className="capitalize font-semibold" variant="outline">
+                              {u.role}
+                            </Badge>
                             {u.isVerified ? (
-                              <Badge className="bg-emerald-50 text-emerald-600 border-emerald-200/50">Verified</Badge>
+                              <Badge className="bg-emerald-50 text-emerald-600 border-emerald-200/50">
+                                Verified
+                              </Badge>
                             ) : (
-                              <Badge className="bg-gray-100 text-gray-500 border-gray-200/50">Unverified</Badge>
+                              <Badge className="bg-gray-100 text-gray-500 border-gray-200/50">
+                                Unverified
+                              </Badge>
                             )}
                           </div>
                         </div>
@@ -277,7 +334,9 @@ export function SuperAdminManager({ locale }: SuperAdminManagerProps) {
 
                   <Card className="rounded-2xl border-border bg-card">
                     <CardHeader>
-                      <CardTitle className="text-base font-bold">Recent Created Businesses</CardTitle>
+                      <CardTitle className="text-base font-bold">
+                        Recent Created Businesses
+                      </CardTitle>
                       <CardDescription>Latest store launches</CardDescription>
                     </CardHeader>
                     <CardContent className="divide-y divide-border">
@@ -285,13 +344,23 @@ export function SuperAdminManager({ locale }: SuperAdminManagerProps) {
                         <div key={b._id} className="py-3 flex items-center justify-between">
                           <div>
                             <p className="text-sm font-bold text-foreground">{b.name}</p>
-                            <p className="text-xs text-muted-foreground">Owner: {b.ownerId?.name || "System"}</p>
+                            <p className="text-xs text-muted-foreground">
+                              Owner: {b.ownerId?.name || "System"}
+                            </p>
                           </div>
                           <div className="flex gap-2 items-center">
-                            <Badge className="capitalize font-bold border-none" style={{ backgroundColor: planColors[b.subscriptionPlan]?.bg, color: planColors[b.subscriptionPlan]?.text }}>
+                            <Badge
+                              className="capitalize font-bold border-none"
+                              style={{
+                                backgroundColor: planColors[b.subscriptionPlan]?.bg,
+                                color: planColors[b.subscriptionPlan]?.text,
+                              }}
+                            >
                               {b.subscriptionPlan}
                             </Badge>
-                            <span className={`w-2 h-2 rounded-full ${b.status === "active" ? "bg-emerald-500" : "bg-red-500"}`} />
+                            <span
+                              className={`w-2 h-2 rounded-full ${b.status === "active" ? "bg-emerald-500" : "bg-red-500"}`}
+                            />
                           </div>
                         </div>
                       ))}
@@ -313,7 +382,9 @@ export function SuperAdminManager({ locale }: SuperAdminManagerProps) {
                   className="max-w-md h-10 rounded-xl"
                   startIcon={<Search className="w-4 h-4 text-muted-foreground" />}
                 />
-                <Button type="submit" variant="outline" className="h-10 rounded-xl">Search</Button>
+                <Button type="submit" variant="outline" className="h-10 rounded-xl">
+                  Search
+                </Button>
               </form>
 
               <Card className="rounded-2xl border-border overflow-hidden">
@@ -331,20 +402,31 @@ export function SuperAdminManager({ locale }: SuperAdminManagerProps) {
                     </thead>
                     <tbody className="divide-y divide-border">
                       {dataList.map((u) => (
-                        <tr key={u._id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/20 transition-colors">
+                        <tr
+                          key={u._id}
+                          className="hover:bg-gray-50/50 dark:hover:bg-gray-800/20 transition-colors"
+                        >
                           <td className="p-4 font-bold text-foreground">{u.name}</td>
                           <td className="p-4 text-muted-foreground">{u.email}</td>
                           <td className="p-4">
-                            <Badge className="capitalize font-semibold" variant="outline">{u.role}</Badge>
+                            <Badge className="capitalize font-semibold" variant="outline">
+                              {u.role}
+                            </Badge>
                           </td>
                           <td className="p-4">
                             {u.isVerified ? (
-                              <Badge className="bg-emerald-50 text-emerald-600 border-emerald-200/50">Verified</Badge>
+                              <Badge className="bg-emerald-50 text-emerald-600 border-emerald-200/50">
+                                Verified
+                              </Badge>
                             ) : (
-                              <Badge className="bg-gray-100 text-gray-500 border-gray-200/50">Pending</Badge>
+                              <Badge className="bg-gray-100 text-gray-500 border-gray-200/50">
+                                Pending
+                              </Badge>
                             )}
                           </td>
-                          <td className="p-4 text-muted-foreground text-xs">{formatDate(u.createdAt)}</td>
+                          <td className="p-4 text-muted-foreground text-xs">
+                            {formatDate(u.createdAt)}
+                          </td>
                           <td className="p-4 text-right">
                             <Button
                               variant="ghost"
@@ -364,7 +446,9 @@ export function SuperAdminManager({ locale }: SuperAdminManagerProps) {
                 {/* Paginations */}
                 {meta && meta.totalPages > 1 && (
                   <div className="p-4 border-t border-border flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">Showing Page {meta.page} of {meta.totalPages}</span>
+                    <span className="text-xs text-muted-foreground">
+                      Showing Page {meta.page} of {meta.totalPages}
+                    </span>
                     <div className="flex gap-2">
                       <Button
                         variant="outline"
@@ -402,7 +486,9 @@ export function SuperAdminManager({ locale }: SuperAdminManagerProps) {
                   className="max-w-md h-10 rounded-xl"
                   startIcon={<Search className="w-4 h-4 text-muted-foreground" />}
                 />
-                <Button type="submit" variant="outline" className="h-10 rounded-xl">Search</Button>
+                <Button type="submit" variant="outline" className="h-10 rounded-xl">
+                  Search
+                </Button>
               </form>
 
               <Card className="rounded-2xl border-border overflow-hidden">
@@ -421,13 +507,18 @@ export function SuperAdminManager({ locale }: SuperAdminManagerProps) {
                     </thead>
                     <tbody className="divide-y divide-border">
                       {dataList.map((b) => (
-                        <tr key={b._id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/20 transition-colors">
+                        <tr
+                          key={b._id}
+                          className="hover:bg-gray-50/50 dark:hover:bg-gray-800/20 transition-colors"
+                        >
                           <td className="p-4">
                             <p className="font-extrabold text-foreground">{b.name}</p>
                             <p className="text-xs text-muted-foreground font-mono">/{b.slug}</p>
                           </td>
                           <td className="p-4">
-                            <p className="font-semibold text-foreground">{b.ownerId?.name || "System"}</p>
+                            <p className="font-semibold text-foreground">
+                              {b.ownerId?.name || "System"}
+                            </p>
                             <p className="text-xs text-muted-foreground">{b.ownerId?.email}</p>
                           </td>
                           <td className="p-4 text-muted-foreground">
@@ -436,7 +527,10 @@ export function SuperAdminManager({ locale }: SuperAdminManagerProps) {
                           <td className="p-4">
                             <Badge
                               className="capitalize font-bold border-none"
-                              style={{ backgroundColor: planColors[b.subscriptionPlan]?.bg, color: planColors[b.subscriptionPlan]?.text }}
+                              style={{
+                                backgroundColor: planColors[b.subscriptionPlan]?.bg,
+                                color: planColors[b.subscriptionPlan]?.text,
+                              }}
                             >
                               {b.subscriptionPlan}
                             </Badge>
@@ -444,13 +538,19 @@ export function SuperAdminManager({ locale }: SuperAdminManagerProps) {
                           <td className="p-4">
                             <Badge
                               variant="outline"
-                              className={b.status === "active" ? "text-emerald-500 border-emerald-200 bg-emerald-50/20" : "text-red-500 border-red-200 bg-red-50/20"}
+                              className={
+                                b.status === "active"
+                                  ? "text-emerald-500 border-emerald-200 bg-emerald-50/20"
+                                  : "text-red-500 border-red-200 bg-red-50/20"
+                              }
                             >
                               {b.status}
                             </Badge>
                           </td>
                           <td className="p-4 text-muted-foreground text-xs">
-                            {b.subscriptionExpiresAt ? formatDate(b.subscriptionExpiresAt) : "Lifetime"}
+                            {b.subscriptionExpiresAt
+                              ? formatDate(b.subscriptionExpiresAt)
+                              : "Lifetime"}
                           </td>
                           <td className="p-4 text-right space-x-1 whitespace-nowrap">
                             <Button
@@ -459,7 +559,11 @@ export function SuperAdminManager({ locale }: SuperAdminManagerProps) {
                               onClick={() => {
                                 setEditingBusinessSub(b);
                                 setSelectedPlan(b.subscriptionPlan);
-                                setExpiresAt(b.subscriptionExpiresAt ? new Date(b.subscriptionExpiresAt).toISOString().split('T')[0] : "");
+                                setExpiresAt(
+                                  b.subscriptionExpiresAt
+                                    ? new Date(b.subscriptionExpiresAt).toISOString().split("T")[0]
+                                    : ""
+                                );
                               }}
                               className="rounded-lg text-violet-600 dark:text-violet-400 font-bold hover:bg-violet-50 dark:hover:bg-violet-950/20"
                             >
@@ -487,7 +591,9 @@ export function SuperAdminManager({ locale }: SuperAdminManagerProps) {
                 {/* Paginations */}
                 {meta && meta.totalPages > 1 && (
                   <div className="p-4 border-t border-border flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">Showing Page {meta.page} of {meta.totalPages}</span>
+                    <span className="text-xs text-muted-foreground">
+                      Showing Page {meta.page} of {meta.totalPages}
+                    </span>
                     <div className="flex gap-2">
                       <Button
                         variant="outline"
@@ -550,10 +656,26 @@ export function SuperAdminManager({ locale }: SuperAdminManagerProps) {
 
               <div className="space-y-3">
                 {[
-                  { value: "business_owner", label: "Business Owner", desc: "Allows full control of a shop store & dashboard settings" },
-                  { value: "super_admin", label: "Super Admin", desc: "Grants absolute root control over the central SmartDukaan ecosystem" },
-                  { value: "staff", label: "Staff Member", desc: "Allows store POS ordering and billing management" },
-                  { value: "customer", label: "Regular Customer", desc: "Restricted buyer account" },
+                  {
+                    value: "business_owner",
+                    label: "Business Owner",
+                    desc: "Allows full control of a shop store & dashboard settings",
+                  },
+                  {
+                    value: "super_admin",
+                    label: "Super Admin",
+                    desc: "Grants absolute root control over the central SmartDukaan ecosystem",
+                  },
+                  {
+                    value: "staff",
+                    label: "Staff Member",
+                    desc: "Allows store POS ordering and billing management",
+                  },
+                  {
+                    value: "customer",
+                    label: "Regular Customer",
+                    desc: "Restricted buyer account",
+                  },
                 ].map((role) => (
                   <button
                     key={role.value}
@@ -565,10 +687,14 @@ export function SuperAdminManager({ locale }: SuperAdminManagerProps) {
                         : "border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800"
                     }`}
                   >
-                    <ShieldAlert className={`w-5 h-5 shrink-0 mt-0.5 ${editingUser.role === role.value ? "text-violet-600 dark:text-violet-400" : "text-muted-foreground"}`} />
+                    <ShieldAlert
+                      className={`w-5 h-5 shrink-0 mt-0.5 ${editingUser.role === role.value ? "text-violet-600 dark:text-violet-400" : "text-muted-foreground"}`}
+                    />
                     <div>
                       <p className="text-sm font-bold text-foreground">{role.label}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{role.desc}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+                        {role.desc}
+                      </p>
                     </div>
                   </button>
                 ))}
@@ -597,9 +723,12 @@ export function SuperAdminManager({ locale }: SuperAdminManagerProps) {
             >
               <div className="flex items-center justify-between mb-6">
                 <div>
-                  <h3 className="font-extrabold text-xl text-foreground">Manage Subscription Plan</h3>
+                  <h3 className="font-extrabold text-xl text-foreground">
+                    Manage Subscription Plan
+                  </h3>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Set limits and billing details for <span className="font-bold text-violet-600">{editingBusinessSub.name}</span>
+                    Set limits and billing details for{" "}
+                    <span className="font-bold text-violet-600">{editingBusinessSub.name}</span>
                   </p>
                 </div>
                 <button
@@ -612,7 +741,9 @@ export function SuperAdminManager({ locale }: SuperAdminManagerProps) {
 
               <form onSubmit={handleUpdateSubscription} className="space-y-5">
                 <div className="space-y-2">
-                  <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground block">Select Plan Tier</label>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground block">
+                    Select Plan Tier
+                  </label>
                   <div className="grid grid-cols-2 gap-3">
                     {[
                       { value: "free" as const, label: "Free Plan", price: "₹0" },

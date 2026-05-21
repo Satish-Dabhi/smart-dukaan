@@ -14,16 +14,13 @@ export async function GET(req: NextRequest) {
     const { searchParams } = req.nextUrl;
     const unreadOnly = searchParams.get("unread") === "true";
 
-    const query: Record<string, any> = { businessId };
+    const query: Record<string, unknown> = { businessId };
     if (unreadOnly) {
       query.read = false;
     }
 
     await connectDB();
-    const notifications = await Notification.find(query)
-      .sort({ createdAt: -1 })
-      .limit(30)
-      .lean();
+    const notifications = await Notification.find(query).sort({ createdAt: -1 }).limit(30).lean();
 
     return NextResponse.json({ success: true, data: notifications });
   } catch (error) {
@@ -32,7 +29,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
-export async function POST(req: NextRequest) {
+export async function POST() {
   try {
     const session = await auth();
     const businessId = session?.user?.businessId;

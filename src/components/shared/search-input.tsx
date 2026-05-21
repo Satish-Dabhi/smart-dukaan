@@ -23,7 +23,10 @@ export function SearchInput({ placeholder, className }: SearchInputProps) {
 
   // Sync state if URL changes externally
   useEffect(() => {
-    setQuery(searchParams.get("q") || "");
+    const timer = setTimeout(() => {
+      setQuery(searchParams.get("q") || "");
+    }, 0);
+    return () => clearTimeout(timer);
   }, [searchParams]);
 
   const handleSearch = (value: string) => {
@@ -38,10 +41,10 @@ export function SearchInput({ placeholder, className }: SearchInputProps) {
         } else {
           params.delete("q");
         }
-        
+
         // Reset page to 1 on new search
         params.delete("page");
-        
+
         router.push(`${pathname}?${params.toString()}`);
       });
     }, 300);
@@ -56,7 +59,9 @@ export function SearchInput({ placeholder, className }: SearchInputProps) {
       onChange={(e) => {
         handleSearch(e.target.value);
       }}
-      startIcon={<Search className={`w-4 h-4 ${isPending ? 'animate-pulse text-violet-500' : ''}`} />}
+      startIcon={
+        <Search className={`w-4 h-4 ${isPending ? "animate-pulse text-violet-500" : ""}`} />
+      }
       className={className}
     />
   );

@@ -2,29 +2,56 @@
 
 import { motion } from "framer-motion";
 import {
-  TrendingUp, TrendingDown, ShoppingCart, Package,
-  Users, IndianRupee, AlertTriangle, ArrowRight, Store, CheckCircle2
+  TrendingUp,
+  TrendingDown,
+  ShoppingCart,
+  Package,
+  Users,
+  IndianRupee,
+  AlertTriangle,
+  ArrowRight,
+  Store,
+  CheckCircle2,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { ComponentType } from "react";
 import {
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
 } from "recharts";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 
-const CHART_COLORS = ["#7c3aed", "#db2777", "#0ea5e9", "#10b981", "#f59e0b", "#ef4444", "#6366f1", "#14b8a6"];
+const CHART_COLORS = [
+  "#7c3aed",
+  "#db2777",
+  "#0ea5e9",
+  "#10b981",
+  "#f59e0b",
+  "#ef4444",
+  "#6366f1",
+  "#14b8a6",
+];
 
 export interface BlankChartStateProps {
   title: string;
   description: string;
   actionLabel?: string;
   actionHref?: string;
-  icon?: any;
+  icon?: ComponentType<{ className?: string }>;
   chartType?: "area" | "pie" | "bar";
 }
 
@@ -42,15 +69,23 @@ export function BlankChartState({
       <div className="absolute inset-0 opacity-10 dark:opacity-[0.06] select-none pointer-events-none filter blur-[2px] transition-opacity">
         <ResponsiveContainer width="100%" height="100%">
           {chartType === "area" ? (
-            <AreaChart data={[
-              { name: "A", value: 10 },
-              { name: "B", value: 40 },
-              { name: "C", value: 25 },
-              { name: "D", value: 70 },
-              { name: "E", value: 45 },
-              { name: "F", value: 85 },
-            ]}>
-              <Area type="monotone" dataKey="value" stroke="#7c3aed" fill="#7c3aed" strokeWidth={2} />
+            <AreaChart
+              data={[
+                { name: "A", value: 10 },
+                { name: "B", value: 40 },
+                { name: "C", value: 25 },
+                { name: "D", value: 70 },
+                { name: "E", value: 45 },
+                { name: "F", value: 85 },
+              ]}
+            >
+              <Area
+                type="monotone"
+                dataKey="value"
+                stroke="#7c3aed"
+                fill="#7c3aed"
+                strokeWidth={2}
+              />
             </AreaChart>
           ) : chartType === "pie" ? (
             <PieChart>
@@ -69,13 +104,15 @@ export function BlankChartState({
               />
             </PieChart>
           ) : (
-            <BarChart data={[
-              { name: "A", value: 20 },
-              { name: "B", value: 60 },
-              { name: "C", value: 40 },
-              { name: "D", value: 80 },
-              { name: "E", value: 50 },
-            ]}>
+            <BarChart
+              data={[
+                { name: "A", value: 20 },
+                { name: "B", value: 60 },
+                { name: "C", value: 40 },
+                { name: "D", value: 80 },
+                { name: "E", value: 50 },
+              ]}
+            >
               <Bar dataKey="value" fill="#7c3aed" radius={[4, 4, 0, 0]} />
             </BarChart>
           )}
@@ -91,15 +128,17 @@ export function BlankChartState({
             <TrendingUp className="w-5 h-5 animate-pulse" />
           )}
         </div>
-        <h4 className="font-semibold text-sm text-gray-900 dark:text-white mb-1">
-          {title}
-        </h4>
+        <h4 className="font-semibold text-sm text-gray-900 dark:text-white mb-1">{title}</h4>
         <p className="text-xs text-gray-500 dark:text-gray-400 mb-3.5 leading-relaxed">
           {description}
         </p>
         {actionLabel && actionHref && (
           <Link href={actionHref}>
-            <Button size="sm" variant="gradient" className="rounded-lg text-xs font-semibold px-4 py-1.5 shadow-md">
+            <Button
+              size="sm"
+              variant="gradient"
+              className="rounded-lg text-xs font-semibold px-4 py-1.5 shadow-md"
+            >
               {actionLabel}
             </Button>
           </Link>
@@ -108,7 +147,6 @@ export function BlankChartState({
     </div>
   );
 }
-
 
 interface OverviewData {
   stats: {
@@ -121,7 +159,14 @@ interface OverviewData {
     revenueGrowth: number;
     ordersGrowth: number;
   };
-  recentOrders: Array<{ _id: string; orderNumber: string; total: number; status: string; createdAt: string; customerName?: string }>;
+  recentOrders: Array<{
+    _id: string;
+    orderNumber: string;
+    total: number;
+    status: string;
+    createdAt: string;
+    customerName?: string;
+  }>;
   lowStockProducts: Array<{ _id: string; name: string; stock: number; minStock: number }>;
   revenueByDay: Array<{ date: string; value: number }>;
   topProducts: Array<{ _id: string; name: string; totalSold: number; revenue: number }>;
@@ -131,7 +176,10 @@ interface Props {
   data: OverviewData | null;
 }
 
-const statCards = (data: OverviewData["stats"], t: any) => [
+const statCards = (
+  data: OverviewData["stats"],
+  t: (key: string, values?: Record<string, string | number>) => string
+) => [
   {
     title: t("totalRevenue"),
     value: formatCurrency(data.totalRevenue),
@@ -266,7 +314,10 @@ export function DashboardOverview({ data }: Props) {
                         <stop offset="95%" stopColor="#7c3aed" stopOpacity={0} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" className="stroke-gray-100 dark:stroke-gray-800" />
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      className="stroke-gray-100 dark:stroke-gray-800"
+                    />
                     <XAxis
                       dataKey="date"
                       tick={{ fontSize: 11 }}
@@ -329,7 +380,10 @@ export function DashboardOverview({ data }: Props) {
                       outerRadius={70}
                     >
                       {data.topProducts.map((_, index) => (
-                        <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={CHART_COLORS[index % CHART_COLORS.length]}
+                        />
                       ))}
                     </Pie>
                     <Tooltip formatter={(value) => formatCurrency(Number(value))} />
@@ -363,14 +417,23 @@ export function DashboardOverview({ data }: Props) {
               />
             ) : (
               <ResponsiveContainer width="100%" height={280}>
-                <BarChart data={data.topProducts} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-gray-100 dark:stroke-gray-800" />
+                <BarChart
+                  data={data.topProducts}
+                  margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                >
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    className="stroke-gray-100 dark:stroke-gray-800"
+                  />
                   <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                   <YAxis tick={{ fontSize: 11 }} />
                   <Tooltip formatter={(value) => [`${value}`, t("unitsSold")]} />
                   <Bar dataKey="totalSold" fill="#7c3aed" radius={[6, 6, 0, 0]}>
                     {data.topProducts.map((_, index) => (
-                      <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={CHART_COLORS[index % CHART_COLORS.length]}
+                      />
                     ))}
                   </Bar>
                 </BarChart>
@@ -402,17 +465,27 @@ export function DashboardOverview({ data }: Props) {
             <CardContent>
               <div className="space-y-3">
                 {data.recentOrders.map((order) => (
-                  <div key={order._id} className="flex items-center gap-3 py-2 border-b border-gray-50 dark:border-gray-800 last:border-0">
+                  <div
+                    key={order._id}
+                    className="flex items-center gap-3 py-2 border-b border-gray-50 dark:border-gray-800 last:border-0"
+                  >
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-900 dark:text-white">
                         {order.orderNumber}
                       </p>
                       <p className="text-xs text-gray-500">
-                        {order.customerName || t("walkInCustomer")} •{" "}
-                        {formatDate(order.createdAt)}
+                        {order.customerName || t("walkInCustomer")} • {formatDate(order.createdAt)}
                       </p>
                     </div>
-                    <Badge variant={(statusColors[order.status] as "success" | "warning" | "info" | "destructive") ?? "secondary"}>
+                    <Badge
+                      variant={
+                        (statusColors[order.status] as
+                          | "success"
+                          | "warning"
+                          | "info"
+                          | "destructive") ?? "secondary"
+                      }
+                    >
                       {order.status}
                     </Badge>
                     <div className="text-sm font-semibold text-gray-900 dark:text-white">
@@ -451,7 +524,10 @@ export function DashboardOverview({ data }: Props) {
             <CardContent>
               <div className="space-y-3">
                 {data.lowStockProducts.map((product) => (
-                  <div key={product._id} className="flex items-center gap-3 py-2 border-b border-gray-50 dark:border-gray-800 last:border-0">
+                  <div
+                    key={product._id}
+                    className="flex items-center gap-3 py-2 border-b border-gray-50 dark:border-gray-800 last:border-0"
+                  >
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
                         {product.name}
@@ -478,9 +554,7 @@ export function DashboardOverview({ data }: Props) {
                     <div className="w-10 h-10 rounded-full bg-emerald-50 dark:bg-emerald-950/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 mb-2 border border-emerald-100 dark:border-emerald-900/30">
                       <CheckCircle2 className="w-5 h-5" />
                     </div>
-                    <p className="text-xs text-gray-500 max-w-[200px]">
-                      {t("allProductsStocked")}
-                    </p>
+                    <p className="text-xs text-gray-500 max-w-[200px]">{t("allProductsStocked")}</p>
                   </div>
                 )}
               </div>
@@ -506,12 +580,8 @@ function OnboardingCard({ locale }: { locale: string }) {
           <div className="absolute -inset-10 bg-gradient-to-tr from-violet-600 via-purple-600 to-pink-500 rounded-full opacity-30 blur-2xl group-hover:scale-125 transition-transform duration-700 -z-10 animate-pulse" />
           <Store className="w-12 h-12 text-violet-600 dark:text-violet-400 group-hover:scale-110 transition-all duration-300 group-hover:rotate-3" />
         </div>
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-          {t("setupStore")}
-        </h2>
-        <p className="text-gray-500 mb-6">
-          {t("setupStoreSub")}
-        </p>
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{t("setupStore")}</h2>
+        <p className="text-gray-500 mb-6">{t("setupStoreSub")}</p>
         <Link href={`/${locale}/dashboard/settings`}>
           <Button variant="gradient" size="lg">
             {t("setupBusinessBtn")}

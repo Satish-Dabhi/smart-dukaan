@@ -16,7 +16,7 @@ import {
   ToggleRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -99,9 +99,7 @@ export function CategoriesManager({ businessId }: Props) {
 
   const saveMutation = useMutation({
     mutationFn: async (data: FormData) => {
-      const url = editingCategory
-        ? `/api/categories/${editingCategory._id}`
-        : "/api/categories";
+      const url = editingCategory ? `/api/categories/${editingCategory._id}` : "/api/categories";
       const method = editingCategory ? "PUT" : "POST";
       const res = await fetch(url, {
         method,
@@ -167,9 +165,7 @@ export function CategoriesManager({ businessId }: Props) {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t("title")}</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            {t("organiseProducts")}
-          </p>
+          <p className="text-sm text-gray-500 mt-1">{t("organiseProducts")}</p>
         </div>
         <Button variant="gradient" onClick={openCreate} className="gap-2">
           <Plus className="w-4 h-4" />
@@ -188,9 +184,7 @@ export function CategoriesManager({ businessId }: Props) {
           <CardContent className="py-16 text-center">
             <FolderOpen className="w-12 h-12 mx-auto mb-4 text-gray-300 dark:text-gray-600" />
             <p className="text-gray-500 font-medium">{t("noCategoriesYet")}</p>
-            <p className="text-sm text-gray-400 mt-1">
-              {t("createFirstCategorySub")}
-            </p>
+            <p className="text-sm text-gray-400 mt-1">{t("createFirstCategorySub")}</p>
             <Button variant="gradient" onClick={openCreate} className="mt-4 gap-2">
               <Plus className="w-4 h-4" />
               {t("addCategory")}
@@ -274,9 +268,7 @@ export function CategoriesManager({ businessId }: Props) {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>
-              {editingCategory ? t("editCategory") : t("newCategory")}
-            </DialogTitle>
+            <DialogTitle>{editingCategory ? t("editCategory") : t("newCategory")}</DialogTitle>
           </DialogHeader>
           <form
             onSubmit={handleSubmit((data: FormData) => saveMutation.mutate(data))}
@@ -287,9 +279,7 @@ export function CategoriesManager({ businessId }: Props) {
                 {t("nameEnglish")}
               </label>
               <Input placeholder="e.g. Fruits & Vegetables" {...register("name")} />
-              {errors.name && (
-                <p className="text-xs text-red-500">{t("nameRequiredError")}</p>
-              )}
+              {errors.name && <p className="text-xs text-red-500">{t("nameRequiredError")}</p>}
             </div>
 
             <div className="space-y-1.5">
@@ -320,11 +310,7 @@ export function CategoriesManager({ businessId }: Props) {
             </div>
 
             <DialogFooter className="pt-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setDialogOpen(false)}
-              >
+              <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
                 {tCommon("cancel")}
               </Button>
               <Button
@@ -345,9 +331,7 @@ export function CategoriesManager({ businessId }: Props) {
           <DialogHeader>
             <DialogTitle>{t("deleteCategoryTitle")}</DialogTitle>
           </DialogHeader>
-          <p className="text-sm text-gray-600 dark:text-gray-400 py-2">
-            {t("deleteCategoryDesc")}
-          </p>
+          <p className="text-sm text-gray-600 dark:text-gray-400 py-2">{t("deleteCategoryDesc")}</p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteId(null)}>
               {tCommon("cancel")}

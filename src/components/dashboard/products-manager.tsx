@@ -11,24 +11,32 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
-  Plus, Search, Edit2, Trash2, Package,
-  Upload, Download, Star, AlertTriangle
+  Plus,
+  Search,
+  Edit2,
+  Trash2,
+  Package,
+  Upload,
+  Download,
+  Star,
+  AlertTriangle,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { useDebounce } from "@/hooks";
 import type { IProduct } from "@/types";
 import { ProductDialog } from "@/components/dashboard/product-dialog";
 import { ProductImageFallback } from "@/components/ui/product-image-fallback";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 
 interface Props {
   businessId?: string;
 }
 
 export function ProductsManager({ businessId }: Props) {
+  const locale = useLocale();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("");
+  const [selectedCategory] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("");
   const [showDialog, setShowDialog] = useState(false);
   const [editingProduct, setEditingProduct] = useState<IProduct | null>(null);
@@ -132,7 +140,10 @@ export function ProductsManager({ businessId }: Props) {
         <select
           className="h-9 px-3 rounded-lg border border-input bg-background text-sm"
           value={selectedStatus}
-          onChange={(e) => { setSelectedStatus(e.target.value); setPage(1); }}
+          onChange={(e) => {
+            setSelectedStatus(e.target.value);
+            setPage(1);
+          }}
         >
           <option value="">{t("allStatus")}</option>
           <option value="active">{t("activeOption")}</option>
@@ -157,7 +168,9 @@ export function ProductsManager({ businessId }: Props) {
       ) : products.length === 0 ? (
         <div className="text-center py-16">
           <Package className="w-16 h-16 mx-auto mb-4 text-gray-200 dark:text-gray-700" />
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">{t("noProductsYet")}</h3>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+            {t("noProductsYet")}
+          </h3>
           <p className="text-gray-500 mb-4">{t("addFirstProductSub")}</p>
           <Button
             variant="gradient"
@@ -182,6 +195,7 @@ export function ProductsManager({ businessId }: Props) {
                 <Card className="group overflow-hidden hover:shadow-lg hover:border-violet-200 dark:hover:border-violet-800 transition-all duration-300">
                   <div className="aspect-square relative bg-gray-100 dark:bg-gray-800 overflow-hidden">
                     {product.images?.[0] ? (
+                      /* eslint-disable-next-line @next/next/no-img-element */
                       <img
                         src={product.images[0]}
                         alt={product.name}
@@ -235,11 +249,18 @@ export function ProductsManager({ businessId }: Props) {
                       <span className="font-bold text-violet-600 text-sm">
                         {formatCurrency(product.price)}
                       </span>
-                      <Badge variant={statusColor[product.status] ?? "secondary"} className="text-xs">
-                        {product.status === "out_of_stock" ? "OOS" : t(product.status === "active" ? "activeOption" : "inactiveOption")}
+                      <Badge
+                        variant={statusColor[product.status] ?? "secondary"}
+                        className="text-xs"
+                      >
+                        {product.status === "out_of_stock"
+                          ? "OOS"
+                          : t(product.status === "active" ? "activeOption" : "inactiveOption")}
                       </Badge>
                     </div>
-                    <div className="text-xs text-gray-400 mt-1">{t("stockCount", { count: product.stock })}</div>
+                    <div className="text-xs text-gray-400 mt-1">
+                      {t("stockCount", { count: product.stock })}
+                    </div>
                   </CardContent>
                 </Card>
               </motion.div>
@@ -276,13 +297,23 @@ export function ProductsManager({ businessId }: Props) {
       {/* Product Dialog */}
       <ProductDialog
         open={showDialog}
-        onClose={() => { setShowDialog(false); setEditingProduct(null); }}
+        onClose={() => {
+          setShowDialog(false);
+          setEditingProduct(null);
+        }}
         product={editingProduct}
         businessId={businessId}
         onSuccess={() => {
           queryClient.invalidateQueries({ queryKey: ["products"] });
           setShowDialog(false);
           setEditingProduct(null);
+
+          const step = localStorage.getItem("smartdukaan_onboarding_step");
+          if (step === "add_product") {
+            localStorage.setItem("smartdukaan_onboarding_step", "visit_storefront");
+            window.dispatchEvent(new Event("onboarding_step_change"));
+            window.location.href = `/${locale}/dashboard/storefront`;
+          }
         }}
       />
 
