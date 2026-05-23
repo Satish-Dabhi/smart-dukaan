@@ -29,7 +29,7 @@ interface SuperAdminManagerProps {
 }
 
 const planColors: Record<string, { bg: string; text: string }> = {
-  free:       { bg: "bg-gray-100 dark:bg-gray-800",        text: "text-gray-600 dark:text-gray-400" },
+  trial:      { bg: "bg-sky-50 dark:bg-sky-950/30",        text: "text-sky-600 dark:text-sky-400" },
   starter:    { bg: "bg-blue-50 dark:bg-blue-950/30",      text: "text-blue-600 dark:text-blue-400" },
   pro:        { bg: "bg-violet-50 dark:bg-violet-950/30",  text: "text-violet-600 dark:text-violet-400" },
   enterprise: { bg: "bg-amber-50 dark:bg-amber-950/30",    text: "text-amber-600 dark:text-amber-400" },
@@ -41,6 +41,7 @@ export function SuperAdminManager({ locale, mode }: SuperAdminManagerProps) {
   const [meta, setMeta] = useState<any>(null);
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [subFilter, setSubFilter] = useState("all");
   const [page, setPage] = useState(1);
   const limit = 10;
 
@@ -49,13 +50,13 @@ export function SuperAdminManager({ locale, mode }: SuperAdminManagerProps) {
   const [updatingAction, setUpdatingAction] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const [selectedPlan, setSelectedPlan] = useState<"free" | "starter" | "pro" | "enterprise">("free");
+  const [selectedPlan, setSelectedPlan] = useState<"trial" | "starter" | "pro" | "enterprise">("trial");
   const [expiresAt, setExpiresAt] = useState("");
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const url = `/api/super-admin?tab=${mode}&page=${page}&limit=${limit}&q=${encodeURIComponent(searchQuery)}`;
+      const url = `/api/super-admin?tab=${mode}&page=${page}&limit=${limit}&q=${encodeURIComponent(searchQuery)}&subFilter=${subFilter}`;
       const res = await fetch(url);
       if (res.ok) {
         const json = await res.json();
@@ -69,7 +70,7 @@ export function SuperAdminManager({ locale, mode }: SuperAdminManagerProps) {
     } finally {
       setIsLoading(false);
     }
-  }, [mode, page, searchQuery]);
+  }, [mode, page, searchQuery, subFilter]);
 
   useEffect(() => {
     setPage(1);
@@ -191,19 +192,45 @@ export function SuperAdminManager({ locale, mode }: SuperAdminManagerProps) {
         </p>
       </div>
 
-      {/* Search */}
-      <form onSubmit={handleSearchSubmit} className="flex gap-2">
-        <Input
-          placeholder={isUsers ? "Search name or email..." : "Search store name, email or city..."}
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="max-w-md h-10 rounded-xl"
-          startIcon={<Search className="w-4 h-4 text-muted-foreground" />}
-        />
-        <Button type="submit" variant="outline" className="h-10 rounded-xl">
-          Search
-        </Button>
-      </form>
+      {/* Search + Subscription Filter */}
+      <div className="flex flex-col sm:flex-row gap-2">
+        <form onSubmit={handleSearchSubmit} className="flex gap-2 flex-1">
+          <Input
+            placeholder={isUsers ? "Search name or email..." : "Search store name, email or city..."}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="max-w-md h-10 rounded-xl"
+            startIcon={<Search className="w-4 h-4 text-muted-foreground" />}
+          />
+          <Button type="submit" variant="outline" className="h-10 rounded-xl">
+            Search
+          </Button>
+        </form>
+        {!isUsers && (
+          <div className="flex gap-1.5 flex-wrap">
+            {[
+              { value: "all",           label: "All",           color: "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400" },
+              { value: "trial",         label: "On Trial",      color: "bg-sky-100 dark:bg-sky-900/40 text-sky-700 dark:text-sky-400" },
+              { value: "expiring_soon", label: "Expiring ≤7d",  color: "bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400" },
+              { value: "expired",       label: "Expired",       color: "bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400" },
+              { value: "active",        label: "Paid",          color: "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400" },
+            ].map((f) => (
+              <button
+                key={f.value}
+                type="button"
+                onClick={() => { setSubFilter(f.value); setPage(1); }}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${
+                  subFilter === f.value
+                    ? `${f.color} border-current ring-1 ring-current`
+                    : "border-transparent bg-muted/50 text-muted-foreground hover:bg-muted"
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
 
       {isLoading && !updatingAction ? (
         <div className="flex items-center justify-center min-h-[40vh]">
@@ -351,8 +378,23 @@ export function SuperAdminManager({ locale, mode }: SuperAdminManagerProps) {
                               {b.status}
                             </Badge>
                           </td>
-                          <td className="p-4 text-muted-foreground text-xs">
-                            {b.subscriptionExpiresAt ? formatDate(b.subscriptionExpiresAt) : "Lifetime"}
+                          <td className="p-4 text-xs">
+                            {b.subscriptionExpiresAt ? (() => {
+                              const exp = new Date(b.subscriptionExpiresAt);
+                              const now = new Date();
+                              const diff = Math.ceil((exp.getTime() - now.getTime()) / 86400000);
+                              const expired = diff < 0;
+                              return (
+                                <div>
+                                  <span className="text-muted-foreground">{formatDate(b.subscriptionExpiresAt)}</span>
+                                  {expired ? (
+                                    <span className="ml-1 text-red-500 font-bold">(Expired)</span>
+                                  ) : diff <= 7 ? (
+                                    <span className="ml-1 text-amber-500 font-bold">({diff}d left)</span>
+                                  ) : null}
+                                </div>
+                              );
+                            })() : <span className="text-emerald-600 font-semibold">Lifetime</span>}
                           </td>
                           <td className="p-4">
                             <a
@@ -371,7 +413,7 @@ export function SuperAdminManager({ locale, mode }: SuperAdminManagerProps) {
                               size="sm"
                               onClick={() => {
                                 setEditingBusinessSub(b);
-                                setSelectedPlan(b.subscriptionPlan);
+                                setSelectedPlan(b.subscriptionPlan ?? "trial");
                                 setExpiresAt(
                                   b.subscriptionExpiresAt
                                     ? new Date(b.subscriptionExpiresAt).toISOString().split("T")[0]
@@ -524,10 +566,10 @@ export function SuperAdminManager({ locale, mode }: SuperAdminManagerProps) {
                   </label>
                   <div className="grid grid-cols-2 gap-3">
                     {[
-                      { value: "free" as const, label: "Free Plan", price: "₹0" },
-                      { value: "starter" as const, label: "Starter", price: "₹999/mo" },
-                      { value: "pro" as const, label: "Pro Tier", price: "₹2,499/mo" },
-                      { value: "enterprise" as const, label: "Enterprise", price: "₹4,999/mo" },
+                      { value: "trial" as const,      label: "Free Trial",  price: "30 days free", desc: "Reset trial window" },
+                      { value: "starter" as const,    label: "Starter",     price: "₹499/mo",      desc: "200 products, 3 staff" },
+                      { value: "pro" as const,        label: "Pro",         price: "₹999/mo",      desc: "2,000 products, 10 staff" },
+                      { value: "enterprise" as const, label: "Enterprise",  price: "₹2,499/mo",    desc: "Unlimited everything" },
                     ].map((tier) => (
                       <button
                         key={tier.value}
@@ -541,6 +583,7 @@ export function SuperAdminManager({ locale, mode }: SuperAdminManagerProps) {
                       >
                         <p className="text-sm font-bold text-foreground">{tier.label}</p>
                         <p className="text-xs text-violet-600 font-bold mt-0.5">{tier.price}</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">{tier.desc}</p>
                       </button>
                     ))}
                   </div>

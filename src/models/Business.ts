@@ -50,8 +50,9 @@ export interface IBusinessDoc extends Document {
   primaryColor?: string;
   secondaryColor?: string;
   fontFamily?: string;
-  subscriptionPlan: "free" | "starter" | "pro" | "enterprise";
+  subscriptionPlan: "trial" | "starter" | "pro" | "enterprise";
   subscriptionExpiresAt?: Date;
+  trialStartedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -115,10 +116,11 @@ const BusinessSchema = new Schema<IBusinessDoc>(
     fontFamily: { type: String, default: "Inter" },
     subscriptionPlan: {
       type: String,
-      enum: ["free", "starter", "pro", "enterprise"],
-      default: "free",
+      enum: ["trial", "starter", "pro", "enterprise"],
+      default: "trial",
     },
     subscriptionExpiresAt: { type: Date },
+    trialStartedAt: { type: Date },
   },
   { timestamps: true }
 );
@@ -129,8 +131,9 @@ BusinessSchema.index({ status: 1 });
 BusinessSchema.index({ slug: 1, status: 1 });
 // Admin growth aggregation
 BusinessSchema.index({ createdAt: -1 });
-// Subscription management
+// Subscription management + expiry jobs
 BusinessSchema.index({ subscriptionPlan: 1, status: 1 });
+BusinessSchema.index({ subscriptionExpiresAt: 1 }, { sparse: true });
 
 const Business: Model<IBusinessDoc> =
   mongoose.models.Business || mongoose.model<IBusinessDoc>("Business", BusinessSchema);

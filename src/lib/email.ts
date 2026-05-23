@@ -368,6 +368,115 @@ export async function sendBusinessSuspendedEmail(
   return sendMail(email, `Urgent: Your SmartDukaan store has been suspended`, html);
 }
 
+// ─── Trial Expiring Warning ─────────────────────────────────────────────────
+
+export async function sendTrialExpiringEmail(
+  email: string,
+  ownerName: string,
+  businessName: string,
+  daysLeft: number,
+  upgradeUrl: string
+): Promise<MailResult> {
+  console.log(`[EMAIL] Sending trial expiring (${daysLeft}d) to ${email}`);
+
+  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+    console.warn(`[SMTP NOT CONFIGURED] Trial expiring (${daysLeft}d) for ${email}`);
+    return { success: true, mocked: true };
+  }
+
+  const urgencyColor = daysLeft <= 1 ? "#dc2626" : daysLeft <= 3 ? "#d97706" : "#7c3aed";
+  const html = baseLayout(`
+    <div style="background:#fef3c7;border:1px solid #fde68a;border-radius:12px;padding:16px;text-align:center;margin-bottom:24px;">
+      <p style="margin:0;color:#92400e;font-size:13px;font-weight:700;">
+        ⏳ Your free trial ends in <span style="color:${urgencyColor};font-size:18px;font-weight:900;">${daysLeft} day${daysLeft === 1 ? "" : "s"}</span>
+      </p>
+    </div>
+
+    <h3 style="color:#1f2937;font-size:16px;font-weight:700;margin-bottom:8px;">Hi ${escapeHtml(ownerName)},</h3>
+    <p style="color:#4b5563;font-size:14px;line-height:1.7;margin-bottom:20px;">
+      Your free trial for <strong>${escapeHtml(businessName)}</strong> on SmartDukaan is ending soon.
+      To keep your store running without interruption, please choose a plan before your trial expires.
+    </p>
+
+    <div style="background:#f5f3ff;border:1px solid #ddd6fe;border-radius:12px;padding:18px;margin-bottom:24px;">
+      <p style="margin:0 0 10px;color:#4b5563;font-size:13px;font-weight:600;">Available Plans:</p>
+      <table style="width:100%;border-collapse:collapse;font-size:13px;">
+        <tr>
+          <td style="padding:8px 0;color:#374151;font-weight:700;">Starter</td>
+          <td style="padding:8px 0;color:#7c3aed;font-weight:700;text-align:right;">₹499 / month</td>
+        </tr>
+        <tr style="border-top:1px solid #ede9fe;">
+          <td style="padding:8px 0;color:#374151;font-weight:700;">Pro</td>
+          <td style="padding:8px 0;color:#7c3aed;font-weight:700;text-align:right;">₹999 / month</td>
+        </tr>
+        <tr style="border-top:1px solid #ede9fe;">
+          <td style="padding:8px 0;color:#374151;font-weight:700;">Enterprise</td>
+          <td style="padding:8px 0;color:#7c3aed;font-weight:700;text-align:right;">₹2,499 / month</td>
+        </tr>
+      </table>
+    </div>
+
+    <div style="text-align:center;margin:28px 0 20px;">
+      <a href="${upgradeUrl}" style="display:inline-block;padding:13px 32px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;font-weight:700;text-decoration:none;border-radius:10px;font-size:14px;box-shadow:0 4px 6px rgba(124,58,237,0.25);">
+        Choose a Plan Now
+      </a>
+    </div>
+
+    <p style="color:#9ca3af;font-size:12px;text-align:center;">
+      If you have questions, reply to this email and we'll help you pick the right plan.
+    </p>
+  `);
+
+  return sendMail(email, `⏳ Your SmartDukaan trial ends in ${daysLeft} day${daysLeft === 1 ? "" : "s"} — ${businessName}`, html);
+}
+
+// ─── Trial Expired ─────────────────────────────────────────────────────────────
+
+export async function sendTrialExpiredEmail(
+  email: string,
+  ownerName: string,
+  businessName: string,
+  upgradeUrl: string
+): Promise<MailResult> {
+  console.log(`[EMAIL] Sending trial expired to ${email}`);
+
+  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+    console.warn(`[SMTP NOT CONFIGURED] Trial expired for ${email}`);
+    return { success: true, mocked: true };
+  }
+
+  const html = baseLayout(`
+    <div style="background:#fee2e2;border:1px solid #fca5a5;border-radius:12px;padding:16px;text-align:center;margin-bottom:24px;">
+      <h3 style="margin:0;color:#b91c1c;font-size:17px;font-weight:800;">🔒 Your free trial has ended</h3>
+    </div>
+
+    <h3 style="color:#1f2937;font-size:16px;font-weight:700;margin-bottom:8px;">Hi ${escapeHtml(ownerName)},</h3>
+    <p style="color:#4b5563;font-size:14px;line-height:1.7;margin-bottom:20px;">
+      Your 30-day free trial for <strong>${escapeHtml(businessName)}</strong> has expired.
+      Your store dashboard is currently restricted. Upgrade to a paid plan to restore full access immediately.
+    </p>
+
+    <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:12px;padding:16px;margin-bottom:24px;">
+      <p style="margin:0;color:#7f1d1d;font-size:13px;line-height:1.6;">
+        <strong>What's restricted:</strong> Adding products, creating invoices, viewing analytics,
+        and accepting online orders are paused until you upgrade.
+      </p>
+    </div>
+
+    <div style="text-align:center;margin:28px 0 20px;">
+      <a href="${upgradeUrl}" style="display:inline-block;padding:13px 32px;background:linear-gradient(135deg,#dc2626,#b91c1c);color:#fff;font-weight:700;text-decoration:none;border-radius:10px;font-size:14px;box-shadow:0 4px 6px rgba(220,38,38,0.25);">
+        Upgrade Now — From ₹499/mo
+      </a>
+    </div>
+
+    <p style="color:#9ca3af;font-size:12px;text-align:center;">
+      Your data is safe and will be fully restored the moment you upgrade.
+    </p>
+  `);
+
+  return sendMail(email, `🔒 Your SmartDukaan trial has ended — ${businessName}`, html);
+}
+
 // ─── Order Delivered ───────────────────────────────────────────────────────────
 
 export async function sendOrderDeliveredEmail(

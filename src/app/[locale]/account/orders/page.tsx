@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { connectDB } from "@/lib/db";
@@ -21,6 +22,14 @@ const statusVariant: Record<string, "warning" | "success"> = {
 
 export default async function CustomerOrdersPage({ params }: Props) {
   const { locale } = await params;
+  return (
+    <Suspense fallback={<OrdersLoadingSkeleton />}>
+      <OrdersContent locale={locale} />
+    </Suspense>
+  );
+}
+
+async function OrdersContent({ locale }: { locale: string }) {
   const session = await auth();
 
   if (!session?.user?.email) {
@@ -40,7 +49,6 @@ export default async function CustomerOrdersPage({ params }: Props) {
       .lean(),
   ]);
 
-  // Collect unique businessIds to show business names
   const businessIds = [
     ...new Set([
       ...orders.map((o) => o.businessId.toString()),
@@ -220,6 +228,24 @@ export default async function CustomerOrdersPage({ params }: Props) {
             </div>
           )}
         </section>
+      </div>
+    </div>
+  );
+}
+
+function OrdersLoadingSkeleton() {
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 animate-pulse">
+      <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-10">
+        <div className="max-w-3xl mx-auto px-4 py-4">
+          <div className="h-6 w-32 bg-gray-200 dark:bg-gray-700 rounded" />
+          <div className="h-4 w-48 bg-gray-200 dark:bg-gray-700 rounded mt-1" />
+        </div>
+      </div>
+      <div className="max-w-3xl mx-auto px-4 py-6 space-y-3">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="bg-white dark:bg-gray-900 rounded-lg p-4 h-20" />
+        ))}
       </div>
     </div>
   );

@@ -2,9 +2,9 @@ import { getCachedSession } from "@/lib/auth-cache";
 import { redirect } from "next/navigation";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 import type { Session } from "next-auth";
-import { connectDB } from "@/lib/db";
-import Business from "@/models/Business";
 import { SuspendedView } from "@/components/dashboard/suspended-view";
+import { getSubscriptionInfo } from "@/lib/subscription";
+import { getBusinessForDashboard } from "@/lib/get-business-for-dashboard";
 
 export const unstable_instant = false;
 
@@ -22,16 +22,21 @@ export default async function DashboardLayout({
     redirect(`/${locale}/auth/login`);
   }
 
-  // Real-time store status suspension check on server-side
+  // Fetch business status + subscription info server-side
   let isSuspended = false;
   let businessName = "";
+  let subscriptionInfo: ReturnType<typeof getSubscriptionInfo> | null = null;
 
   if (session.user.businessId && session.user.role !== "super_admin") {
-    await connectDB();
-    const business = await Business.findById(session.user.businessId).select("status name").lean();
-    if (business && business.status === "suspended") {
-      isSuspended = true;
-      businessName = business.name;
+    const business = await getBusinessForDashboard(session.user.businessId);
+
+    if (business) {
+      if (business.status === "suspended") {
+        isSuspended = true;
+        businessName = business.name;
+      } else {
+        subscriptionInfo = getSubscriptionInfo(business);
+      }
     }
   }
 
@@ -41,7 +46,7 @@ export default async function DashboardLayout({
   }
 
   return (
-    <DashboardShell locale={locale} session={session as Session}>
+    <DashboardShell locale={locale} session={session as Session} subscriptionInfo={subscriptionInfo}>
       {children}
     </DashboardShell>
   );

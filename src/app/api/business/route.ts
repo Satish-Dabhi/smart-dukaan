@@ -7,6 +7,7 @@ import { slugify } from "@/lib/utils";
 import { z } from "zod";
 import { BusinessSchema, BusinessUpdateSchema } from "@/lib/schemas";
 import { sendBusinessCreatedEmail } from "@/lib/email";
+import { trialExpiresAt } from "@/lib/subscription";
 
 export async function GET() {
   try {
@@ -52,10 +53,14 @@ export async function POST(req: NextRequest) {
       slug = `${slug}-${Date.now()}`;
     }
 
+    const now = new Date();
     const business = await Business.create({
       ...validated,
       slug,
       ownerId: session.user.id,
+      subscriptionPlan: "trial",
+      subscriptionExpiresAt: trialExpiresAt(),
+      trialStartedAt: now,
     });
 
     // Link business to user

@@ -24,6 +24,7 @@ import {
   Lock,
   Building2,
   ShieldCheck,
+  CreditCard,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "next-intl";
@@ -72,6 +73,7 @@ const getBusinessNavItems = (locale: string, t: (key: string) => string) => [
     group: t("nav.store"),
     items: [
       { icon: Store, label: t("nav.storefront"), href: `/${locale}/dashboard/storefront` },
+      { icon: CreditCard, label: t("nav.billing"), href: `/${locale}/dashboard/billing` },
       { icon: Settings, label: t("nav.settings"), href: `/${locale}/dashboard/settings` },
     ],
   },

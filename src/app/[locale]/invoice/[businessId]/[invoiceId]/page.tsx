@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { connectDB } from "@/lib/db";
@@ -10,7 +11,15 @@ interface Props {
   params: Promise<{ locale: string; businessId: string; invoiceId: string }>;
 }
 
-export default async function InvoiceViewPage({ params }: Props) {
+export default function InvoiceViewPage({ params }: Props) {
+  return (
+    <Suspense fallback={<InvoiceLoadingSkeleton />}>
+      <InvoiceContent params={params} />
+    </Suspense>
+  );
+}
+
+async function InvoiceContent({ params }: { params: Props["params"] }) {
   const { locale, businessId, invoiceId } = await params;
   const session = await auth();
 
@@ -28,10 +37,7 @@ export default async function InvoiceViewPage({ params }: Props) {
   await connectDB();
 
   const [invoice, business] = await Promise.all([
-    Invoice.findOne({
-      _id: invoiceId,
-      businessId,
-    }).lean(),
+    Invoice.findOne({ _id: invoiceId, businessId }).lean(),
     Business.findById(businessId).lean(),
   ]);
 
@@ -39,7 +45,6 @@ export default async function InvoiceViewPage({ params }: Props) {
 
   const userBusinessId = session.user.businessId;
   const userEmail = session.user.email;
-
   const isOwner = userBusinessId === businessId;
   const isCustomer = userEmail && invoice.customerEmail === userEmail;
 
@@ -50,4 +55,19 @@ export default async function InvoiceViewPage({ params }: Props) {
   const data = JSON.parse(JSON.stringify({ invoice, business }));
 
   return <InvoicePrintPage invoice={data.invoice} business={data.business} />;
+}
+
+function InvoiceLoadingSkeleton() {
+  return (
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-950 animate-pulse">
+      <div className="max-w-2xl mx-auto p-8 space-y-4">
+        <div className="h-8 w-48 bg-gray-200 dark:bg-gray-800 rounded" />
+        <div className="h-4 w-64 bg-gray-200 dark:bg-gray-800 rounded" />
+        <div className="h-px bg-gray-200 dark:bg-gray-800 my-6" />
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="h-6 bg-gray-200 dark:bg-gray-800 rounded w-full" />
+        ))}
+      </div>
+    </div>
+  );
 }

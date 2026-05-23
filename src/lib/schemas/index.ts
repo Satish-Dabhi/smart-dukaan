@@ -45,11 +45,63 @@ export const BusinessSchema = z.object({
   banner: z.string().url().optional().or(z.literal("")),
 });
 
-export const BusinessUpdateSchema = BusinessSchema.extend({
-  "settings.currency": z.string().optional(),
-  "settings.invoicePrefix": z.string().optional(),
-  "settings.taxRate": z.number().min(0).max(100).optional(),
-});
+// Explicitly allowlist only the fields a business owner may self-update.
+// subscriptionPlan, subscriptionExpiresAt, status, ownerId, and slug are
+// intentionally absent — those are admin-only or immutable.
+export const BusinessUpdateSchema = z
+  .object({
+    name: z.string().min(2).max(100).optional(),
+    phone: z.string().min(10).optional(),
+    email: z.string().email().optional(),
+    address: z.string().min(5).optional(),
+    city: z.string().min(2).optional(),
+    state: z.string().min(2).optional(),
+    pincode: z.string().min(6).max(6).optional(),
+    gstNumber: z.string().optional(),
+    description: z.string().optional(),
+    descriptionGu: z.string().optional(),
+    tagline: z.string().optional(),
+    taglineGu: z.string().optional(),
+    theme: z.string().optional(),
+    whatsappNumber: z.string().optional(),
+    mapUrl: z.string().optional(),
+    logo: z.string().url().optional().or(z.literal("")),
+    banner: z.string().url().optional().or(z.literal("")),
+    favicon: z.string().url().optional().or(z.literal("")),
+    primaryColor: z.string().optional(),
+    secondaryColor: z.string().optional(),
+    fontFamily: z.string().optional(),
+    socialLinks: z
+      .object({
+        instagram: z.string().optional(),
+        facebook: z.string().optional(),
+        twitter: z.string().optional(),
+        youtube: z.string().optional(),
+        website: z.string().optional(),
+      })
+      .optional(),
+    openingHours: z
+      .array(
+        z.object({
+          day: z.string(),
+          open: z.string(),
+          close: z.string(),
+          isClosed: z.boolean(),
+        })
+      )
+      .optional(),
+    // Settings sub-fields via MongoDB dot-notation $set keys
+    "settings.currency": z.string().optional(),
+    "settings.currencySymbol": z.string().optional(),
+    "settings.invoicePrefix": z.string().max(10).optional(),
+    "settings.taxEnabled": z.boolean().optional(),
+    "settings.defaultGst": z.number().min(0).max(28).optional(),
+    "settings.loyaltyEnabled": z.boolean().optional(),
+    "settings.onlineOrderEnabled": z.boolean().optional(),
+    "settings.whatsappOrderEnabled": z.boolean().optional(),
+    "settings.language": z.enum(["en", "gu"]).optional(),
+  })
+  .strict();
 
 export type BusinessInput = z.infer<typeof BusinessSchema>;
 export type BusinessUpdateInput = z.infer<typeof BusinessUpdateSchema>;

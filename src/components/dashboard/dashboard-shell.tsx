@@ -3,18 +3,21 @@
 import { useState, useEffect } from "react";
 import { DashboardSidebar } from "./sidebar";
 import { DashboardHeader } from "./header";
+import { SubscriptionBanner } from "./subscription-banner";
 import type { Session } from "next-auth";
 import { usePathname, useRouter } from "next/navigation";
 import { Sparkles, Building2, Package, Store, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { getSubscriptionInfo } from "@/lib/subscription";
 
 interface DashboardShellProps {
   children: React.ReactNode;
   locale: string;
   session: Session;
+  subscriptionInfo?: ReturnType<typeof getSubscriptionInfo> | null;
 }
 
-export function DashboardShell({ children, locale, session }: DashboardShellProps) {
+export function DashboardShell({ children, locale, session, subscriptionInfo }: DashboardShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
@@ -165,6 +168,14 @@ export function DashboardShell({ children, locale, session }: DashboardShellProp
           locale={locale}
           onMenuClick={() => setSidebarOpen(true)}
         />
+        {subscriptionInfo && role !== "super_admin" && (
+          <SubscriptionBanner
+            plan={subscriptionInfo.plan}
+            status={subscriptionInfo.status}
+            daysRemaining={subscriptionInfo.daysRemaining}
+            locale={locale}
+          />
+        )}
         {renderOnboardingBanner()}
         <main className="flex-1 overflow-auto p-4 sm:p-6 page-transition">{children}</main>
       </div>

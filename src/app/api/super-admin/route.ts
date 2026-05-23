@@ -17,7 +17,7 @@ const USER_SAFE_PROJECTION = {
 };
 
 const ALLOWED_ROLES = ["super_admin", "business_owner", "staff", "customer"] as const;
-const ALLOWED_PLANS = ["free", "starter", "pro", "enterprise"] as const;
+const ALLOWED_PLANS = ["trial", "starter", "pro", "enterprise"] as const;
 const ALLOWED_STATUSES = ["active", "inactive", "suspended"] as const;
 
 const UpdateRoleSchema = z.object({
@@ -71,6 +71,7 @@ export async function GET(req: NextRequest) {
     const skip = (page - 1) * limit;
     const rawQ = searchParams.get("q") ?? "";
     const q = rawQ.trim().slice(0, 100);
+    const subFilter = searchParams.get("subFilter") ?? "all"; // all | trial | expiring_soon | expired | active
 
     await connectDB();
 
@@ -83,7 +84,7 @@ export async function GET(req: NextRequest) {
         Business.aggregate([{ $group: { _id: "$status", count: { $sum: 1 } } }]),
       ]);
 
-    const subscriptionsBreakdown = { free: 0, starter: 0, pro: 0, enterprise: 0 };
+    const subscriptionsBreakdown = { trial: 0, starter: 0, pro: 0, enterprise: 0 };
     planStats.forEach((p) => {
       if (p._id in subscriptionsBreakdown)
         subscriptionsBreakdown[p._id as keyof typeof subscriptionsBreakdown] = p.count;
@@ -134,6 +135,33 @@ export async function GET(req: NextRequest) {
           { email: { $regex: safe, $options: "i" } },
           { city: { $regex: safe, $options: "i" } },
         ];
+      }
+
+      // Subscription status filter
+      const now = new Date();
+      const in7Days = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+      if (subFilter === "trial") {
+        query.subscriptionPlan = "trial";
+        query.subscriptionExpiresAt = { $gt: now };
+      } else if (subFilter === "expiring_soon") {
+        query.subscriptionExpiresAt = { $gte: now, $lte: in7Days };
+      } else if (subFilter === "expired") {
+        query.subscriptionExpiresAt = { $lt: now };
+      } else if (subFilter === "active") {
+        query.subscriptionPlan = { $in: ["starter", "pro", "enterprise"] };
+        // Paid plan is "active" when expiry is absent (lifetime) or in the future
+        const activeExpiryCond = [
+          { subscriptionExpiresAt: { $exists: false } },
+          { subscriptionExpiresAt: null },
+          { subscriptionExpiresAt: { $gt: now } },
+        ];
+        if (query.$or) {
+          // Both the text-search OR and the active-expiry OR must hold — use $and
+          query.$and = [{ $or: query.$or as unknown[] }, { $or: activeExpiryCond }];
+          delete query.$or;
+        } else {
+          query.$or = activeExpiryCond;
+        }
       }
 
       const [businesses, total] = await Promise.all([

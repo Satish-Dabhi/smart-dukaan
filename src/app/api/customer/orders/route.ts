@@ -1,10 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, connection } from "next/server";
 import { auth } from "@/auth";
 import { connectDB } from "@/lib/db";
 import Order from "@/models/Order";
 import Invoice from "@/models/Invoice";
 
 export async function GET(req: NextRequest) {
+  await connection();
   try {
     const session = await auth();
     if (!session?.user?.email) {

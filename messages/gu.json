@@ -75,7 +75,8 @@
     "operations": "કામગીરી",
     "store": "દુકાન",
     "qrCodes": "QR કોડ",
-    "storefront": "સ્ટોરફ્રન્ટ"
+    "storefront": "સ્ટોરફ્રન્ટ",
+    "billing": "બિલિંગ અને પ્લાન"
   },
   "auth": {
     "login": "લૉગ ઇન",
