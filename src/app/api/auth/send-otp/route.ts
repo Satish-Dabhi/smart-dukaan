@@ -3,9 +3,19 @@ import bcrypt from "bcryptjs";
 import { connectDB } from "@/lib/db";
 import User from "@/models/User";
 import { sendOtpEmail } from "@/lib/email";
+import { checkOtpLimit, getClientIp } from "@/lib/ratelimit";
 
 export async function POST(req: NextRequest) {
   try {
+    const ip = getClientIp(req);
+    const limit = await checkOtpLimit(ip);
+    if (!limit.allowed) {
+      return NextResponse.json(
+        { success: false, error: "Too many OTP requests. Please wait before trying again." },
+        { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds ?? 60) } }
+      );
+    }
+
     const { email } = await req.json();
     if (!email) {
       return NextResponse.json({ success: false, error: "Email is required" }, { status: 400 });
@@ -15,7 +25,8 @@ export async function POST(req: NextRequest) {
 
     const user = await User.findOne({ email });
     if (!user) {
-      return NextResponse.json({ success: false, error: "User not found" }, { status: 404 });
+      // Return success regardless to prevent user enumeration — don't reveal if email is registered
+      return NextResponse.json({ success: true, message: "If that email is registered, an OTP has been sent." });
     }
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();

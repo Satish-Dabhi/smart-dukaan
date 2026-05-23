@@ -37,6 +37,7 @@ type PaymentMethod = "cash" | "upi" | "card";
 interface CheckoutData {
   customerName: string;
   customerPhone: string;
+  customerEmail: string;
   paymentMethod: PaymentMethod;
   discount: number;
 }
@@ -51,6 +52,7 @@ export function POSSystem({ businessId }: POSProps) {
   const [checkoutData, setCheckoutData] = useState<CheckoutData>({
     customerName: "",
     customerPhone: "",
+    customerEmail: "",
     paymentMethod: "cash",
     discount: 0,
   });
@@ -161,6 +163,7 @@ export function POSSystem({ businessId }: POSProps) {
           items: cart,
           customerName: checkoutData.customerName,
           customerPhone: checkoutData.customerPhone,
+          customerEmail: checkoutData.customerEmail || undefined,
           paymentMethod: checkoutData.paymentMethod,
           discount: additionalDiscount,
           subtotal,
@@ -408,6 +411,20 @@ export function POSSystem({ businessId }: POSProps) {
                         setCheckoutData((p) => ({ ...p, customerPhone: e.target.value }))
                       }
                       type="tel"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block">
+                      Email (optional — for digital invoice)
+                    </label>
+                    <Input
+                      placeholder="customer@email.com"
+                      value={checkoutData.customerEmail}
+                      onChange={(e) =>
+                        setCheckoutData((p) => ({ ...p, customerEmail: e.target.value }))
+                      }
+                      type="email"
                     />
                   </div>
 

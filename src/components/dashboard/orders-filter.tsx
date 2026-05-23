@@ -31,12 +31,8 @@ export function OrdersFilter({ currentStatus }: OrdersFilterProps) {
       onChange={(e) => handleChange(e.target.value)}
     >
       <option value="">{t("allStatus")}</option>
-      <option value="pending">{t("pending")}</option>
-      <option value="confirmed">{t("confirmed")}</option>
-      <option value="preparing">{t("preparing")}</option>
-      <option value="ready">{t("ready")}</option>
+      <option value="placed">{t("placed")}</option>
       <option value="delivered">{t("delivered")}</option>
-      <option value="cancelled">{t("cancelled")}</option>
     </select>
   );
 }

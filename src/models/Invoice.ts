@@ -7,6 +7,7 @@ export interface IInvoiceDoc extends Document {
   customerId?: mongoose.Types.ObjectId;
   customerName?: string;
   customerPhone?: string;
+  customerEmail?: string;
   customerAddress?: string;
   items: Array<{
     productId?: mongoose.Types.ObjectId;
@@ -58,6 +59,7 @@ const InvoiceSchema = new Schema<IInvoiceDoc>(
     customerId: { type: Schema.Types.ObjectId, ref: "Customer" },
     customerName: { type: String },
     customerPhone: { type: String },
+    customerEmail: { type: String },
     customerAddress: { type: String },
     items: [InvoiceItemSchema],
     subtotal: { type: Number, required: true, min: 0 },
@@ -85,6 +87,10 @@ InvoiceSchema.index({ businessId: 1, invoiceNumber: 1 }, { unique: true });
 InvoiceSchema.index({ businessId: 1, status: 1 });
 InvoiceSchema.index({ businessId: 1, createdAt: -1 });
 InvoiceSchema.index({ businessId: 1, customerId: 1 });
+// Compound index for analytics: paid invoices by business + date (covers revenue aggregations)
+InvoiceSchema.index({ businessId: 1, status: 1, createdAt: -1 });
+// Customer-facing lookup by email
+InvoiceSchema.index({ customerEmail: 1 });
 
 const Invoice: Model<IInvoiceDoc> =
   mongoose.models.Invoice || mongoose.model<IInvoiceDoc>("Invoice", InvoiceSchema);

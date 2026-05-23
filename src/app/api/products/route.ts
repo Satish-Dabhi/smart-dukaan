@@ -5,13 +5,23 @@ import Product from "@/models/Product";
 import "@/models/Category";
 import { z } from "zod";
 import { ProductSchema } from "@/lib/schemas";
+import { escapeRegex } from "@/lib/utils";
+
+// Whitelist of fields the client is allowed to sort by
+const ALLOWED_SORT_FIELDS = new Set([
+  "createdAt",
+  "updatedAt",
+  "price",
+  "name",
+  "stock",
+  "totalSold",
+]);
 
 export async function GET(req: NextRequest) {
   try {
     const session = await auth();
     const businessId = session?.user?.businessId;
 
-    // Allow public access for storefront
     const { searchParams } = req.nextUrl;
     const publicBusinessId = searchParams.get("businessId");
     const targetBusinessId = publicBusinessId || businessId;
@@ -22,15 +32,16 @@ export async function GET(req: NextRequest) {
 
     await connectDB();
 
-    const page = parseInt(searchParams.get("page") ?? "1");
-    const limit = parseInt(searchParams.get("limit") ?? "20");
+    const page = Math.max(1, parseInt(searchParams.get("page") ?? "1"));
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") ?? "20")));
     const skip = (page - 1) * limit;
 
     const query: Record<string, unknown> = { businessId: targetBusinessId };
 
     const q = searchParams.get("q");
     if (q) {
-      query.$text = { $search: q };
+      const trimmed = q.trim().slice(0, 100);
+      query.$text = { $search: trimmed };
     }
 
     const category = searchParams.get("category");
@@ -50,12 +61,15 @@ export async function GET(req: NextRequest) {
     const minPrice = searchParams.get("minPrice");
     const maxPrice = searchParams.get("maxPrice");
     if (minPrice || maxPrice) {
-      query.price = {};
-      if (minPrice) (query.price as Record<string, number>).$gte = Number(minPrice);
-      if (maxPrice) (query.price as Record<string, number>).$lte = Number(maxPrice);
+      const priceFilter: Record<string, number> = {};
+      if (minPrice) priceFilter.$gte = Math.max(0, Number(minPrice));
+      if (maxPrice) priceFilter.$lte = Math.max(0, Number(maxPrice));
+      query.price = priceFilter;
     }
 
-    const sortBy = searchParams.get("sortBy") ?? "createdAt";
+    // Validate sort field against whitelist to prevent injection
+    const sortByParam = searchParams.get("sortBy") ?? "createdAt";
+    const sortBy = ALLOWED_SORT_FIELDS.has(sortByParam) ? sortByParam : "createdAt";
     const sortOrder = searchParams.get("sortOrder") === "asc" ? 1 : -1;
     const sort: Record<string, 1 | -1> = { [sortBy]: sortOrder };
 

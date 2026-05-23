@@ -3,9 +3,19 @@ import bcrypt from "bcryptjs";
 import { connectDB } from "@/lib/db";
 import User from "@/models/User";
 import { sendWelcomeEmail } from "@/lib/email";
+import { checkOtpVerifyLimit, getClientIp } from "@/lib/ratelimit";
 
 export async function POST(req: NextRequest) {
   try {
+    const ip = getClientIp(req);
+    const limit = await checkOtpVerifyLimit(ip);
+    if (!limit.allowed) {
+      return NextResponse.json(
+        { success: false, error: "Too many attempts. Please wait before trying again." },
+        { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds ?? 60) } }
+      );
+    }
+
     const { email, otp } = await req.json();
     if (!email || !otp) {
       return NextResponse.json(
@@ -18,29 +28,28 @@ export async function POST(req: NextRequest) {
 
     const user = await User.findOne({ email });
     if (!user) {
-      return NextResponse.json({ success: false, error: "User not found" }, { status: 404 });
+      // Return same error as invalid OTP to prevent enumeration
+      return NextResponse.json({ success: false, error: "Invalid or expired OTP code" }, { status: 400 });
     }
 
-    const isOtpValid = user.verificationOtp
-      ? await bcrypt.compare(otp, user.verificationOtp)
-      : false;
-    if (!isOtpValid) {
-      return NextResponse.json({ success: false, error: "Invalid OTP code" }, { status: 400 });
-    }
-
+    // Check expiry BEFORE bcrypt compare (fail-fast, avoid unnecessary hash computation)
     if (!user.verificationOtpExpires || user.verificationOtpExpires < new Date()) {
       return NextResponse.json({ success: false, error: "OTP code has expired" }, { status: 400 });
     }
 
-    // Mark as verified
+    const isOtpValid = user.verificationOtp
+      ? await bcrypt.compare(String(otp), user.verificationOtp)
+      : false;
+    if (!isOtpValid) {
+      return NextResponse.json({ success: false, error: "Invalid or expired OTP code" }, { status: 400 });
+    }
+
     user.isVerified = true;
     user.emailVerified = new Date();
-    // Clear OTP fields
     user.verificationOtp = undefined;
     user.verificationOtpExpires = undefined;
     await user.save();
 
-    // Trigger welcome email asynchronously (errors caught internally or logged)
     try {
       await sendWelcomeEmail(user.email, user.name || "Store Owner");
     } catch (emailErr) {

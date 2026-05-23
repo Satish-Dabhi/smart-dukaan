@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import { escapeHtml } from "@/lib/utils";
 
 type MailResult =
   | { success: true; messageId: string }
@@ -73,8 +74,9 @@ export async function sendOtpEmail(email: string, name: string, otp: string): Pr
     return { success: true, mocked: true, otp };
   }
 
+  const safeName = escapeHtml(name);
   const html = baseLayout(`
-    <h3 style="color:#1f2937;font-size:18px;font-weight:700;margin-bottom:8px;">Hello ${name},</h3>
+    <h3 style="color:#1f2937;font-size:18px;font-weight:700;margin-bottom:8px;">Hello ${safeName},</h3>
     <p style="color:#4b5563;font-size:14px;line-height:1.7;margin-bottom:20px;">
       Thank you for signing up for <strong>SmartDukaan</strong>! To complete your registration and activate your store dashboard, please verify your email address using the code below:
     </p>
@@ -103,10 +105,12 @@ export async function sendForgotPasswordEmail(
     return { success: true, mocked: true, otp };
   }
 
+  const safeName = escapeHtml(name);
+  const safeEmail = escapeHtml(email);
   const html = baseLayout(`
-    <h3 style="color:#1f2937;font-size:18px;font-weight:700;margin-bottom:8px;">Hello ${name},</h3>
+    <h3 style="color:#1f2937;font-size:18px;font-weight:700;margin-bottom:8px;">Hello ${safeName},</h3>
     <p style="color:#4b5563;font-size:14px;line-height:1.7;margin-bottom:20px;">
-      We received a request to reset the password for your SmartDukaan account linked to <strong>${email}</strong>. Use the code below to reset it:
+      We received a request to reset the password for your SmartDukaan account linked to <strong>${safeEmail}</strong>. Use the code below to reset it:
     </p>
     ${otpBox(otp)}
     <p style="color:#6b7280;font-size:12px;text-align:center;line-height:1.6;">
@@ -161,7 +165,7 @@ export async function sendOrderConfirmationEmail(
     .map(
       (item) => `
       <tr>
-        <td style="padding:10px 12px;border-bottom:1px solid #f3f4f6;color:#374151;font-size:13px;">${item.name}</td>
+        <td style="padding:10px 12px;border-bottom:1px solid #f3f4f6;color:#374151;font-size:13px;">${escapeHtml(item.name)}</td>
         <td style="padding:10px 12px;border-bottom:1px solid #f3f4f6;color:#374151;font-size:13px;text-align:center;">${item.quantity}</td>
         <td style="padding:10px 12px;border-bottom:1px solid #f3f4f6;color:#374151;font-size:13px;text-align:right;">₹${item.price.toLocaleString("en-IN")}</td>
         <td style="padding:10px 12px;border-bottom:1px solid #f3f4f6;color:#374151;font-size:13px;text-align:right;font-weight:600;">₹${item.total.toLocaleString("en-IN")}</td>
@@ -182,7 +186,7 @@ export async function sendOrderConfirmationEmail(
       <h2 style="margin:0;color:#1f2937;font-size:22px;font-weight:900;">${data.orderNumber}</h2>
     </div>
 
-    <h3 style="color:#1f2937;font-size:16px;font-weight:700;margin-bottom:6px;">Hello ${data.customerName},</h3>
+    <h3 style="color:#1f2937;font-size:16px;font-weight:700;margin-bottom:6px;">Hello ${escapeHtml(data.customerName)},</h3>
     <p style="color:#4b5563;font-size:14px;line-height:1.7;margin-bottom:22px;">
       Your order has been placed successfully! Here's a summary of what you ordered:
     </p>
@@ -215,7 +219,7 @@ export async function sendOrderConfirmationEmail(
       </div>
     </div>
 
-    ${data.notes ? `<div style="background:#fefce8;border:1px solid #fde68a;border-radius:8px;padding:12px 14px;"><p style="margin:0 0 2px;color:#92400e;font-size:10px;font-weight:700;text-transform:uppercase;">Note</p><p style="margin:0;color:#78350f;font-size:13px;">${data.notes}</p></div>` : ""}
+    ${data.notes ? `<div style="background:#fefce8;border:1px solid #fde68a;border-radius:8px;padding:12px 14px;"><p style="margin:0 0 2px;color:#92400e;font-size:10px;font-weight:700;text-transform:uppercase;">Note</p><p style="margin:0;color:#78350f;font-size:13px;">${escapeHtml(data.notes)}</p></div>` : ""}
   `);
 
   return sendMail(email, `Order Confirmed: ${data.orderNumber} — SmartDukaan`, html);
@@ -233,8 +237,9 @@ export async function sendWelcomeEmail(email: string, name: string): Promise<Mai
     return { success: true, mocked: true };
   }
 
+  const safeName = escapeHtml(name);
   const html = baseLayout(`
-    <h3 style="color:#1f2937;font-size:18px;font-weight:700;margin-bottom:8px;">Welcome to SmartDukaan, ${name}!</h3>
+    <h3 style="color:#1f2937;font-size:18px;font-weight:700;margin-bottom:8px;">Welcome to SmartDukaan, ${safeName}!</h3>
     <p style="color:#4b5563;font-size:14px;line-height:1.7;margin-bottom:20px;">
       We're absolutely thrilled to have you on board! SmartDukaan is designed to help you create a stunning, fully-functional online storefront and manage your products and orders with ultimate ease.
     </p>
@@ -286,10 +291,12 @@ export async function sendBusinessCreatedEmail(
     return { success: true, mocked: true };
   }
 
+  const safeOwnerName = escapeHtml(ownerName);
+  const safeBusinessName = escapeHtml(businessName);
   const html = baseLayout(`
-    <h3 style="color:#1f2937;font-size:18px;font-weight:700;margin-bottom:8px;">Congratulations, ${ownerName}!</h3>
+    <h3 style="color:#1f2937;font-size:18px;font-weight:700;margin-bottom:8px;">Congratulations, ${safeOwnerName}!</h3>
     <p style="color:#4b5563;font-size:14px;line-height:1.7;margin-bottom:20px;">
-      Your business <strong>${businessName}</strong> has been successfully created and your custom storefront is now active! 🚀
+      Your business <strong>${safeBusinessName}</strong> has been successfully created and your custom storefront is now active! 🚀
     </p>
     
     <div style="background:#f5f3ff;border:1px dashed #7c3aed;border-radius:12px;padding:20px;text-align:center;margin-bottom:24px;">
@@ -337,9 +344,9 @@ export async function sendBusinessSuspendedEmail(
       <h3 style="margin:0;color:#b91c1c;font-size:18px;font-weight:800;">⚠️ Shop Suspended</h3>
     </div>
     
-    <h3 style="color:#1f2937;font-size:16px;font-weight:700;margin-bottom:8px;">Hello ${ownerName},</h3>
+    <h3 style="color:#1f2937;font-size:16px;font-weight:700;margin-bottom:8px;">Hello ${escapeHtml(ownerName)},</h3>
     <p style="color:#4b5563;font-size:14px;line-height:1.7;margin-bottom:20px;">
-      This email is to notify you that your SmartDukaan store <strong>${businessName}</strong> has been suspended by the administration.
+      This email is to notify you that your SmartDukaan store <strong>${escapeHtml(businessName)}</strong> has been suspended by the administration.
     </p>
     
     <p style="color:#4b5563;font-size:14px;line-height:1.7;margin-bottom:20px;">
@@ -359,4 +366,59 @@ export async function sendBusinessSuspendedEmail(
   `);
 
   return sendMail(email, `Urgent: Your SmartDukaan store has been suspended`, html);
+}
+
+// ─── Order Delivered ───────────────────────────────────────────────────────────
+
+export async function sendOrderDeliveredEmail(
+  email: string,
+  customerName: string,
+  orderNumber: string,
+  total: number,
+  invoiceUrl?: string
+): Promise<MailResult> {
+  console.log(`[EMAIL] Sending delivery confirmation for ${orderNumber} to ${email}`);
+
+  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+    console.warn("==========================================================");
+    console.warn(`[SMTP NOT CONFIGURED] Delivery confirmation for ${orderNumber} → ${email}`);
+    console.warn("==========================================================");
+    return { success: true, mocked: true };
+  }
+
+  const html = baseLayout(`
+    <div style="background:linear-gradient(135deg,#10b98110,#059f6110);border-radius:12px;padding:18px 20px;margin-bottom:24px;text-align:center;">
+      <p style="margin:0 0 4px;color:#059669;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1px;">Order Delivered</p>
+      <h2 style="margin:0;color:#1f2937;font-size:22px;font-weight:900;">${orderNumber}</h2>
+    </div>
+
+    <h3 style="color:#1f2937;font-size:16px;font-weight:700;margin-bottom:6px;">Hello ${escapeHtml(customerName)},</h3>
+    <p style="color:#4b5563;font-size:14px;line-height:1.7;margin-bottom:22px;">
+      Great news! Your order has been successfully delivered. We hope you enjoy your purchase!
+    </p>
+
+    <div style="background:#f9fafb;border-radius:10px;padding:16px 18px;margin-bottom:20px;">
+      <div style="display:flex;justify-content:space-between;padding-bottom:10px;">
+        <span style="color:#6b7280;font-size:13px;">Order</span>
+        <span style="color:#1f2937;font-size:13px;font-weight:600;">${orderNumber}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;border-top:1px solid #e5e7eb;padding-top:10px;">
+        <span style="color:#1f2937;font-size:15px;font-weight:700;">Total Paid</span>
+        <span style="color:#7c3aed;font-size:18px;font-weight:900;">₹${total.toLocaleString("en-IN")}</span>
+      </div>
+    </div>
+
+    ${invoiceUrl ? `
+    <div style="text-align:center;margin:24px 0;">
+      <a href="${invoiceUrl}" style="display:inline-block;padding:11px 24px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;font-weight:700;text-decoration:none;border-radius:10px;font-size:13px;">
+        View &amp; Download Invoice
+      </a>
+    </div>` : ""}
+
+    <p style="color:#6b7280;font-size:13px;text-align:center;line-height:1.6;margin-top:8px;">
+      Thank you for shopping with us. We look forward to serving you again!
+    </p>
+  `);
+
+  return sendMail(email, `Your order ${orderNumber} has been delivered!`, html);
 }

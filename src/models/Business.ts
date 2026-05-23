@@ -125,6 +125,12 @@ const BusinessSchema = new Schema<IBusinessDoc>(
 
 BusinessSchema.index({ ownerId: 1 });
 BusinessSchema.index({ status: 1 });
+// Storefront lookup: slug + status (most common public query)
+BusinessSchema.index({ slug: 1, status: 1 });
+// Admin growth aggregation
+BusinessSchema.index({ createdAt: -1 });
+// Subscription management
+BusinessSchema.index({ subscriptionPlan: 1, status: 1 });
 
 const Business: Model<IBusinessDoc> =
   mongoose.models.Business || mongoose.model<IBusinessDoc>("Business", BusinessSchema);

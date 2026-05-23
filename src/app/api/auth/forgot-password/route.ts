@@ -3,9 +3,19 @@ import bcrypt from "bcryptjs";
 import { connectDB } from "@/lib/db";
 import User from "@/models/User";
 import { sendForgotPasswordEmail } from "@/lib/email";
+import { checkOtpLimit, getClientIp } from "@/lib/ratelimit";
 
 export async function POST(req: NextRequest) {
   try {
+    const ip = getClientIp(req);
+    const limit = await checkOtpLimit(ip);
+    if (!limit.allowed) {
+      return NextResponse.json(
+        { success: false, error: "Too many requests. Please wait before trying again." },
+        { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds ?? 60) } }
+      );
+    }
+
     const { email } = await req.json();
     if (!email) {
       return NextResponse.json({ success: false, error: "Email is required" }, { status: 400 });

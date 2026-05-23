@@ -12,19 +12,12 @@ import { ShoppingCart } from "lucide-react";
 import type { OrderStatus } from "@/types";
 
 const statusColors: Record<string, "success" | "warning" | "info" | "destructive" | "secondary"> = {
-  pending: "warning",
-  confirmed: "info",
-  preparing: "info",
-  ready: "info",
+  placed: "warning",
   delivered: "success",
-  cancelled: "destructive",
 };
 
 const nextStatus: Record<string, OrderStatus> = {
-  pending: "confirmed",
-  confirmed: "preparing",
-  preparing: "ready",
-  ready: "delivered",
+  placed: "delivered",
 };
 
 interface OrdersManagerProps {
@@ -90,6 +83,9 @@ export async function OrdersManager({ page, q, status }: OrdersManagerProps) {
                         </div>
                         <div className="text-xs text-gray-400 capitalize">
                           {order.source}
+                          {order.source === "qr" && order.tableNumber
+                            ? ` · Table ${order.tableNumber}`
+                            : null}
                         </div>
                       </td>
                       <td className="px-4 py-3">

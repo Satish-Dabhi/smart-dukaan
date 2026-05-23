@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { connectDB } from "@/lib/db";
 import Invoice from "@/models/Invoice";
+import { escapeRegex } from "@/lib/utils";
 
 export async function GET(req: NextRequest) {
   try {
@@ -25,10 +26,11 @@ export async function GET(req: NextRequest) {
 
     const q = searchParams.get("q");
     if (q) {
+      const safe = escapeRegex(q.trim().slice(0, 100));
       query.$or = [
-        { invoiceNumber: { $regex: q, $options: "i" } },
-        { customerName: { $regex: q, $options: "i" } },
-        { customerPhone: { $regex: q, $options: "i" } },
+        { invoiceNumber: { $regex: safe, $options: "i" } },
+        { customerName: { $regex: safe, $options: "i" } },
+        { customerPhone: { $regex: safe, $options: "i" } },
       ];
     }
 

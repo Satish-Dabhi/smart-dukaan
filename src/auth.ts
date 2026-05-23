@@ -55,13 +55,20 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
       if (account?.provider === "google") {
         await connectDB();
-        const dbUser = await User.findOne({ email: token.email });
+        // Google has already verified the email — always mark as verified and track provider.
+        const dbUser = await User.findOneAndUpdate(
+          { email: token.email },
+          { $set: { isVerified: true, authProvider: "google" } },
+          { new: true }
+        );
         if (dbUser) {
           token.role = dbUser.role;
           token.businessId = dbUser.businessId?.toString();
-          token.isVerified = dbUser.isVerified;
+          token.isVerified = true;
+          token.authProvider = "google";
         } else {
           token.isVerified = true;
+          token.authProvider = "google";
         }
       }
       // Re-fetch businessId if not in token (e.g. business created after sign-in)
@@ -83,6 +90,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         (session.user as { role?: string }).role = token.role as string;
         (session.user as { businessId?: string }).businessId = token.businessId as string;
         (session.user as { isVerified?: boolean }).isVerified = token.isVerified as boolean;
+        (session.user as { authProvider?: string }).authProvider = token.authProvider as string;
       }
       return session;
     },

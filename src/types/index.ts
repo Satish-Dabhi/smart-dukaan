@@ -1,7 +1,7 @@
 export type UserRole = "super_admin" | "business_owner" | "staff" | "customer";
 export type BusinessStatus = "active" | "inactive" | "suspended";
 export type ProductStatus = "active" | "inactive" | "out_of_stock";
-export type OrderStatus = "pending" | "confirmed" | "preparing" | "ready" | "delivered" | "cancelled";
+export type OrderStatus = "placed" | "delivered";
 export type InvoiceStatus = "draft" | "paid" | "unpaid" | "cancelled" | "refunded";
 export type PaymentMethod = "cash" | "upi" | "card" | "razorpay" | "paytm" | "phonepe";
 export type BusinessTheme = "grocery" | "cafe" | "bakery" | "restaurant" | "medical" | "salon" | "retail" | "minimal";
@@ -93,6 +93,7 @@ export interface IProduct {
   category?: ICategory;
   stock: number;
   minStock?: number;
+  inStock?: boolean;
   status: ProductStatus;
   isFeatured: boolean;
   gstPercentage?: number;

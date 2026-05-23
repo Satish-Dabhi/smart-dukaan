@@ -21,8 +21,9 @@ import {
   ShoppingBag,
   Store,
   X,
-  ShieldAlert,
   Lock,
+  Building2,
+  ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "next-intl";
@@ -36,7 +37,7 @@ interface SidebarProps {
   businessId?: string;
 }
 
-const getNavItems = (locale: string, t: (key: string) => string) => [
+const getBusinessNavItems = (locale: string, t: (key: string) => string) => [
   {
     group: t("nav.main"),
     items: [
@@ -76,15 +77,33 @@ const getNavItems = (locale: string, t: (key: string) => string) => [
   },
 ];
 
+const getAdminNavItems = (locale: string) => [
+  {
+    group: "Platform",
+    items: [
+      { icon: LayoutDashboard, label: "Dashboard", href: `/${locale}/dashboard` },
+    ],
+  },
+  {
+    group: "Management",
+    items: [
+      { icon: Users, label: "Users", href: `/${locale}/dashboard/super-admin/users` },
+      { icon: Building2, label: "Businesses", href: `/${locale}/dashboard/super-admin/businesses` },
+    ],
+  },
+];
+
 export function DashboardSidebar({ locale, isOpen, setIsOpen, role, businessId }: SidebarProps) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const t = useTranslations();
   const [onboardingStep, setOnboardingStep] = useState<string>("completed");
 
+  const isSuperAdmin = role === "super_admin";
+
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (role === "super_admin") {
+      if (isSuperAdmin) {
         setOnboardingStep("completed");
         return;
       }
@@ -93,27 +112,23 @@ export function DashboardSidebar({ locale, isOpen, setIsOpen, role, businessId }
       if (currentStep) {
         setOnboardingStep(currentStep);
       } else if (businessId) {
-        // Existing business owner defaults to completed
         localStorage.setItem("smartdukaan_onboarding_step", "completed");
         setOnboardingStep("completed");
       } else {
-        // New signup defaults to create_business step
         localStorage.setItem("smartdukaan_onboarding_step", "create_business");
         setOnboardingStep("create_business");
       }
     }, 0);
 
     return () => clearTimeout(timer);
-  }, [businessId, role]);
+  }, [businessId, isSuperAdmin]);
 
-  // Sync step dynamically when local storage changes
   useEffect(() => {
     const handleStorageChange = () => {
       const step = localStorage.getItem("smartdukaan_onboarding_step");
       if (step) setOnboardingStep(step);
     };
     window.addEventListener("storage", handleStorageChange);
-    // Listen for custom onboarding events within the same window too!
     window.addEventListener("onboarding_step_change", handleStorageChange);
     return () => {
       window.removeEventListener("storage", handleStorageChange);
@@ -122,21 +137,15 @@ export function DashboardSidebar({ locale, isOpen, setIsOpen, role, businessId }
   }, []);
 
   const isLocked = (href: string) => {
-    if (role === "super_admin" || onboardingStep === "completed") return false;
+    if (isSuperAdmin || onboardingStep === "completed") return false;
 
     const isSettings = href.endsWith("/settings");
     const isProducts = href.endsWith("/products");
     const isStorefront = href.endsWith("/storefront");
 
-    if (onboardingStep === "create_business") {
-      return !isSettings;
-    }
-    if (onboardingStep === "add_product") {
-      return !isSettings && !isProducts;
-    }
-    if (onboardingStep === "visit_storefront") {
-      return !isSettings && !isProducts && !isStorefront;
-    }
+    if (onboardingStep === "create_business") return !isSettings;
+    if (onboardingStep === "add_product") return !isSettings && !isProducts;
+    if (onboardingStep === "visit_storefront") return !isSettings && !isProducts && !isStorefront;
     return false;
   };
 
@@ -156,7 +165,6 @@ export function DashboardSidebar({ locale, isOpen, setIsOpen, role, businessId }
       action: {
         label: "Guide Me",
         onClick: () => {
-          // If they need to setup a business or products, take them to settings/products
           if (onboardingStep === "create_business") {
             window.location.href = `/${locale}/dashboard/settings`;
           } else if (onboardingStep === "add_product") {
@@ -169,23 +177,88 @@ export function DashboardSidebar({ locale, isOpen, setIsOpen, role, businessId }
     });
   };
 
-  const baseItems = getNavItems(locale, t);
-  const navItems =
-    role === "super_admin"
-      ? [
-          ...baseItems,
-          {
-            group: t("nav.admin") || "Admin Console",
-            items: [
-              {
-                icon: ShieldAlert,
-                label: t("nav.superAdmin") || "Super Admin",
-                href: `/${locale}/dashboard/super-admin`,
-              },
-            ],
-          },
-        ]
-      : baseItems;
+  const navItems = isSuperAdmin
+    ? getAdminNavItems(locale)
+    : getBusinessNavItems(locale, t);
+
+  const renderNavItems = (items: ReturnType<typeof getAdminNavItems>, closeMobile?: () => void) => (
+    <>
+      {items.map((group) => (
+        <div key={group.group}>
+          <AnimatePresence>
+            {!collapsed && (
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="text-xs font-semibold text-gray-400 dark:text-gray-600 uppercase tracking-wider px-2 mb-2"
+              >
+                {group.group}
+              </motion.p>
+            )}
+          </AnimatePresence>
+          <ul className="space-y-1">
+            {group.items.map((item) => {
+              const isActive =
+                pathname === item.href ||
+                (item.href !== `/${locale}/dashboard` && pathname.startsWith(item.href));
+              const locked = isLocked(item.href);
+
+              return (
+                <li key={item.href}>
+                  <Link
+                    href={locked ? "#" : item.href}
+                    onClick={(e) => {
+                      if (locked) {
+                        handleLockedClick(e);
+                      } else {
+                        closeMobile?.();
+                      }
+                    }}
+                    className={cn(
+                      "flex items-center gap-3 px-2 py-2 rounded-lg text-sm font-medium transition-all duration-200 group relative",
+                      isActive
+                        ? "bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300"
+                        : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white",
+                      locked && "opacity-40 cursor-not-allowed hover:bg-transparent"
+                    )}
+                    title={collapsed ? (locked ? `${item.label} (Locked)` : item.label) : undefined}
+                  >
+                    <item.icon
+                      className={cn(
+                        "w-5 h-5 shrink-0 transition-transform group-hover:scale-110",
+                        isActive && "text-violet-600 dark:text-violet-400"
+                      )}
+                    />
+                    <AnimatePresence>
+                      {!collapsed && (
+                        <motion.span
+                          initial={{ opacity: 0, x: -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: -10 }}
+                          className="whitespace-nowrap flex items-center justify-between w-full"
+                        >
+                          <span>{item.label}</span>
+                          {locked && (
+                            <Lock className="w-3.5 h-3.5 ml-2 text-gray-400 shrink-0" />
+                          )}
+                        </motion.span>
+                      )}
+                    </AnimatePresence>
+                    {collapsed && locked && (
+                      <div className="absolute right-1 top-1">
+                        <Lock className="w-2.5 h-2.5 text-gray-400" />
+                      </div>
+                    )}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ))}
+    </>
+  );
 
   return (
     <>
@@ -199,7 +272,11 @@ export function DashboardSidebar({ locale, isOpen, setIsOpen, role, businessId }
         <div className="h-16 flex items-center px-4 border-b border-border">
           <Link href={`/${locale}/dashboard`} className="flex items-center gap-2 overflow-hidden">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-600 to-pink-600 flex items-center justify-center shrink-0">
-              <ShoppingBag className="w-5 h-5 text-white" />
+              {isSuperAdmin ? (
+                <ShieldCheck className="w-5 h-5 text-white" />
+              ) : (
+                <ShoppingBag className="w-5 h-5 text-white" />
+              )}
             </div>
             <AnimatePresence>
               {!collapsed && (
@@ -209,7 +286,7 @@ export function DashboardSidebar({ locale, isOpen, setIsOpen, role, businessId }
                   exit={{ opacity: 0, x: -10 }}
                   className="font-bold text-base gradient-text whitespace-nowrap"
                 >
-                  SmartDukaan
+                  {isSuperAdmin ? "Admin Panel" : "SmartDukaan"}
                 </motion.span>
               )}
             </AnimatePresence>
@@ -218,76 +295,7 @@ export function DashboardSidebar({ locale, isOpen, setIsOpen, role, businessId }
 
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-6">
-          {navItems.map((group) => (
-            <div key={group.group}>
-              <AnimatePresence>
-                {!collapsed && (
-                  <motion.p
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="text-xs font-semibold text-gray-400 dark:text-gray-600 uppercase tracking-wider px-2 mb-2"
-                  >
-                    {group.group}
-                  </motion.p>
-                )}
-              </AnimatePresence>
-              <ul className="space-y-1">
-                {group.items.map((item) => {
-                  const isActive =
-                    pathname === item.href ||
-                    (item.href !== `/${locale}/dashboard` && pathname.startsWith(item.href));
-                  const locked = isLocked(item.href);
-
-                  return (
-                    <li key={item.href}>
-                      <Link
-                        href={locked ? "#" : item.href}
-                        onClick={(e) => (locked ? handleLockedClick(e) : undefined)}
-                        className={cn(
-                          "flex items-center gap-3 px-2 py-2 rounded-lg text-sm font-medium transition-all duration-200 group relative",
-                          isActive
-                            ? "bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300"
-                            : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white",
-                          locked && "opacity-40 cursor-not-allowed hover:bg-transparent"
-                        )}
-                        title={
-                          collapsed ? (locked ? `${item.label} (Locked)` : item.label) : undefined
-                        }
-                      >
-                        <item.icon
-                          className={cn(
-                            "w-5 h-5 shrink-0 transition-transform group-hover:scale-110",
-                            isActive && "text-violet-600 dark:text-violet-400"
-                          )}
-                        />
-                        <AnimatePresence>
-                          {!collapsed && (
-                            <motion.span
-                              initial={{ opacity: 0, x: -10 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              exit={{ opacity: 0, x: -10 }}
-                              className="whitespace-nowrap flex items-center justify-between w-full"
-                            >
-                              <span>{item.label}</span>
-                              {locked && (
-                                <Lock className="w-3.5 h-3.5 ml-2 text-gray-400 shrink-0" />
-                              )}
-                            </motion.span>
-                          )}
-                        </AnimatePresence>
-                        {collapsed && locked && (
-                          <div className="absolute right-1 top-1">
-                            <Lock className="w-2.5 h-2.5 text-gray-400" />
-                          </div>
-                        )}
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          ))}
+          {renderNavItems(navItems)}
         </nav>
 
         {/* Collapse toggle */}
@@ -305,7 +313,6 @@ export function DashboardSidebar({ locale, isOpen, setIsOpen, role, businessId }
       <AnimatePresence>
         {isOpen && (
           <>
-            {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -313,7 +320,6 @@ export function DashboardSidebar({ locale, isOpen, setIsOpen, role, businessId }
               onClick={() => setIsOpen?.(false)}
               className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden"
             />
-            {/* Drawer */}
             <motion.div
               initial={{ x: "-100%" }}
               animate={{ x: 0 }}
@@ -321,7 +327,6 @@ export function DashboardSidebar({ locale, isOpen, setIsOpen, role, businessId }
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
               className="fixed inset-y-0 left-0 w-72 bg-card border-r border-border z-50 md:hidden flex flex-col h-full shadow-2xl"
             >
-              {/* Drawer Logo Area */}
               <div className="h-16 flex items-center justify-between px-4 border-b border-border shrink-0">
                 <Link
                   href={`/${locale}/dashboard`}
@@ -329,10 +334,14 @@ export function DashboardSidebar({ locale, isOpen, setIsOpen, role, businessId }
                   className="flex items-center gap-2 overflow-hidden"
                 >
                   <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-600 to-pink-600 flex items-center justify-center shrink-0">
-                    <ShoppingBag className="w-5 h-5 text-white" />
+                    {isSuperAdmin ? (
+                      <ShieldCheck className="w-5 h-5 text-white" />
+                    ) : (
+                      <ShoppingBag className="w-5 h-5 text-white" />
+                    )}
                   </div>
                   <span className="font-bold text-base gradient-text whitespace-nowrap">
-                    SmartDukaan
+                    {isSuperAdmin ? "Admin Panel" : "SmartDukaan"}
                   </span>
                 </Link>
                 <button
@@ -343,7 +352,6 @@ export function DashboardSidebar({ locale, isOpen, setIsOpen, role, businessId }
                 </button>
               </div>
 
-              {/* Navigation */}
               <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-6">
                 {navItems.map((group) => (
                   <div key={group.group}>
@@ -354,7 +362,8 @@ export function DashboardSidebar({ locale, isOpen, setIsOpen, role, businessId }
                       {group.items.map((item) => {
                         const isActive =
                           pathname === item.href ||
-                          (item.href !== `/${locale}/dashboard` && pathname.startsWith(item.href));
+                          (item.href !== `/${locale}/dashboard` &&
+                            pathname.startsWith(item.href));
                         const locked = isLocked(item.href);
 
                         return (
@@ -385,7 +394,9 @@ export function DashboardSidebar({ locale, isOpen, setIsOpen, role, businessId }
                                 />
                                 <span>{item.label}</span>
                               </div>
-                              {locked && <Lock className="w-3.5 h-3.5 text-gray-400 shrink-0" />}
+                              {locked && (
+                                <Lock className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                              )}
                             </Link>
                           </li>
                         );

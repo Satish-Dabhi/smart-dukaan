@@ -60,10 +60,16 @@ export default async function BusinessStorefront({ params, searchParams }: Props
       .lean(),
   ]);
 
+  // Strip exact stock counts — only expose inStock boolean to the public client.
+  const publicProducts = products.map(({ stock, minStock, ...rest }) => ({
+    ...rest,
+    inStock: stock > 0,
+  }));
+
   return (
     <StorefrontPage
       business={JSON.parse(JSON.stringify(business))}
-      products={JSON.parse(JSON.stringify(products))}
+      products={JSON.parse(JSON.stringify(publicProducts))}
       categories={JSON.parse(JSON.stringify(categories))}
       locale={locale}
       filters={filters}

@@ -20,7 +20,7 @@ export interface IOrderDoc extends Document {
   discount: number;
   taxAmount: number;
   total: number;
-  status: "pending" | "confirmed" | "preparing" | "ready" | "delivered" | "cancelled";
+  status: "placed" | "delivered";
   paymentMethod?: string;
   paymentStatus: "pending" | "paid" | "refunded";
   notes?: string;
@@ -56,8 +56,8 @@ const OrderSchema = new Schema<IOrderDoc>(
     total: { type: Number, required: true },
     status: {
       type: String,
-      enum: ["pending", "confirmed", "preparing", "ready", "delivered", "cancelled"],
-      default: "pending",
+      enum: ["placed", "delivered"],
+      default: "placed",
     },
     paymentMethod: { type: String },
     paymentStatus: { type: String, enum: ["pending", "paid", "refunded"], default: "pending" },
@@ -72,6 +72,10 @@ const OrderSchema = new Schema<IOrderDoc>(
 OrderSchema.index({ businessId: 1, orderNumber: 1 }, { unique: true });
 OrderSchema.index({ businessId: 1, status: 1 });
 OrderSchema.index({ businessId: 1, createdAt: -1 });
+// Customer-facing lookup by email
+OrderSchema.index({ customerEmail: 1 });
+// Analytics: orders by business with date filter
+OrderSchema.index({ businessId: 1, createdAt: -1, status: 1 });
 
 const Order: Model<IOrderDoc> =
   mongoose.models.Order || mongoose.model<IOrderDoc>("Order", OrderSchema);

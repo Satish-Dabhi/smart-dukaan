@@ -114,3 +114,18 @@ export function buildQueryString(params: Record<string, unknown>): string {
   });
   return query.toString();
 }
+
+/** Escape a string for safe use inside a MongoDB $regex query. Prevents ReDoS. */
+export function escapeRegex(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/** Sanitize a string for safe HTML embedding (for email templates etc.). */
+export function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#x27;");
+}

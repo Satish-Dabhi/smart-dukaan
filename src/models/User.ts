@@ -11,6 +11,7 @@ export interface IUserDoc extends Document {
   phone?: string;
   isVerified: boolean;
   isActive: boolean;
+  authProvider: "google" | "credentials";
   verificationOtp?: string;
   verificationOtpExpires?: Date;
   resetPasswordOtp?: string;
@@ -41,12 +42,19 @@ const UserSchema = new Schema<IUserDoc>(
     resetPasswordOtp: { type: String },
     resetPasswordOtpExpires: { type: Date },
     lastLoginAt: { type: Date },
+    authProvider: { type: String, enum: ["google", "credentials"], default: "credentials" },
   },
   { timestamps: true }
 );
 
-UserSchema.index({ email: 1 });
 UserSchema.index({ businessId: 1 });
+// Auth lookups
+UserSchema.index({ email: 1 }); // already unique but explicit for clarity
+// Admin growth aggregations
+UserSchema.index({ createdAt: -1 });
+// OTP expiry — TTL-style cleanup possible, but index helps expiry queries
+UserSchema.index({ verificationOtpExpires: 1 }, { sparse: true });
+UserSchema.index({ resetPasswordOtpExpires: 1 }, { sparse: true });
 
 const User: Model<IUserDoc> =
   mongoose.models.User || mongoose.model<IUserDoc>("User", UserSchema);

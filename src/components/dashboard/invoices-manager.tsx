@@ -1,4 +1,5 @@
-import { getTranslations } from "next-intl/server";
+import { getTranslations, getLocale } from "next-intl/server";
+import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { SearchInput } from "@/components/shared/search-input";
@@ -8,7 +9,7 @@ import { ExportCsvButton } from "./export-csv-button";
 import { getInvoices } from "@/services/invoice.service";
 import { requireBusinessAuth } from "@/lib/require-auth";
 import { formatCurrency, formatDateTime } from "@/lib/utils";
-import { FileText, Printer, Eye, Download } from "lucide-react";
+import { FileText } from "lucide-react";
 
 const statusVariant: Record<string, "success" | "destructive" | "warning" | "secondary" | "info"> = {
   paid: "success",
@@ -26,8 +27,7 @@ interface InvoicesManagerProps {
 
 export async function InvoicesManager({ page, q, status }: InvoicesManagerProps) {
   const { businessId } = await requireBusinessAuth();
-
-  const t = await getTranslations("invoices");
+  const [t, locale] = await Promise.all([getTranslations("invoices"), getLocale()]);
 
   const { data: invoices, meta } = await getInvoices({ businessId, page, q, status });
 
@@ -108,15 +108,13 @@ export async function InvoicesManager({ page, q, status }: InvoicesManagerProps)
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center justify-end gap-2">
-                          <button className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors text-gray-400 hover:text-gray-600">
-                            <Eye className="w-4 h-4" />
-                          </button>
-                          <button className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors text-gray-400 hover:text-gray-600">
-                            <Printer className="w-4 h-4" />
-                          </button>
-                          <button className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors text-gray-400 hover:text-gray-600">
-                            <Download className="w-4 h-4" />
-                          </button>
+                          <Link
+                            href={`/${locale}/invoice/${businessId}/${invoice._id}`}
+                            className="flex items-center gap-1.5 text-xs font-medium text-violet-600 hover:text-violet-800 border border-violet-200 rounded-lg px-2.5 py-1.5 hover:bg-violet-50 dark:hover:bg-violet-950/30 transition-colors"
+                          >
+                            <FileText className="w-3.5 h-3.5" />
+                            View / Print
+                          </Link>
                         </div>
                       </td>
                     </tr>

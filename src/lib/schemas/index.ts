@@ -70,10 +70,9 @@ export type CategoryInput = z.infer<typeof CategorySchema>;
 // ─── Order ───────────────────────────────────────────────────────────────────
 
 export const OrderUpdateSchema = z.object({
-  status: z.enum(["pending", "confirmed", "processing", "shipped", "delivered", "cancelled"]).optional(),
-  paymentStatus: z.enum(["pending", "partial", "paid", "refunded"]).optional(),
+  status: z.enum(["placed", "delivered"]).optional(),
+  paymentStatus: z.enum(["pending", "paid", "refunded"]).optional(),
   notes: z.string().max(500).optional(),
-  trackingNumber: z.string().max(100).optional(),
 });
 
 export type OrderUpdateInput = z.infer<typeof OrderUpdateSchema>;

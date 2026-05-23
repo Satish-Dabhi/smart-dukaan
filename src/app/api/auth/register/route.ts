@@ -4,6 +4,7 @@ import User from "@/models/User";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { sendOtpEmail } from "@/lib/email";
+import { checkRegisterLimit, getClientIp } from "@/lib/ratelimit";
 
 const RegisterSchema = z.object({
   name: z.string().min(2),
@@ -14,6 +15,15 @@ const RegisterSchema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
+    const ip = getClientIp(req);
+    const limit = await checkRegisterLimit(ip);
+    if (!limit.allowed) {
+      return NextResponse.json(
+        { success: false, error: "Too many registration attempts. Please try again later." },
+        { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds ?? 60) } }
+      );
+    }
+
     const body = await req.json();
     const { name, email, password, phone } = RegisterSchema.parse(body);
 

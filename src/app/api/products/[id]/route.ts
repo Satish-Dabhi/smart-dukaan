@@ -7,9 +7,25 @@ import { ProductSchema } from "@/lib/schemas";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const session = await auth();
+    const businessId = session?.user?.businessId;
+
+    // Allow public access when a businessId query param is provided (storefront use-case)
+    const { searchParams } = req.nextUrl;
+    const publicBusinessId = searchParams.get("businessId");
+    const targetBusinessId = businessId || publicBusinessId;
+
     const { id } = await params;
     await connectDB();
-    const product = await Product.findById(id).populate("categoryId", "name nameGu slug").lean();
+
+    const query: Record<string, unknown> = { _id: id };
+    // Scope to business if one is known — prevents cross-business data leakage
+    if (targetBusinessId) query.businessId = targetBusinessId;
+
+    const product = await Product.findOne(query)
+      .populate("categoryId", "name nameGu slug")
+      .lean();
+
     if (!product) {
       return NextResponse.json({ success: false, error: "Product not found" }, { status: 404 });
     }

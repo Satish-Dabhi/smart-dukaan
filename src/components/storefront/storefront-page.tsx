@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter, usePathname } from "next/navigation";
+import { useSession } from "next-auth/react";
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -28,14 +29,14 @@ interface StorefrontProps {
 }
 
 const themeMap: Record<string, { from: string; to: string; accent: string }> = {
-  grocery:    { from: "from-emerald-600",  to: "to-teal-700",    accent: "bg-emerald-600" },
-  cafe:       { from: "from-amber-600",    to: "to-orange-700",  accent: "bg-amber-600" },
-  bakery:     { from: "from-rose-500",     to: "to-pink-700",    accent: "bg-rose-500" },
-  restaurant: { from: "from-red-600",      to: "to-orange-700",  accent: "bg-red-600" },
-  medical:    { from: "from-blue-600",     to: "to-cyan-700",    accent: "bg-blue-600" },
-  salon:      { from: "from-purple-600",   to: "to-pink-700",    accent: "bg-purple-600" },
-  retail:     { from: "from-indigo-600",   to: "to-violet-700",  accent: "bg-indigo-600" },
-  minimal:    { from: "from-violet-600",   to: "to-purple-700",  accent: "bg-violet-600" },
+  grocery: { from: "from-emerald-600", to: "to-teal-700", accent: "bg-emerald-600" },
+  cafe: { from: "from-amber-600", to: "to-orange-700", accent: "bg-amber-600" },
+  bakery: { from: "from-rose-500", to: "to-pink-700", accent: "bg-rose-500" },
+  restaurant: { from: "from-red-600", to: "to-orange-700", accent: "bg-red-600" },
+  medical: { from: "from-blue-600", to: "to-cyan-700", accent: "bg-blue-600" },
+  salon: { from: "from-purple-600", to: "to-pink-700", accent: "bg-purple-600" },
+  retail: { from: "from-indigo-600", to: "to-violet-700", accent: "bg-indigo-600" },
+  minimal: { from: "from-violet-600", to: "to-purple-700", accent: "bg-violet-600" },
 };
 
 export function StorefrontPage({
@@ -47,6 +48,7 @@ export function StorefrontPage({
 }: StorefrontProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const { data: session } = useSession();
   const [cart, setCart] = useState<CartItem[]>([]);
   const [showCart, setShowCart] = useState(false);
   const [showQR, setShowQR] = useState(false);
@@ -65,19 +67,62 @@ export function StorefrontPage({
     notes: "",
     paymentMethod: "cod",
   });
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [placedOrder, setPlacedOrder] = useState<IOrder | null>(null);
+
+  const pendingCartKey = `sd_pending_cart_${business._id}`;
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
 
+  // After returning from auth: restore saved cart and open checkout
+  useEffect(() => {
+    if (!session) return;
+    const saved = localStorage.getItem(pendingCartKey);
+    if (!saved) return;
+    try {
+      const parsed = JSON.parse(saved) as CartItem[];
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        setCart(parsed);
+        setShowCheckoutModal(true);
+        localStorage.removeItem(pendingCartKey);
+      }
+    } catch {
+      localStorage.removeItem(pendingCartKey);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session]);
+
+  // Pre-fill name from logged-in user
+  useEffect(() => {
+    if (session?.user?.name) {
+      setCheckoutForm((prev) => ({
+        ...prev,
+        customerName: prev.customerName || session.user.name || "",
+      }));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.user?.name]);
+
   const handlePlaceOrder = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!checkoutForm.customerName || !checkoutForm.customerPhone) {
-      alert(t("Please enter your name and phone number.", "કૃપા કરીને તમારું નામ અને ફોન નંબર દાખલ કરો."));
+
+    const errors: Record<string, string> = {};
+    if (!checkoutForm.customerName.trim()) {
+      errors.customerName = t("Name is required", "નામ જરૂરી છે");
+    }
+    if (!checkoutForm.customerPhone.trim()) {
+      errors.customerPhone = t("Phone number is required", "ફોન નંબર જરૂરી છે");
+    } else if (!/^\d{10}$/.test(checkoutForm.customerPhone.replace(/[\s\-()]/g, ""))) {
+      errors.customerPhone = t("Enter a valid 10-digit mobile number", "10-અંકનો માન્ય મોબાઇલ નંબર દાખલ કરો");
+    }
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
       return;
     }
+    setFormErrors({});
 
     setIsSubmitting(true);
 
@@ -102,6 +147,7 @@ export function StorefrontPage({
         })),
         customerName: checkoutForm.customerName,
         customerPhone: checkoutForm.customerPhone,
+        customerEmail: session?.user?.email ?? undefined,
         subtotal,
         discount,
         taxAmount,
@@ -128,7 +174,7 @@ export function StorefrontPage({
     } catch (err) {
       console.error(err);
       const errMsg = err instanceof Error ? err.message : String(err);
-      alert(errMsg || t("Something went wrong. Please try again.", "કાંઈક ખોટું થયું. કૃપા કરીને ફરી પ્રયાસ કરો."));
+      setFormErrors({ form: errMsg || t("Something went wrong. Please try again.", "કાંઈક ખોટું થયું. કૃપા કરીને ફરી પ્રયાસ કરો.") });
     } finally {
       setIsSubmitting(false);
     }
@@ -197,7 +243,7 @@ export function StorefrontPage({
           discount: product.discount ?? 0,
           gst: product.gstPercentage ?? 0,
           image: product.images?.[0],
-          stock: product.stock,
+          stock: 0,
         },
       ];
     });
@@ -414,11 +460,10 @@ export function StorefrontPage({
             <div className="flex gap-2 mt-3 overflow-x-auto pb-1 scrollbar-none">
               <button
                 onClick={() => updateFilters({ category: undefined })}
-                className={`shrink-0 px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
-                  !filters.category
+                className={`shrink-0 px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${!filters.category
                     ? "bg-violet-600 text-white shadow-md shadow-violet-200 dark:shadow-violet-900/30"
                     : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
-                }`}
+                  }`}
               >
                 {t("All", "બધું")}
               </button>
@@ -428,11 +473,10 @@ export function StorefrontPage({
                   onClick={() =>
                     updateFilters({ category: filters.category === cat._id ? undefined : cat._id })
                   }
-                  className={`shrink-0 px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
-                    filters.category === cat._id
+                  className={`shrink-0 px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${filters.category === cat._id
                       ? "bg-violet-600 text-white shadow-md shadow-violet-200 dark:shadow-violet-900/30"
                       : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
-                  }`}
+                    }`}
                 >
                   {locale === "gu" ? cat.nameGu ?? cat.name : cat.name}
                 </button>
@@ -477,9 +521,9 @@ export function StorefrontPage({
                   ? t(`Results for "${filters.q}"`, `"${filters.q}" માટે પરિણામ`)
                   : categories.find((c) => c._id === filters.category)
                     ? t(
-                        `${categories.find((c) => c._id === filters.category)?.name}`,
-                        `${categories.find((c) => c._id === filters.category)?.nameGu ?? ""}`
-                      )
+                      `${categories.find((c) => c._id === filters.category)?.name}`,
+                      `${categories.find((c) => c._id === filters.category)?.nameGu ?? ""}`
+                    )
                     : t("Products", "ઉત્પાદનો")}
               </h2>
               <Badge variant="secondary">{displayProducts.length}</Badge>
@@ -665,7 +709,7 @@ export function StorefrontPage({
                       <button
                         onClick={() => updateQuantity(item.productId, 1)}
                         className="w-7 h-7 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-sm font-bold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-                        disabled={item.quantity >= item.stock}
+                        disabled={false}
                       >
                         +
                       </button>
@@ -689,6 +733,13 @@ export function StorefrontPage({
                     variant="gradient"
                     className="w-full gap-2 h-12 text-base font-bold shadow-lg shadow-violet-200 dark:shadow-violet-900/30"
                     onClick={() => {
+                      if (!session) {
+                        localStorage.setItem(pendingCartKey, JSON.stringify(cart));
+                        router.push(
+                          `/${locale}/auth/customer-auth?callbackUrl=${encodeURIComponent(pathname)}`
+                        );
+                        return;
+                      }
                       setShowCart(false);
                       setShowCheckoutModal(true);
                     }}
@@ -753,7 +804,7 @@ export function StorefrontPage({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-            onClick={() => setShowCheckoutModal(false)}
+            onClick={() => { setShowCheckoutModal(false); setFormErrors({}); }}
           >
             <motion.div
               initial={{ scale: 0.95, y: 20 }}
@@ -772,7 +823,7 @@ export function StorefrontPage({
                   </p>
                 </div>
                 <button
-                  onClick={() => setShowCheckoutModal(false)}
+                  onClick={() => { setShowCheckoutModal(false); setFormErrors({}); }}
                   className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
                 >
                   <X className="w-4 h-4" />
@@ -788,9 +839,15 @@ export function StorefrontPage({
                     required
                     placeholder={t("Enter your name", "તમારું નામ દાખલ કરો")}
                     value={checkoutForm.customerName}
-                    onChange={(e) => setCheckoutForm(prev => ({ ...prev, customerName: e.target.value }))}
-                    className="h-11 rounded-xl focus-visible:ring-violet-500"
+                    onChange={(e) => {
+                      setCheckoutForm(prev => ({ ...prev, customerName: e.target.value }));
+                      if (formErrors.customerName) setFormErrors(prev => ({ ...prev, customerName: "" }));
+                    }}
+                    className={`h-11 rounded-xl focus-visible:ring-violet-500 ${formErrors.customerName ? "border-destructive" : ""}`}
                   />
+                  {formErrors.customerName && (
+                    <p className="text-xs text-destructive mt-1">{formErrors.customerName}</p>
+                  )}
                 </div>
 
                 <div>
@@ -802,9 +859,15 @@ export function StorefrontPage({
                     required
                     placeholder={t("Enter 10-digit mobile number", "10-અંકનો મોબાઇલ નંબર")}
                     value={checkoutForm.customerPhone}
-                    onChange={(e) => setCheckoutForm(prev => ({ ...prev, customerPhone: e.target.value }))}
-                    className="h-11 rounded-xl focus-visible:ring-violet-500"
+                    onChange={(e) => {
+                      setCheckoutForm(prev => ({ ...prev, customerPhone: e.target.value }));
+                      if (formErrors.customerPhone) setFormErrors(prev => ({ ...prev, customerPhone: "" }));
+                    }}
+                    className={`h-11 rounded-xl focus-visible:ring-violet-500 ${formErrors.customerPhone ? "border-destructive" : ""}`}
                   />
+                  {formErrors.customerPhone && (
+                    <p className="text-xs text-destructive mt-1">{formErrors.customerPhone}</p>
+                  )}
                 </div>
 
                 <div>
@@ -813,6 +876,7 @@ export function StorefrontPage({
                   </label>
                   <textarea
                     rows={3}
+                    required
                     placeholder={t("E.g., Table 4, Home Delivery Address, or special requests...", "દા.ત., ટેબલ 4, ડિલિવરી સરનામું...")}
                     value={checkoutForm.notes}
                     onChange={(e) => setCheckoutForm(prev => ({ ...prev, notes: e.target.value }))}
@@ -828,11 +892,10 @@ export function StorefrontPage({
                     <button
                       type="button"
                       onClick={() => setCheckoutForm(prev => ({ ...prev, paymentMethod: "cod" }))}
-                      className={`flex flex-col items-center justify-center p-3 rounded-2xl border text-sm font-semibold transition-all ${
-                        checkoutForm.paymentMethod === "cod"
+                      className={`flex flex-col items-center justify-center p-3 rounded-2xl border text-sm font-semibold transition-all ${checkoutForm.paymentMethod === "cod"
                           ? "border-violet-600 bg-violet-50/50 dark:bg-violet-950/20 text-violet-600"
                           : "border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 text-muted-foreground"
-                      }`}
+                        }`}
                     >
                       <Truck className="w-5 h-5 mb-1 text-violet-500" />
                       {t("Cash on Delivery", "કેશ ઓન ડિલિવરી")}
@@ -840,11 +903,10 @@ export function StorefrontPage({
                     <button
                       type="button"
                       onClick={() => setCheckoutForm(prev => ({ ...prev, paymentMethod: "pay_at_store" }))}
-                      className={`flex flex-col items-center justify-center p-3 rounded-2xl border text-sm font-semibold transition-all ${
-                        checkoutForm.paymentMethod === "pay_at_store"
+                      className={`flex flex-col items-center justify-center p-3 rounded-2xl border text-sm font-semibold transition-all ${checkoutForm.paymentMethod === "pay_at_store"
                           ? "border-violet-600 bg-violet-50/50 dark:bg-violet-950/20 text-violet-600"
                           : "border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 text-muted-foreground"
-                      }`}
+                        }`}
                     >
                       <Store className="w-5 h-5 mb-1 text-violet-500" />
                       {t("Pay at Store", "દુકાન પર ચૂકવો")}
@@ -866,6 +928,12 @@ export function StorefrontPage({
                     </span>
                   </div>
                 </div>
+
+                {formErrors.form && (
+                  <p className="text-xs text-destructive bg-destructive/10 rounded-xl px-3 py-2">
+                    {formErrors.form}
+                  </p>
+                )}
 
                 <Button
                   type="submit"
@@ -1014,7 +1082,7 @@ function ProductCard({ product, locale, index, onAdd, compact = false }: Product
             <Star className="w-2.5 h-2.5 fill-white" />
           </div>
         )}
-        {product.stock === 0 && (
+        {!product.inStock && (
           <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
             <span className="text-white text-xs font-bold bg-black/60 px-3 py-1 rounded-full">
               {t("Out of Stock", "સ્ટૉક ખત્મ")}
@@ -1046,19 +1114,18 @@ function ProductCard({ product, locale, index, onAdd, compact = false }: Product
 
         {!compact && (
           <button
-            className={`mt-2.5 w-full h-8 text-xs font-semibold rounded-xl transition-all duration-200 ${
-              product.stock === 0
+            className={`mt-2.5 w-full h-8 text-xs font-semibold rounded-xl transition-all duration-200 ${!product.inStock
                 ? "bg-gray-100 dark:bg-gray-800 text-muted-foreground cursor-not-allowed"
                 : "bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-300 hover:bg-violet-600 hover:text-white active:scale-95"
-            }`}
-            disabled={product.stock === 0}
+              }`}
+            disabled={!product.inStock}
             onClick={() => onAdd(product)}
           >
-            {product.stock === 0 ? t("Unavailable", "ઉપલબ્ધ નથી") : t("+ Add", "+ ઉમેરો")}
+            {!product.inStock ? t("Unavailable", "ઉપલબ્ધ નથી") : t("+ Add", "+ ઉમેરો")}
           </button>
         )}
 
-        {compact && product.stock > 0 && (
+        {compact && product.inStock && (
           <button
             className="mt-1.5 w-full h-7 text-xs font-semibold rounded-lg bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-300 hover:bg-violet-600 hover:text-white transition-all duration-200 active:scale-95"
             onClick={() => onAdd(product)}

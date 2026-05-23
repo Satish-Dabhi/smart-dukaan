@@ -63,27 +63,14 @@ export async function POST(req: NextRequest) {
 
     // Trigger congratulations / business creation email asynchronously
     try {
-      const user = await User.findById(session.user.id);
+      const user = await User.findById(session.user.id).select("email name");
       const email = user?.email || session.user.email;
       const ownerName = user?.name || session.user.name || "Store Owner";
 
       if (email) {
-        const referer = req.headers.get("referer") || "";
-        let locale = "en";
-        try {
-          if (referer) {
-            const urlObj = new URL(referer);
-            const pathParts = urlObj.pathname.split("/").filter(Boolean);
-            if (pathParts[0] && pathParts[0].length === 2) {
-              locale = pathParts[0];
-            }
-          }
-        } catch (urlErr) {
-          console.error("[BUSINESS_POST] Failed to parse referer URL:", urlErr);
-        }
-
+        // Use a fixed default locale — never derive locale from the Referer header (attacker-controlled)
         const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-        const storeUrl = `${appUrl}/${locale}/business/${business.slug}`;
+        const storeUrl = `${appUrl}/en/business/${business.slug}`;
 
         await sendBusinessCreatedEmail(email, ownerName, business.name, storeUrl);
       }

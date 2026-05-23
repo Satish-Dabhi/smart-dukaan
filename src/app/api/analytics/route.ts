@@ -4,14 +4,19 @@ import { connectDB } from "@/lib/db";
 import Invoice from "@/models/Invoice";
 import Order from "@/models/Order";
 import Customer from "@/models/Customer";
+import mongoose from "mongoose";
 
 export async function GET(req: NextRequest) {
   try {
     const session = await auth();
-    const businessId = session?.user?.businessId;
-    if (!businessId) {
+    const businessIdStr = session?.user?.businessId;
+    if (!businessIdStr) {
       return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
+
+    // Session stores businessId as string; MongoDB stores it as ObjectId.
+    // Aggregation $match requires ObjectId — string comparison silently returns 0 results.
+    const businessId = new mongoose.Types.ObjectId(businessIdStr);
 
     await connectDB();
 
