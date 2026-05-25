@@ -14,12 +14,12 @@ interface Props {
   businessId?: string;
 }
 
-export function QRCodesManager(_props: Props) {
+export function QRCodesManager({ businessId }: Props) {
   const [tableNumber, setTableNumber] = useState("");
   const t = useTranslations("qrCodes");
 
   const { data: businessData } = useQuery({
-    queryKey: ["business"],
+    queryKey: ["business", businessId],
     queryFn: async () => {
       const res = await fetch("/api/business");
       return res.json();

@@ -22,6 +22,11 @@ export default async function DashboardLayout({
     redirect(`/${locale}/auth/login`);
   }
 
+  // Redirect customer role users directly to their orders screen
+  if (session.user.role === "customer") {
+    redirect(`/${locale}/account/orders`);
+  }
+
   // Fetch business status + subscription info server-side
   let isSuspended = false;
   let businessName = "";
@@ -46,7 +51,11 @@ export default async function DashboardLayout({
   }
 
   return (
-    <DashboardShell locale={locale} session={session as Session} subscriptionInfo={subscriptionInfo}>
+    <DashboardShell
+      locale={locale}
+      session={session as Session}
+      subscriptionInfo={subscriptionInfo}
+    >
       {children}
     </DashboardShell>
   );

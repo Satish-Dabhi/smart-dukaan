@@ -26,6 +26,7 @@ const schema = z.object({
   tagline: z.string().optional(),
   whatsappNumber: z.string().min(10, "WhatsApp number must be at least 10 digits"),
   theme: z.string().optional(),
+  productView: z.string().optional(),
   primaryColor: z.string().optional(),
 });
 
@@ -79,6 +80,7 @@ export function BusinessSettings() {
           tagline: business.tagline ?? "",
           whatsappNumber: business.whatsappNumber ?? "",
           theme: business.theme ?? "minimal",
+          productView: business.productView ?? "card",
           primaryColor: business.primaryColor ?? "#7c3aed",
         }
       : undefined,
@@ -88,6 +90,12 @@ export function BusinessSettings() {
     control,
     name: "theme",
     defaultValue: "minimal",
+  });
+
+  const selectedProductView = useWatch({
+    control,
+    name: "productView",
+    defaultValue: "card",
   });
 
   const locale = useLocale();
@@ -289,6 +297,74 @@ export function BusinessSettings() {
                     {theme.label.split(" ").slice(1).join(" ")}
                   </div>
                   <div className="text-xs text-gray-500 mt-0.5">{theme.description}</div>
+                </button>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Product Display Mode */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Store className="w-4 h-4 text-violet-500" />{" "}
+              {t("productDisplayMode") ?? "Product Display Mode"}
+            </CardTitle>
+            <CardDescription>
+              {t("chooseViewDesc") ??
+                "Choose how your products are displayed to customers in your storefront."}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {[
+                {
+                  value: "card",
+                  label: "🎴 Card Grid View",
+                  description:
+                    "Stunning product cards in a visual grid layout. Ideal for highly visual products like garments, bakeries, and boutique retail.",
+                },
+                {
+                  value: "row",
+                  label: "☰ Detailed Row View",
+                  description:
+                    "Elegant horizontal list rows with thumbnails, description text, and hover-triggered Add button. Perfect for cafes, grocery, and medical stores.",
+                },
+                {
+                  value: "compact",
+                  label: "⚡ Compact List View",
+                  description:
+                    "Ultra-clean list without description clutter. Space-saving, highly efficient for fast-shopping catalogs, supermarkets, and wholesale businesses.",
+                },
+              ].map((view) => (
+                <button
+                  key={view.value}
+                  type="button"
+                  onClick={() => setValue("productView", view.value)}
+                  className={`p-4 rounded-2xl border-2 text-left transition-all cursor-pointer flex flex-col justify-between h-full hover:shadow-md ${
+                    selectedProductView === view.value
+                      ? "border-violet-500 bg-violet-50/70 dark:bg-violet-900/10"
+                      : "border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700"
+                  }`}
+                >
+                  <div>
+                    <div className="text-base font-extrabold text-gray-900 dark:text-white mb-1">
+                      {view.label}
+                    </div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400 leading-normal">
+                      {view.description}
+                    </div>
+                  </div>
+                  <div className="mt-4 flex items-center justify-between w-full">
+                    <span className="text-[10px] uppercase font-black px-2 py-0.5 rounded bg-gray-150 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+                      {view.value}
+                    </span>
+                    {selectedProductView === view.value && (
+                      <span className="text-xs font-bold text-violet-650 dark:text-violet-400 flex items-center gap-1">
+                        ● Active
+                      </span>
+                    )}
+                  </div>
                 </button>
               ))}
             </div>

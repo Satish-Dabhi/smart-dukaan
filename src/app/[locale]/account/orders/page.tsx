@@ -8,7 +8,7 @@ import Business from "@/models/Business";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { ShoppingBag, FileText, LogOut } from "lucide-react";
+import { ShoppingBag, FileText, LogOut, Printer } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 
 interface Props {
@@ -39,14 +39,8 @@ async function OrdersContent({ locale }: { locale: string }) {
   await connectDB();
 
   const [orders, invoices] = await Promise.all([
-    Order.find({ customerEmail: session.user.email })
-      .sort({ createdAt: -1 })
-      .limit(30)
-      .lean(),
-    Invoice.find({ customerEmail: session.user.email })
-      .sort({ createdAt: -1 })
-      .limit(30)
-      .lean(),
+    Order.find({ customerEmail: session.user.email }).sort({ createdAt: -1 }).limit(30).lean(),
+    Invoice.find({ customerEmail: session.user.email }).sort({ createdAt: -1 }).limit(30).lean(),
   ]);
 
   const businessIds = [
@@ -129,11 +123,12 @@ async function OrdersContent({ locale }: { locale: string }) {
                                 </span>
                               )}
                             </div>
-                            {biz && (
-                              <p className="text-xs text-violet-600 mt-0.5">{biz.name}</p>
-                            )}
+                            {biz && <p className="text-xs text-violet-600 mt-0.5">{biz.name}</p>}
                             <p className="text-xs text-gray-400 mt-1">
-                              {order.items.slice(0, 3).map((i) => `${i.name} ×${i.quantity}`).join(", ")}
+                              {order.items
+                                .slice(0, 3)
+                                .map((i) => `${i.name} ×${i.quantity}`)
+                                .join(", ")}
                               {order.items.length > 3 && ` +${order.items.length - 3} more`}
                             </p>
                             <p className="text-xs text-gray-400 mt-0.5">
@@ -144,10 +139,17 @@ async function OrdersContent({ locale }: { locale: string }) {
                               })}
                             </p>
                           </div>
-                          <div className="text-right shrink-0">
+                          <div className="text-right shrink-0 flex flex-col items-end gap-2">
                             <p className="font-bold text-gray-900 dark:text-white">
                               {formatCurrency(order.total)}
                             </p>
+                            <Link
+                              href={`/${locale}/account/orders/${order._id}/invoice`}
+                              className="text-xs font-medium text-violet-600 hover:text-violet-800 border border-violet-200 rounded px-2 py-1.5 hover:bg-violet-50 transition-colors flex items-center gap-1.5 mt-1"
+                            >
+                              <Printer className="w-3.5 h-3.5" />
+                              Print Bill
+                            </Link>
                           </div>
                         </div>
                       </CardContent>
@@ -197,9 +199,7 @@ async function OrdersContent({ locale }: { locale: string }) {
                                 {inv.status}
                               </Badge>
                             </div>
-                            {biz && (
-                              <p className="text-xs text-violet-600 mt-0.5">{biz.name}</p>
-                            )}
+                            {biz && <p className="text-xs text-violet-600 mt-0.5">{biz.name}</p>}
                             <p className="text-xs text-gray-400 mt-0.5">
                               {new Date(inv.createdAt).toLocaleDateString("en-IN", {
                                 day: "2-digit",

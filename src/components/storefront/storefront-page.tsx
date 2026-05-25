@@ -1,80 +1,76 @@
 "use client";
 
 import { useState, useCallback, useEffect, useMemo } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import { useRouter, usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
-import Image from "next/image";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { useTheme } from "next-themes";
+import { Search, Star, Shield, Truck, MessageCircle } from "lucide-react";
+
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { formatCurrency, debounce } from "@/lib/utils";
+import type { IBusiness, IProduct, ICategory, CartItem, IOrder } from "@/types";
+
+// Import Shared Theme Configurations
+import { themeAestheticMap } from "./theme-config";
+
+// Import Subcomponents
+import { ProductCard } from "./product-card";
+import { ProductRow } from "./product-row";
+import { CompactProductCard } from "./compact-product-card";
+import { HeroBanner } from "./hero-banner";
+import { CategoryShowcase } from "./category-showcase";
+import { CartSidebar } from "./cart-sidebar";
+import { CheckoutModal } from "./checkout-modal";
+import { SuccessModal } from "./success-modal";
+import { QRModal } from "./qr-modal";
+
+// Import Dynamic Category Helper Icons
 import {
-  Phone,
-  MapPin,
-  Share2,
-  QrCode,
-  MessageCircle,
-  Search,
-  Star,
-  ShoppingCart,
-  X,
-  CheckCircle,
-  Truck,
-  Shield,
-  Sun,
-  Moon,
-  Store,
-  Loader2,
-  LogIn,
-  LogOut,
-  Carrot,
-  Milk,
+  CupSoda,
+  GlassWater,
   Coffee,
+  Croissant,
+  Cake,
+  IceCream,
+  Banana,
+  Grape,
+  Cherry,
+  Carrot,
+  Apple,
+  Milk,
+  Egg,
+  Wheat,
   Cookie,
+  Candy,
+  Soup,
+  Pizza,
+  Utensils,
+  ChefHat,
   Pill,
+  Heart,
   Shirt,
   Scissors,
   Sparkles,
-  Package,
-  Leaf,
-  ShoppingBag,
-  Apple,
-  Cake,
-  Utensils,
   Tv,
-  Candy,
-  BookOpen,
-  Flame,
-  Heart,
-  Tag,
-  Gift,
-  Gem,
-  Crown,
-  Banana,
-  Egg,
-  Wheat,
-  Grape,
-  Cherry,
-  CupSoda,
-  GlassWater,
-  Croissant,
-  IceCream,
-  Pizza,
-  Soup,
-  ChefHat,
   Smartphone,
   Laptop,
   Headphones,
   Home,
-  Smile,
+  Leaf,
+  Package,
+  ShoppingBag,
+  Flame,
+  BookOpen,
+  Tag,
+  Gift,
+  Gem,
+  Crown,
   Clock,
+  Smile,
+  Store,
 } from "lucide-react";
-import { useTheme } from "next-themes";
-import { formatCurrency, debounce } from "@/lib/utils";
-import type { IBusiness, IProduct, ICategory, CartItem, IOrder } from "@/types";
-import { QRCodeCanvas } from "qrcode.react";
-import { ProductImageFallback } from "@/components/ui/product-image-fallback";
 
 interface StorefrontProps {
   business: IBusiness;
@@ -83,104 +79,6 @@ interface StorefrontProps {
   locale: string;
   filters: { category?: string; q?: string; sort?: string };
 }
-
-const themeMap: Record<string, { from: string; to: string; accent: string }> = {
-  grocery: { from: "from-emerald-600", to: "to-teal-700", accent: "bg-emerald-600" },
-  cafe: { from: "from-amber-600", to: "to-orange-700", accent: "bg-amber-600" },
-  bakery: { from: "from-rose-500", to: "to-pink-700", accent: "bg-rose-500" },
-  restaurant: { from: "from-red-600", to: "to-orange-700", accent: "bg-red-600" },
-  medical: { from: "from-blue-600", to: "to-cyan-700", accent: "bg-blue-600" },
-  salon: { from: "from-purple-600", to: "to-pink-700", accent: "bg-purple-600" },
-  retail: { from: "from-indigo-600", to: "to-violet-700", accent: "bg-indigo-600" },
-  minimal: { from: "from-violet-600", to: "to-purple-700", accent: "bg-violet-600" },
-};
-
-const themeAestheticMap: Record<
-  string,
-  {
-    fontFamily: string;
-    bgColor: string;
-    cardStyle: string;
-    isCulinaryMenu: boolean;
-    buttonClass: string;
-    badgeClass: string;
-  }
-> = {
-  grocery: {
-    fontFamily: "font-sans",
-    bgColor: "bg-emerald-50/20 dark:bg-emerald-950/5",
-    cardStyle:
-      "rounded-2xl border-emerald-100 dark:border-emerald-900/30 hover:border-emerald-300 dark:hover:border-emerald-700 shadow-sm",
-    isCulinaryMenu: false,
-    buttonClass: "bg-emerald-600 hover:bg-emerald-700 text-white",
-    badgeClass: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300",
-  },
-  cafe: {
-    fontFamily: "font-serif",
-    bgColor: "bg-[#FAF6F0] dark:bg-[#1C1917] text-stone-900 dark:text-stone-100",
-    cardStyle:
-      "rounded-xl border-amber-200 dark:border-amber-900/40 hover:border-amber-400 dark:hover:border-amber-700 shadow-md",
-    isCulinaryMenu: true,
-    buttonClass: "bg-amber-700 hover:bg-amber-800 text-white",
-    badgeClass: "bg-amber-100 text-amber-900 dark:bg-amber-950/60 dark:text-amber-300",
-  },
-  bakery: {
-    fontFamily: "font-sans",
-    bgColor: "bg-[#FFF8F8] dark:bg-[#1E1B1B] text-rose-950 dark:text-rose-50",
-    cardStyle:
-      "rounded-3xl border-rose-100 dark:border-rose-900/30 hover:border-rose-300 dark:hover:border-rose-700 shadow-sm",
-    isCulinaryMenu: false,
-    buttonClass: "bg-rose-500 hover:bg-rose-600 text-white rounded-2xl",
-    badgeClass: "bg-rose-100 text-rose-800 dark:bg-rose-950/50 dark:text-rose-300",
-  },
-  restaurant: {
-    fontFamily: "font-serif",
-    bgColor: "bg-[#FCFBF7] dark:bg-[#121212]",
-    cardStyle:
-      "rounded-lg border-red-200 dark:border-red-900/30 hover:border-red-400 dark:hover:border-red-700 shadow-md",
-    isCulinaryMenu: true,
-    buttonClass: "bg-red-600 hover:bg-red-700 text-white",
-    badgeClass: "bg-red-100 text-red-800 dark:bg-red-950/50 dark:text-red-300",
-  },
-  medical: {
-    fontFamily: "font-sans",
-    bgColor: "bg-slate-50 dark:bg-slate-950",
-    cardStyle:
-      "rounded-lg border-blue-100 dark:border-blue-900/30 hover:border-blue-300 dark:hover:border-blue-700 shadow-none",
-    isCulinaryMenu: false,
-    buttonClass: "bg-blue-600 hover:bg-blue-700 text-white",
-    badgeClass: "bg-blue-100 text-blue-800 dark:bg-blue-950/50 dark:text-blue-300",
-  },
-  salon: {
-    fontFamily: "font-serif",
-    bgColor: "bg-[#FAF5FF] dark:bg-[#181124] text-purple-950 dark:text-purple-50",
-    cardStyle:
-      "rounded-2xl border-purple-100 dark:border-purple-900/30 hover:border-purple-300 dark:hover:border-purple-700",
-    isCulinaryMenu: false,
-    buttonClass: "bg-purple-600 hover:bg-purple-700 text-white",
-    badgeClass: "bg-purple-100 text-purple-800 dark:bg-purple-950/50 dark:text-purple-300",
-  },
-  retail: {
-    fontFamily: "font-sans",
-    bgColor: "bg-white dark:bg-gray-950",
-    cardStyle:
-      "rounded-none border-gray-200 dark:border-gray-800 hover:border-gray-400 dark:hover:border-gray-600 shadow-none",
-    isCulinaryMenu: false,
-    buttonClass:
-      "bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wider rounded-none",
-    badgeClass: "bg-indigo-100 text-indigo-800 dark:bg-indigo-950/50 dark:text-indigo-300",
-  },
-  minimal: {
-    fontFamily: "font-sans",
-    bgColor: "bg-white dark:bg-gray-950",
-    cardStyle:
-      "rounded-xl border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white shadow-none",
-    isCulinaryMenu: false,
-    buttonClass:
-      "bg-black hover:bg-neutral-800 dark:bg-white dark:text-black dark:hover:bg-neutral-200 text-white",
-    badgeClass: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200",
-  },
-};
 
 // Helper to map category names dynamically to stunning retail icons & gradients
 function getCategoryIcon(name: string) {
@@ -436,7 +334,7 @@ function getCategoryIcon(name: string) {
     return {
       icon: Shirt,
       gradient:
-        "from-violet-500/10 to-fuchsia-500/10 text-violet-600 dark:text-violet-400 border-violet-500/20",
+        "from-violet-500/10 to-fuchsia-500/10 text-violet-650 dark:text-violet-400 border-violet-500/20",
     };
   }
   if (
@@ -461,7 +359,7 @@ function getCategoryIcon(name: string) {
     return {
       icon: Sparkles,
       gradient:
-        "from-indigo-500/10 to-purple-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20",
+        "from-indigo-500/10 to-purple-500/10 text-indigo-650 dark:text-indigo-400 border-indigo-500/20",
     };
   }
   if (
@@ -504,7 +402,7 @@ function getCategoryIcon(name: string) {
     return {
       icon: Headphones,
       gradient:
-        "from-purple-500/10 to-pink-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20",
+        "from-purple-500/10 to-pink-500/10 text-purple-650 dark:text-purple-400 border-purple-500/20",
     };
   }
   if (
@@ -516,7 +414,7 @@ function getCategoryIcon(name: string) {
     return {
       icon: Home,
       gradient:
-        "from-teal-500/10 to-emerald-500/10 text-teal-600 dark:text-teal-400 border-teal-500/20",
+        "from-teal-500/10 to-emerald-500/10 text-teal-650 dark:text-teal-400 border-teal-500/20",
     };
   }
   if (
@@ -528,7 +426,7 @@ function getCategoryIcon(name: string) {
     return {
       icon: Leaf,
       gradient:
-        "from-amber-500/10 to-yellow-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
+        "from-amber-500/10 to-yellow-500/10 text-amber-650 dark:text-amber-400 border-amber-500/20",
     };
   }
   if (
@@ -540,7 +438,7 @@ function getCategoryIcon(name: string) {
     return {
       icon: Package,
       gradient:
-        "from-violet-500/10 to-indigo-500/10 text-violet-600 dark:text-violet-400 border-violet-500/20",
+        "from-violet-500/10 to-indigo-500/10 text-violet-650 dark:text-violet-400 border-violet-500/20",
     };
   }
   if (
@@ -552,7 +450,7 @@ function getCategoryIcon(name: string) {
     return {
       icon: ShoppingBag,
       gradient:
-        "from-violet-500/10 to-indigo-500/10 text-violet-600 dark:text-violet-400 border-violet-500/20",
+        "from-violet-500/10 to-indigo-500/10 text-violet-650 dark:text-violet-400 border-violet-500/20",
     };
   }
   if (
@@ -563,7 +461,7 @@ function getCategoryIcon(name: string) {
   ) {
     return {
       icon: Flame,
-      gradient: "from-red-500/10 to-orange-500/10 text-red-600 dark:text-red-400 border-red-500/20",
+      gradient: "from-red-500/10 to-orange-500/10 text-red-650 dark:text-red-400 border-red-500/20",
     };
   }
   if (
@@ -575,7 +473,7 @@ function getCategoryIcon(name: string) {
     return {
       icon: BookOpen,
       gradient:
-        "from-amber-500/10 to-yellow-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
+        "from-amber-500/10 to-yellow-500/10 text-amber-650 dark:text-amber-400 border-amber-500/20",
     };
   }
   if (
@@ -588,7 +486,7 @@ function getCategoryIcon(name: string) {
     return {
       icon: Tag,
       gradient:
-        "from-slate-500/10 to-gray-600/10 text-slate-600 dark:text-slate-400 border-slate-500/20",
+        "from-slate-500/10 to-gray-600/10 text-slate-650 dark:text-slate-400 border-slate-500/20",
     };
   }
   if (
@@ -600,7 +498,7 @@ function getCategoryIcon(name: string) {
     return {
       icon: Gift,
       gradient:
-        "from-rose-500/10 to-red-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20",
+        "from-rose-500/10 to-red-500/10 text-rose-650 dark:text-rose-400 border-rose-500/20",
     };
   }
   if (
@@ -626,7 +524,7 @@ function getCategoryIcon(name: string) {
     return {
       icon: Crown,
       gradient:
-        "from-amber-500/10 to-yellow-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
+        "from-amber-500/10 to-yellow-500/10 text-amber-650 dark:text-amber-400 border-amber-500/20",
     };
   }
   if (
@@ -638,7 +536,7 @@ function getCategoryIcon(name: string) {
     return {
       icon: Clock,
       gradient:
-        "from-indigo-500/10 to-blue-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20",
+        "from-indigo-500/10 to-blue-500/10 text-indigo-650 dark:text-indigo-400 border-indigo-500/20",
     };
   }
   if (
@@ -651,13 +549,13 @@ function getCategoryIcon(name: string) {
     return {
       icon: Smile,
       gradient:
-        "from-yellow-400/10 to-amber-500/10 text-amber-500 dark:text-amber-400 border-amber-500/20",
+        "from-yellow-400/10 to-amber-500/10 text-amber-650 dark:text-amber-400 border-amber-500/20",
     };
   }
   return {
     icon: Store,
     gradient:
-      "from-violet-500/10 to-indigo-500/10 text-violet-600 dark:text-violet-400 border-violet-500/20",
+      "from-violet-500/10 to-indigo-500/10 text-violet-650 dark:text-violet-400 border-violet-500/20",
   };
 }
 
@@ -679,6 +577,7 @@ export function StorefrontPage({
 
   const { resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const [showAuthDropdown, setShowAuthDropdown] = useState(false);
 
   // Checkout and Order states
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
@@ -699,6 +598,19 @@ export function StorefrontPage({
     const timer = setTimeout(() => setMounted(true), 0);
     return () => clearTimeout(timer);
   }, []);
+
+  // Click outside auth dropdown handler
+  useEffect(() => {
+    if (!showAuthDropdown) return;
+    const handleOutsideClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest(".auth-dropdown-container")) {
+        setShowAuthDropdown(false);
+      }
+    };
+    document.addEventListener("click", handleOutsideClick);
+    return () => document.removeEventListener("click", handleOutsideClick);
+  }, [showAuthDropdown]);
 
   // After returning from auth: restore saved cart and open checkout
   useEffect(() => {
@@ -832,11 +744,6 @@ export function StorefrontPage({
     );
   };
 
-  const toggleTheme = () => {
-    setTheme(resolvedTheme === "dark" ? "light" : "dark");
-  };
-
-  const theme = themeMap[business.theme ?? ""] ?? themeMap.minimal;
   const storeUrl = typeof window !== "undefined" ? window.location.href : "";
 
   const updateFilters = useCallback(
@@ -907,201 +814,70 @@ export function StorefrontPage({
   const displayProducts = products;
   const t = (en: string, gu: string) => (locale === "gu" ? gu : en);
 
+  // Determine current active product view mode based on merchant settings
+  const productViewMode = business.productView ?? "card";
+
+  // Group products by category when no specific category is filtered and no active search query
+  const groupedProducts = useMemo(() => {
+    if (filters.category || filters.q) {
+      return null;
+    }
+
+    const groups: Array<{ category: ICategory | null; products: IProduct[] }> = [];
+
+    // Group products by category ID
+    const productGroups = displayProducts.reduce<Record<string, IProduct[]>>((acc, product) => {
+      const catId = product.categoryId ?? "uncategorized";
+      if (!acc[catId]) acc[catId] = [];
+      acc[catId].push(product);
+      return acc;
+    }, {});
+
+    // First, add categorized products in the order of categories
+    categories.forEach((cat) => {
+      const catProducts = productGroups[cat._id];
+      if (catProducts && catProducts.length > 0) {
+        groups.push({
+          category: cat,
+          products: catProducts,
+        });
+      }
+    });
+
+    // Then, add uncategorized products if any exist
+    const uncategorized = productGroups["uncategorized"] || [];
+    if (uncategorized.length > 0) {
+      groups.push({
+        category: null,
+        products: uncategorized,
+      });
+    }
+
+    return groups;
+  }, [displayProducts, categories, filters.category, filters.q]);
+
   return (
     <div
       className={`min-h-screen ${aesthetic.bgColor} ${aesthetic.fontFamily} transition-colors duration-300`}
     >
-      {/* ─── Hero Banner ─────────────────────────────────────────────────── */}
-      <div className={`relative bg-gradient-to-br ${theme.from} ${theme.to} overflow-hidden`}>
-        {business.banner && (
-          <div className="absolute inset-0">
-            <Image src={business.banner} alt="" fill className="object-cover opacity-20" />
-          </div>
-        )}
-        {/* Decorative circle */}
-        <div className="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-white/5" />
-        <div className="absolute -bottom-16 -left-16 w-64 h-64 rounded-full bg-white/5" />
-
-        <div className="relative max-w-5xl mx-auto px-4 sm:px-6 py-10 sm:py-16">
-          <div className="flex flex-col sm:flex-row items-start sm:items-end gap-6">
-            {/* Logo */}
-            <div className="shrink-0">
-              <Link
-                href={`/${locale}/business/${business.slug}`}
-                className="block hover:scale-[1.02] active:scale-95 transition-all"
-              >
-                {business.logo ? (
-                  <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-3xl bg-white/20 backdrop-blur-sm overflow-hidden border-2 border-white/30 shadow-2xl">
-                    <Image
-                      src={business.logo}
-                      alt={business.name}
-                      width={128}
-                      height={128}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                ) : (
-                  <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-3xl bg-white/20 backdrop-blur-sm flex items-center justify-center border-2 border-white/30 shadow-2xl group overflow-hidden">
-                    <Store className="w-12 h-12 text-white group-hover:scale-110 transition-transform duration-300" />
-                  </div>
-                )}
-              </Link>
-            </div>
-
-            {/* Business info */}
-            <div className="flex-1 text-white">
-              <div className="flex flex-wrap items-center gap-2 mb-2">
-                <Badge className="bg-white/20 text-white border-0 backdrop-blur-sm text-xs">
-                  <CheckCircle className="w-3 h-3 mr-1" />
-                  {t("Verified", "ચકાસાયેલ")}
-                </Badge>
-                {business.theme && (
-                  <Badge className="bg-white/20 text-white border-0 backdrop-blur-sm text-xs capitalize">
-                    {business.theme}
-                  </Badge>
-                )}
-              </div>
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight drop-shadow-sm">
-                {business.name}
-              </h1>
-              {(locale === "gu" ? business.taglineGu : business.tagline) && (
-                <p className="text-white/80 mt-2 text-base sm:text-lg max-w-lg">
-                  {locale === "gu" ? business.taglineGu : business.tagline}
-                </p>
-              )}
-              {business.description && (
-                <p className="text-white/70 mt-1 text-sm max-w-lg line-clamp-2">
-                  {business.description}
-                </p>
-              )}
-
-              {/* Action chips */}
-              <div className="flex flex-wrap gap-2 mt-4">
-                {business.phone && (
-                  <a
-                    href={`tel:${business.phone}`}
-                    className="flex items-center gap-1.5 bg-white/15 hover:bg-white/25 backdrop-blur-sm px-4 py-2 rounded-full text-sm font-medium transition-all border border-white/20"
-                  >
-                    <Phone className="w-3.5 h-3.5" />
-                    {business.phone}
-                  </a>
-                )}
-                {(business.city || business.state) && (
-                  <span className="flex items-center gap-1.5 bg-white/15 backdrop-blur-sm px-4 py-2 rounded-full text-sm font-medium border border-white/20">
-                    <MapPin className="w-3.5 h-3.5" />
-                    {[business.city, business.state].filter(Boolean).join(", ")}
-                  </span>
-                )}
-                {business.whatsappNumber && (
-                  <a
-                    href={`https://wa.me/${business.whatsappNumber.replace(/\D/g, "")}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="flex items-center gap-1.5 bg-emerald-500/80 hover:bg-emerald-500 backdrop-blur-sm px-4 py-2 rounded-full text-sm font-medium transition-all border border-emerald-400/30"
-                  >
-                    <MessageCircle className="w-3.5 h-3.5" />
-                    WhatsApp
-                  </a>
-                )}
-                <button
-                  onClick={() => setShowQR(true)}
-                  className="flex items-center gap-1.5 bg-white/15 hover:bg-white/25 backdrop-blur-sm px-4 py-2 rounded-full text-sm font-medium transition-all border border-white/20"
-                >
-                  <QrCode className="w-3.5 h-3.5" />
-                  {t("QR Menu", "QR મેનૂ")}
-                </button>
-                <button
-                  onClick={() => navigator.share?.({ url: storeUrl, title: business.name })}
-                  className="flex items-center gap-1.5 bg-white/15 hover:bg-white/25 backdrop-blur-sm px-4 py-2 rounded-full text-sm font-medium transition-all border border-white/20"
-                >
-                  <Share2 className="w-3.5 h-3.5" />
-                  {t("Share", "શેર")}
-                </button>
-                <button
-                  onClick={toggleTheme}
-                  className="flex items-center gap-1.5 bg-white/15 hover:bg-white/25 backdrop-blur-sm px-4 py-2 rounded-full text-sm font-medium transition-all border border-white/20"
-                >
-                  {mounted && resolvedTheme === "dark" ? (
-                    <Sun className="w-3.5 h-3.5" />
-                  ) : (
-                    <Moon className="w-3.5 h-3.5" />
-                  )}
-                  <span>
-                    {mounted && resolvedTheme === "dark"
-                      ? t("Light Mode", "લાઇટ મોડ")
-                      : t("Dark Mode", "ડાર્ક મોડ")}
-                  </span>
-                </button>
-
-                {/* Account / Login Controls */}
-                {session ? (
-                  <div className="relative flex items-center gap-1.5 bg-white text-gray-900 px-4 py-2 rounded-full text-sm font-semibold shadow-md transition-all">
-                    <span>👤 {session.user.name || "Customer"}</span>
-                    {session.user.role === "customer" ? (
-                      <Link
-                        href={`/${locale}/account/orders`}
-                        className="bg-violet-600 hover:bg-violet-700 text-white px-2.5 py-1 rounded-full text-xs font-bold transition-colors ml-1"
-                      >
-                        {t("My Orders", "મારા ઓર્ડર")}
-                      </Link>
-                    ) : (
-                      <Link
-                        href={`/${locale}/dashboard`}
-                        className="bg-violet-600 hover:bg-violet-700 text-white px-2.5 py-1 rounded-full text-xs font-bold transition-colors ml-1"
-                      >
-                        {t("Dashboard", "ડૅશબોર્ડ")}
-                      </Link>
-                    )}
-                    <button
-                      onClick={() => {
-                        import("next-auth/react").then((m) => m.signOut());
-                      }}
-                      className="text-gray-400 hover:text-gray-600 transition-colors pl-1 border-l border-gray-200 ml-1"
-                      title={t("Sign Out", "લૉગ આઉટ")}
-                    >
-                      <LogOut className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                ) : (
-                  <div className="relative group">
-                    <button className="flex items-center gap-1.5 bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-md transition-all">
-                      <LogIn className="w-3.5 h-3.5" />
-                      <span>{t("Login", "લૉગ ઇન")}</span>
-                    </button>
-                    {/* Hover Dropdown */}
-                    <div className="absolute left-0 mt-1 w-48 rounded-xl bg-white dark:bg-gray-800 shadow-xl border border-gray-100 dark:border-gray-700 py-1 z-50 hidden group-hover:block hover:block">
-                      <Link
-                        href={`/${locale}/auth/customer-auth?callbackUrl=${encodeURIComponent(pathname)}`}
-                        className="block px-4 py-2 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                      >
-                        🛍️ {t("Customer Sign In", "ગ્રાહક લૉગ ઇન")}
-                      </Link>
-                      <Link
-                        href={`/${locale}/auth/login?callbackUrl=${encodeURIComponent(pathname)}`}
-                        className="block px-4 py-2 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border-t border-gray-100 dark:border-gray-700"
-                      >
-                        💼 {t("Merchant Portal", "વેપારી પોર્ટલ")}
-                      </Link>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Cart button (top right on desktop) */}
-            {cartCount > 0 && (
-              <button
-                onClick={() => setShowCart(true)}
-                className="hidden sm:flex items-center gap-2 bg-white text-gray-900 px-5 py-2.5 rounded-full font-semibold shadow-xl hover:shadow-2xl transition-all"
-              >
-                <ShoppingCart className="w-4 h-4" />
-                {t("Cart", "કાર્ટ")} ({cartCount})
-                <span className="font-bold">{formatCurrency(cartTotal)}</span>
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
+      {/* ─── Hero Banner Subcomponent ───────────────────────────────────── */}
+      <HeroBanner
+        business={business}
+        session={session}
+        cartCount={cartCount}
+        cartTotal={cartTotal}
+        resolvedTheme={mounted ? resolvedTheme : "light"}
+        setTheme={setTheme}
+        locale={locale}
+        setShowCart={setShowCart}
+        showAuthDropdown={showAuthDropdown}
+        setShowAuthDropdown={setShowAuthDropdown}
+        setShowQR={setShowQR}
+        pathname={pathname}
+        t={t}
+        storeUrl={storeUrl}
+        formatCurrency={formatCurrency}
+      />
 
       {/* ─── Trust Bar ───────────────────────────────────────────────────── */}
       <div className="bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800">
@@ -1157,7 +933,7 @@ export function StorefrontPage({
             <div className="flex gap-2 mt-3 overflow-x-auto pb-1 scrollbar-none">
               <button
                 onClick={() => updateFilters({ category: undefined })}
-                className={`shrink-0 px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                className={`shrink-0 px-4 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer border-0 ${
                   !filters.category
                     ? "bg-violet-600 text-white shadow-md shadow-violet-200 dark:shadow-violet-900/30"
                     : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
@@ -1171,7 +947,7 @@ export function StorefrontPage({
                   onClick={() =>
                     updateFilters({ category: filters.category === cat._id ? undefined : cat._id })
                   }
-                  className={`shrink-0 px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                  className={`shrink-0 px-4 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer border-0 ${
                     filters.category === cat._id
                       ? "bg-violet-600 text-white shadow-md shadow-violet-200 dark:shadow-violet-900/30"
                       : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
@@ -1186,76 +962,15 @@ export function StorefrontPage({
       </div>
 
       <div className="max-w-5xl mx-auto px-4 py-8 space-y-12">
-        {/* Category Circle Cards Showcase */}
-        {categories.length > 0 && (
-          <section className="animate-fadeIn">
-            <h2 className="text-lg font-bold text-foreground mb-5 flex items-center gap-2">
-              <Store className="w-5 h-5 text-violet-600 dark:text-violet-400" />
-              {t("Browse Categories", "શ્રેણીઓ બ્રાઉઝ કરો")}
-            </h2>
-            <div className="flex gap-4 overflow-x-auto pb-4 pt-1 scrollbar-none -mx-4 px-4 sm:mx-0 sm:px-0">
-              {/* "All" Card */}
-              <button
-                onClick={() => updateFilters({ category: undefined })}
-                className="shrink-0 flex flex-col items-center gap-2 group focus:outline-none"
-              >
-                <div
-                  className={`w-16 h-16 rounded-full flex items-center justify-center border transition-all duration-300 ${
-                    !filters.category
-                      ? "bg-violet-600 border-violet-600 text-white shadow-lg shadow-violet-200 dark:shadow-violet-900/30 scale-105"
-                      : "bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-800 hover:border-violet-300 dark:hover:border-violet-800 hover:shadow-md text-gray-500 hover:text-violet-600"
-                  }`}
-                >
-                  <Store className="w-6 h-6 transition-transform group-hover:scale-110" />
-                </div>
-                <span
-                  className={`text-xs font-semibold tracking-wide transition-colors ${
-                    !filters.category
-                      ? "text-violet-600 dark:text-violet-400 font-bold"
-                      : "text-gray-600 dark:text-gray-400 group-hover:text-violet-600"
-                  }`}
-                >
-                  {t("All Products", "બધા ઉત્પાદનો")}
-                </span>
-              </button>
-
-              {/* Individual Category Cards */}
-              {categories.map((cat) => {
-                const isSelected = filters.category === cat._id;
-                const { icon: IconComp, gradient } = getCategoryIcon(cat.name);
-
-                return (
-                  <button
-                    key={cat._id}
-                    onClick={() => updateFilters({ category: isSelected ? undefined : cat._id })}
-                    className="shrink-0 flex flex-col items-center gap-2 group focus:outline-none"
-                  >
-                    <div
-                      className={`w-16 h-16 rounded-full flex items-center justify-center border transition-all duration-300 ${
-                        isSelected
-                          ? "bg-violet-600 border-violet-600 text-white shadow-lg shadow-violet-200 dark:shadow-violet-900/30 scale-105"
-                          : `bg-gradient-to-br ${gradient} border-gray-100 dark:border-gray-800 hover:border-violet-300 dark:hover:border-violet-800 hover:shadow-md text-current`
-                      }`}
-                    >
-                      <IconComp
-                        className={`w-6 h-6 transition-transform group-hover:scale-110 ${isSelected ? "text-white" : ""}`}
-                      />
-                    </div>
-                    <span
-                      className={`text-xs font-semibold tracking-wide transition-colors ${
-                        isSelected
-                          ? "text-violet-600 dark:text-violet-400 font-bold"
-                          : "text-gray-600 dark:text-gray-400 group-hover:text-violet-600"
-                      }`}
-                    >
-                      {locale === "gu" ? (cat.nameGu ?? cat.name) : cat.name}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </section>
-        )}
+        {/* Category Circle Cards Showcase Subcomponent */}
+        <CategoryShowcase
+          categories={categories}
+          filters={filters}
+          updateFilters={updateFilters}
+          locale={locale}
+          t={t}
+          getCategoryIcon={getCategoryIcon}
+        />
 
         {/* ─── Featured Products (if no active filter) ─────────────────── */}
         {!filters.category && !filters.q && featuredProducts.length > 0 && (
@@ -1275,6 +990,7 @@ export function StorefrontPage({
                   index={i}
                   onAdd={addToCart}
                   compact
+                  themeName={business.theme}
                   categories={categories}
                 />
               ))}
@@ -1282,7 +998,7 @@ export function StorefrontPage({
           </section>
         )}
 
-        {/* ─── Main Products Grid ───────────────────────────────────────── */}
+        {/* ─── Main Products Grid / Rows / Compact List ────────────────── */}
         <section>
           {(filters.category || filters.q) && (
             <div className="flex items-center gap-2 mb-5">
@@ -1314,118 +1030,155 @@ export function StorefrontPage({
               {(filters.q || filters.category) && (
                 <Button
                   variant="outline"
-                  className="mt-4"
+                  className="mt-4 cursor-pointer"
                   onClick={() => updateFilters({ q: undefined, category: undefined })}
                 >
                   {t("Clear filters", "ફિલ્ટર સાફ કરો")}
                 </Button>
               )}
             </div>
-          ) : aesthetic.isCulinaryMenu ? (
-            <div className="max-w-2xl mx-auto space-y-6 bg-white dark:bg-stone-900 rounded-3xl p-6 sm:p-8 border border-amber-100/50 dark:border-stone-800 shadow-xl shadow-amber-500/5">
-              {displayProducts.map((product) => {
-                const discountedPrice = product.price * (1 - (product.discount ?? 0) / 100);
-                const hasDiscount = (product.discount ?? 0) > 0;
-                return (
-                  <div
-                    key={product._id}
-                    className="flex items-start justify-between gap-4 py-4 border-b border-dashed border-stone-200 dark:border-stone-850 last:border-none group"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-baseline gap-2">
-                        <h3 className="text-base sm:text-lg font-extrabold text-stone-900 dark:text-stone-100 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
-                          {locale === "gu" ? (product.nameGu ?? product.name) : product.name}
-                        </h3>
-                        {/* Show category label if present */}
-                        {(() => {
-                          const cat = categories.find((c) => c._id === product.categoryId);
-                          if (cat) {
-                            return (
-                              <span className="text-[9px] uppercase font-black px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-stone-850 dark:text-amber-300">
-                                {locale === "gu" ? (cat.nameGu ?? cat.name) : cat.name}
-                              </span>
-                            );
-                          }
-                          return null;
-                        })()}
-                        <div className="flex-1 border-b border-dotted border-stone-300 dark:border-stone-700 mx-2" />
-                        <div className="shrink-0 text-right">
-                          <span className="font-extrabold text-amber-700 dark:text-amber-500 text-base sm:text-lg">
-                            {formatCurrency(discountedPrice)}
-                          </span>
-                          {hasDiscount && product.originalPrice && (
-                            <span className="text-xs text-muted-foreground line-through block">
-                              {formatCurrency(product.originalPrice)}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      {product.description && (
-                        <p className="text-xs sm:text-sm text-stone-500 dark:text-stone-400 mt-1 line-clamp-2 pr-4 sm:pr-8 leading-relaxed">
-                          {product.description}
-                        </p>
-                      )}
-                      <div className="flex items-center gap-2 mt-2.5 flex-wrap">
-                        {product.unit && (
-                          <Badge
-                            variant="secondary"
-                            className="text-[10px] px-2 py-0.5 font-medium bg-stone-100 text-stone-700 dark:bg-stone-800 dark:text-stone-300"
-                          >
-                            {product.unit}
-                          </Badge>
-                        )}
-                        {!product.inStock && (
-                          <Badge
-                            variant="destructive"
-                            className="text-[10px] px-2 py-0.5 font-medium"
-                          >
-                            {t("Out of Stock", "સ્ટૉક ખાલી")}
-                          </Badge>
-                        )}
-                        {hasDiscount && (
-                          <Badge
-                            variant="secondary"
-                            className="bg-red-50 text-red-600 dark:bg-red-950/20 dark:text-red-400 text-[10px] px-2 py-0.5 font-bold"
-                          >
-                            {product.discount}% OFF
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
+          ) : groupedProducts ? (
+            // Category-Grouped Layout (renders when viewing all products with no active search/category filter)
+            groupedProducts.map((group) => {
+              const cat = group.category;
+              const catName = cat
+                ? locale === "gu"
+                  ? (cat.nameGu ?? cat.name)
+                  : cat.name
+                : t("Other Products", "અન્ય ઉત્પાદનો");
+              const { icon: CategoryIcon, gradient } = getCategoryIcon(cat ? cat.name : "");
 
-                    <div className="shrink-0 flex flex-col items-center gap-2">
-                      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden bg-gray-50 dark:bg-gray-800 relative border border-gray-100 dark:border-gray-800 shadow-sm shrink-0">
-                        {product.images?.[0] ? (
-                          <Image
-                            src={product.images[0]}
-                            alt={product.name}
-                            fill
-                            className="object-cover"
-                          />
-                        ) : (
-                          <ProductImageFallback
-                            name={product.name}
-                            icon={product.icon}
-                            className="w-full h-full"
-                            iconClassName="w-6 h-6 sm:w-8 sm:h-8"
-                          />
-                        )}
-                      </div>
-                      <button
-                        disabled={!product.inStock}
-                        onClick={() => addToCart(product)}
-                        className={`px-3 py-1 rounded-lg text-[10px] sm:text-xs font-bold shadow-sm transition-all duration-200 ${
-                          !product.inStock
-                            ? "bg-gray-100 dark:bg-gray-850 text-muted-foreground cursor-not-allowed"
-                            : `${aesthetic.buttonClass} hover:opacity-90 active:scale-95`
-                        }`}
-                      >
-                        {!product.inStock ? t("Unavailable", "ઉપલબ્ધ નથી") : t("+ Add", "+ ઉમેરો")}
-                      </button>
+              return (
+                <div
+                  key={cat ? cat._id : "uncategorized"}
+                  className="space-y-6 mt-12 first:mt-0 animate-fadeIn"
+                >
+                  {/* Visual Category Divider Header */}
+                  <div className="flex items-center gap-3 mb-6">
+                    <div
+                      className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 bg-gradient-to-br ${gradient} shadow-sm border border-gray-100/50 dark:border-gray-850/50`}
+                    >
+                      <CategoryIcon className="w-5 h-5 text-current" />
                     </div>
+                    <h3 className="text-lg font-black text-gray-900 dark:text-white uppercase tracking-wider shrink-0 flex items-center gap-2">
+                      <span>{catName}</span>
+                      <span className="text-[10px] lowercase font-normal px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+                        {group.products.length}{" "}
+                        {group.products.length === 1 ? t("item", "આઇટમ") : t("items", "આઇટમ્સ")}
+                      </span>
+                    </h3>
+                    <div className="flex-1 border-b border-dashed border-gray-200 dark:border-gray-800 mx-2" />
                   </div>
-                );
-              })}
+
+                  {/* Grouped Layout Render based on settings view choice */}
+                  {aesthetic.isCulinaryMenu ? (
+                    <div className="max-w-2xl mx-auto space-y-6 bg-white dark:bg-stone-900 rounded-3xl p-6 sm:p-8 border border-amber-100/50 dark:border-stone-800 shadow-xl shadow-amber-500/5">
+                      {group.products.map((product, i) => (
+                        <ProductRow
+                          key={product._id}
+                          product={product}
+                          locale={locale}
+                          index={i}
+                          onAdd={addToCart}
+                          themeName={business.theme}
+                          categories={categories}
+                          getCategoryIcon={getCategoryIcon}
+                        />
+                      ))}
+                    </div>
+                  ) : productViewMode === "row" ? (
+                    <div className="max-w-3xl mx-auto space-y-3">
+                      {group.products.map((product, i) => (
+                        <ProductRow
+                          key={product._id}
+                          product={product}
+                          locale={locale}
+                          index={i}
+                          onAdd={addToCart}
+                          themeName={business.theme}
+                          categories={categories}
+                          getCategoryIcon={getCategoryIcon}
+                        />
+                      ))}
+                    </div>
+                  ) : productViewMode === "compact" ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                      {group.products.map((product, i) => (
+                        <CompactProductCard
+                          key={product._id}
+                          product={product}
+                          locale={locale}
+                          index={i}
+                          onAdd={addToCart}
+                          themeName={business.theme}
+                          categories={categories}
+                          getCategoryIcon={getCategoryIcon}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
+                      {group.products.map((product, i) => (
+                        <ProductCard
+                          key={product._id}
+                          product={product}
+                          locale={locale}
+                          index={i}
+                          onAdd={addToCart}
+                          themeName={business.theme}
+                          categories={categories}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          ) : // Flat Layout (renders when a specific category or search filter is active)
+          aesthetic.isCulinaryMenu ? (
+            <div className="max-w-2xl mx-auto space-y-6 bg-white dark:bg-stone-900 rounded-3xl p-6 sm:p-8 border border-amber-100/50 dark:border-stone-800 shadow-xl shadow-amber-500/5">
+              {displayProducts.map((product, i) => (
+                <ProductRow
+                  key={product._id}
+                  product={product}
+                  locale={locale}
+                  index={i}
+                  onAdd={addToCart}
+                  themeName={business.theme}
+                  categories={categories}
+                  getCategoryIcon={getCategoryIcon}
+                />
+              ))}
+            </div>
+          ) : productViewMode === "row" ? (
+            <div className="max-w-3xl mx-auto space-y-3">
+              {displayProducts.map((product, i) => (
+                <ProductRow
+                  key={product._id}
+                  product={product}
+                  locale={locale}
+                  index={i}
+                  onAdd={addToCart}
+                  themeName={business.theme}
+                  categories={categories}
+                  getCategoryIcon={getCategoryIcon}
+                />
+              ))}
+            </div>
+          ) : productViewMode === "compact" ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+              {displayProducts.map((product, i) => (
+                <CompactProductCard
+                  key={product._id}
+                  product={product}
+                  locale={locale}
+                  index={i}
+                  onAdd={addToCart}
+                  themeName={business.theme}
+                  categories={categories}
+                  getCategoryIcon={getCategoryIcon}
+                />
+              ))}
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
@@ -1456,7 +1209,7 @@ export function StorefrontPage({
             <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
               {business.address && (
                 <div className="flex items-start gap-2">
-                  <MapPin className="w-4 h-4 mt-0.5 text-primary shrink-0" />
+                  <span className="text-primary shrink-0">📍</span>
                   <span>
                     {business.address}, {business.city}, {business.state} – {business.pincode}
                   </span>
@@ -1465,9 +1218,9 @@ export function StorefrontPage({
               {business.phone && (
                 <a
                   href={`tel:${business.phone}`}
-                  className="flex items-center gap-2 hover:text-primary transition-colors"
+                  className="flex items-center gap-2 hover:text-primary transition-colors font-semibold"
                 >
-                  <Phone className="w-4 h-4 text-primary" />
+                  <span className="text-primary shrink-0">📞</span>
                   {business.phone}
                 </a>
               )}
@@ -1477,595 +1230,80 @@ export function StorefrontPage({
       </div>
 
       {/* ─── Floating Cart Button (mobile) ───────────────────────────────── */}
-      <AnimatePresence>
-        {cartCount > 0 && (
-          <motion.div
-            initial={{ y: 100, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 100, opacity: 0 }}
-            className="fixed bottom-6 inset-x-4 sm:inset-x-auto sm:left-auto sm:right-6 sm:w-auto z-40"
+      {cartCount > 0 && (
+        <div className="fixed bottom-6 inset-x-4 sm:inset-x-auto sm:left-auto sm:right-6 sm:w-auto z-40">
+          <button
+            onClick={() => setShowCart(true)}
+            className="w-full sm:w-auto flex items-center justify-between sm:justify-start gap-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 px-5 py-3.5 rounded-2xl shadow-2xl font-semibold transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
           >
-            <button
-              onClick={() => setShowCart(true)}
-              className="w-full sm:w-auto flex items-center justify-between sm:justify-start gap-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 px-5 py-3.5 rounded-2xl shadow-2xl font-semibold transition-all hover:scale-[1.02] active:scale-[0.98]"
-            >
-              <div className="flex items-center gap-2">
-                <ShoppingCart className="w-5 h-5" />
-                <span>{t("View Cart", "કાર્ટ જુઓ")}</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="w-6 h-6 bg-violet-500 rounded-full text-xs flex items-center justify-center text-white font-bold">
-                  {cartCount}
-                </span>
-                <span className="font-bold">{formatCurrency(cartTotal)}</span>
-              </div>
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* ─── Cart Sidebar ─────────────────────────────────────────────────── */}
-      <AnimatePresence>
-        {showCart && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
-            onClick={() => setShowCart(false)}
-          >
-            <motion.div
-              initial={{ x: "100%" }}
-              animate={{ x: 0 }}
-              exit={{ x: "100%" }}
-              transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="absolute right-0 top-0 h-full w-full max-w-sm bg-white dark:bg-gray-900 shadow-2xl flex flex-col"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Cart header */}
-              <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-gray-800">
-                <div>
-                  <h2 className="font-bold text-lg text-foreground">
-                    {t("Your Cart", "તમારો કાર્ટ")}
-                  </h2>
-                  <p className="text-xs text-muted-foreground">
-                    {cartCount} {t("item(s)", "આઇટમ")}
-                  </p>
-                </div>
-                <button
-                  onClick={() => setShowCart(false)}
-                  className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              {/* Cart items */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                {cart.map((item) => (
-                  <motion.div
-                    key={item.productId}
-                    layout
-                    exit={{ opacity: 0, x: 50 }}
-                    className="flex items-center gap-3 bg-gray-50 dark:bg-gray-800 rounded-2xl p-3"
-                  >
-                    {item.image ? (
-                      <div className="w-14 h-14 rounded-xl overflow-hidden shrink-0 bg-gray-100 dark:bg-gray-700">
-                        <Image
-                          src={item.image}
-                          alt={item.name}
-                          width={56}
-                          height={56}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    ) : (
-                      <div className="w-14 h-14 rounded-xl overflow-hidden shrink-0">
-                        <ProductImageFallback
-                          name={item.name}
-                          className="w-full h-full"
-                          iconClassName="w-5 h-5"
-                          showOverlay={false}
-                        />
-                      </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-foreground truncate">
-                        {locale === "gu" ? (item.nameGu ?? item.name) : item.name}
-                      </p>
-                      <p className="text-xs text-violet-600 font-medium">
-                        {formatCurrency(item.price * (1 - item.discount / 100))}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        onClick={() => updateQuantity(item.productId, -1)}
-                        className="w-7 h-7 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-sm font-bold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-                      >
-                        -
-                      </button>
-                      <span className="text-sm font-bold w-5 text-center">{item.quantity}</span>
-                      <button
-                        onClick={() => updateQuantity(item.productId, 1)}
-                        className="w-7 h-7 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-sm font-bold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-                        disabled={false}
-                      >
-                        +
-                      </button>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-
-              {/* Cart footer */}
-              <div className="p-5 border-t border-gray-100 dark:border-gray-800 space-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="font-semibold text-foreground">{t("Total", "કુલ")}</span>
-                  <span className="text-xl font-black text-violet-600">
-                    {formatCurrency(cartTotal)}
-                  </span>
-                </div>
-                {cartCount > 0 ? (
-                  <Button
-                    variant="gradient"
-                    className="w-full gap-2 h-12 text-base font-bold shadow-lg shadow-violet-200 dark:shadow-violet-900/30"
-                    onClick={() => {
-                      if (!session) {
-                        localStorage.setItem(pendingCartKey, JSON.stringify(cart));
-                        router.push(
-                          `/${locale}/auth/customer-auth?callbackUrl=${encodeURIComponent(pathname)}`
-                        );
-                        return;
-                      }
-                      setShowCart(false);
-                      setShowCheckoutModal(true);
-                    }}
-                  >
-                    <ShoppingCart className="w-5 h-5" />
-                    {t("Proceed to Checkout", "ચેકઆઉટ કરવા આગળ વધો")}
-                  </Button>
-                ) : (
-                  <Button variant="outline" className="w-full" disabled>
-                    {t("Your cart is empty", "તમારો કાર્ટ ખાલી છે")}
-                  </Button>
-                )}
-                <button
-                  onClick={() => setCart([])}
-                  className="w-full text-xs text-muted-foreground hover:text-destructive transition-colors"
-                >
-                  {t("Clear cart", "કાર્ટ સાફ કરો")}
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* ─── QR Modal ─────────────────────────────────────────────────────── */}
-      <AnimatePresence>
-        {showQR && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-            onClick={() => setShowQR(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white dark:bg-gray-900 rounded-3xl p-8 text-center shadow-2xl max-w-xs w-full"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <h3 className="font-bold text-xl text-foreground mb-1">{business.name}</h3>
-              <p className="text-sm text-muted-foreground mb-5">
-                {t("Scan to visit our store", "ઓ storefront ની મુલાકાત માટે સ્કેન કરો")}
-              </p>
-              <div className="inline-block p-4 bg-white rounded-2xl shadow-inner">
-                <QRCodeCanvas value={storeUrl} size={180} />
-              </div>
-              <Button variant="outline" className="mt-5 w-full" onClick={() => setShowQR(false)}>
-                {t("Close", "બંધ")}
-              </Button>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* ─── Checkout Modal ────────────────────────────────────────────────── */}
-      <AnimatePresence>
-        {showCheckoutModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-            onClick={() => {
-              setShowCheckoutModal(false);
-              setFormErrors({});
-            }}
-          >
-            <motion.div
-              initial={{ scale: 0.95, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.95, y: 20 }}
-              className="bg-white dark:bg-gray-900 rounded-3xl p-6 sm:p-8 shadow-2xl max-w-lg w-full overflow-hidden border border-gray-100 dark:border-gray-800"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h3 className="font-extrabold text-2xl text-foreground bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent">
-                    {t("Complete Your Order", "તમારો ઓર્ડર પૂર્ણ કરો")}
-                  </h3>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {t(
-                      "Enter your details to finalize the purchase",
-                      "ખરીદી પૂર્ણ કરવા માટે વિગતો દાખલ કરો"
-                    )}
-                  </p>
-                </div>
-                <button
-                  onClick={() => {
-                    setShowCheckoutModal(false);
-                    setFormErrors({});
-                  }}
-                  className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              <form onSubmit={handlePlaceOrder} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
-                    {t("Full Name", "પૂરું નામ")} <span className="text-destructive">*</span>
-                  </label>
-                  <Input
-                    required
-                    placeholder={t("Enter your name", "તમારું નામ દાખલ કરો")}
-                    value={checkoutForm.customerName}
-                    onChange={(e) => {
-                      setCheckoutForm((prev) => ({ ...prev, customerName: e.target.value }));
-                      if (formErrors.customerName)
-                        setFormErrors((prev) => ({ ...prev, customerName: "" }));
-                    }}
-                    className={`h-11 rounded-xl focus-visible:ring-violet-500 ${formErrors.customerName ? "border-destructive" : ""}`}
-                  />
-                  {formErrors.customerName && (
-                    <p className="text-xs text-destructive mt-1">{formErrors.customerName}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
-                    {t("Phone Number", "ફોન નંબર")} <span className="text-destructive">*</span>
-                  </label>
-                  <Input
-                    type="tel"
-                    required
-                    placeholder={t("Enter 10-digit mobile number", "10-અંકનો મોબાઇલ નંબર")}
-                    value={checkoutForm.customerPhone}
-                    onChange={(e) => {
-                      setCheckoutForm((prev) => ({ ...prev, customerPhone: e.target.value }));
-                      if (formErrors.customerPhone)
-                        setFormErrors((prev) => ({ ...prev, customerPhone: "" }));
-                    }}
-                    className={`h-11 rounded-xl focus-visible:ring-violet-500 ${formErrors.customerPhone ? "border-destructive" : ""}`}
-                  />
-                  {formErrors.customerPhone && (
-                    <p className="text-xs text-destructive mt-1">{formErrors.customerPhone}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
-                    {t("Delivery Address or Special Notes", "સરનામું અથવા વિશેષ નોંધો")}
-                  </label>
-                  <textarea
-                    rows={3}
-                    required
-                    placeholder={t(
-                      "E.g., Table 4, Home Delivery Address, or special requests...",
-                      "દા.ત., ટેબલ 4, ડિલિવરી સરનામું..."
-                    )}
-                    value={checkoutForm.notes}
-                    onChange={(e) =>
-                      setCheckoutForm((prev) => ({ ...prev, notes: e.target.value }))
-                    }
-                    className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
-                    {t("Payment Method", "ચુકવણી પદ્ધતિ")}
-                  </label>
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setCheckoutForm((prev) => ({ ...prev, paymentMethod: "cod" }))}
-                      className={`flex flex-col items-center justify-center p-3 rounded-2xl border text-sm font-semibold transition-all ${
-                        checkoutForm.paymentMethod === "cod"
-                          ? "border-violet-600 bg-violet-50/50 dark:bg-violet-950/20 text-violet-600"
-                          : "border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 text-muted-foreground"
-                      }`}
-                    >
-                      <Truck className="w-5 h-5 mb-1 text-violet-500" />
-                      {t("Cash on Delivery", "કેશ ઓન ડિલિવરી")}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setCheckoutForm((prev) => ({ ...prev, paymentMethod: "pay_at_store" }))
-                      }
-                      className={`flex flex-col items-center justify-center p-3 rounded-2xl border text-sm font-semibold transition-all ${
-                        checkoutForm.paymentMethod === "pay_at_store"
-                          ? "border-violet-600 bg-violet-50/50 dark:bg-violet-950/20 text-violet-600"
-                          : "border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 text-muted-foreground"
-                      }`}
-                    >
-                      <Store className="w-5 h-5 mb-1 text-violet-500" />
-                      {t("Pay at Store", "દુકાન પર ચૂકવો")}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-4 mt-2 space-y-2">
-                  <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>{t("Total Items", "કુલ આઇટમ")}</span>
-                    <span className="font-semibold text-foreground">
-                      {cart.reduce((sum, item) => sum + item.quantity, 0)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm font-bold text-foreground border-t border-gray-200/50 dark:border-gray-700/50 pt-2">
-                    <span>{t("Amount Payable", "ચૂકવવાપાત્ર રકમ")}</span>
-                    <span className="text-violet-600 dark:text-violet-400">
-                      {formatCurrency(cartTotal)}
-                    </span>
-                  </div>
-                </div>
-
-                {formErrors.form && (
-                  <p className="text-xs text-destructive bg-destructive/10 rounded-xl px-3 py-2">
-                    {formErrors.form}
-                  </p>
-                )}
-
-                <Button
-                  type="submit"
-                  disabled={isSubmitting}
-                  variant="gradient"
-                  className="w-full h-12 text-base font-bold rounded-2xl shadow-xl shadow-violet-200 dark:shadow-violet-900/30 transition-transform active:scale-[0.98]"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                      {t("Placing Order...", "ઓર્ડર થઈ રહ્યો છે...")}
-                    </>
-                  ) : (
-                    t(
-                      `Place Order - ${formatCurrency(cartTotal)}`,
-                      `ઓર્ડર સબમિટ કરો - ${formatCurrency(cartTotal)}`
-                    )
-                  )}
-                </Button>
-              </form>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* ─── Success Modal ─────────────────────────────────────────────────── */}
-      <AnimatePresence>
-        {showSuccessModal && placedOrder && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white dark:bg-gray-900 rounded-3xl p-6 sm:p-8 text-center shadow-2xl max-w-md w-full border border-gray-100 dark:border-gray-800"
-            >
-              <div className="w-16 h-16 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4 border border-emerald-100 dark:border-emerald-900/30 shadow-inner">
-                <CheckCircle className="w-10 h-10 animate-bounce" />
-              </div>
-
-              <h3 className="font-extrabold text-2xl text-foreground mb-1">
-                {t("Order Placed!", "ઓર્ડર સફળતાપૂર્વક મૂકાયો!")}
-              </h3>
-              <p className="text-sm text-emerald-600 dark:text-emerald-400 font-semibold mb-4">
-                {t(
-                  `Order Number: ${placedOrder.orderNumber}`,
-                  `ઓર્ડર નંબર: ${placedOrder.orderNumber}`
-                )}
-              </p>
-
-              <div className="text-left bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-4 mb-6 space-y-2 border border-gray-100 dark:border-gray-800">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-                  {t("Order Details", "ઓર્ડર વિગતો")}
-                </p>
-                <div className="max-h-32 overflow-y-auto space-y-1.5 pr-1">
-                  {placedOrder.items.map((item, i: number) => (
-                    <div key={i} className="flex justify-between text-xs text-foreground">
-                      <span className="truncate max-w-[200px]">
-                        {item.quantity}x {item.name}
-                      </span>
-                      <span className="font-medium">
-                        {formatCurrency(item.price * item.quantity)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-                <div className="border-t border-gray-200 dark:border-gray-700 pt-2 flex justify-between text-sm font-bold text-foreground">
-                  <span>{t("Total Paid", "કુલ ચૂકવેલ")}</span>
-                  <span className="text-violet-600 dark:text-violet-400">
-                    {formatCurrency(placedOrder.total)}
-                  </span>
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                {business.whatsappNumber && (
-                  <Button
-                    variant="gradient"
-                    onClick={handleSuccessWhatsApp}
-                    className="w-full gap-2 h-12 text-base font-bold rounded-2xl shadow-lg shadow-violet-200 dark:shadow-violet-900/30"
-                  >
-                    <MessageCircle className="w-5 h-5" />
-                    {t("Send WhatsApp Confirmation", "WhatsApp પર કન્ફર્મેશન મોકલો")}
-                  </Button>
-                )}
-
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setShowSuccessModal(false);
-                    setPlacedOrder(null);
-                  }}
-                  className="w-full h-12 text-base font-bold rounded-2xl border-gray-200 dark:border-gray-800"
-                >
-                  {t("Continue Shopping", "ખરીદી ચાલુ રાખો")}
-                </Button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-}
-
-// ─── Product Card Component ────────────────────────────────────────────────────
-
-interface ProductCardProps {
-  product: IProduct;
-  locale: string;
-  index: number;
-  onAdd: (product: IProduct) => void;
-  compact?: boolean;
-  themeName?: string;
-  categories: ICategory[];
-}
-
-function ProductCard({
-  product,
-  locale,
-  index,
-  onAdd,
-  compact = false,
-  themeName,
-  categories,
-}: ProductCardProps) {
-  const t = (en: string, gu: string) => (locale === "gu" ? gu : en);
-  const discountedPrice = product.price * (1 - (product.discount ?? 0) / 100);
-  const hasDiscount = (product.discount ?? 0) > 0;
-  const aesthetic = themeAestheticMap[themeName ?? ""] ?? themeAestheticMap.minimal;
-  const category = categories?.find((c) => c._id === product.categoryId);
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: Math.min(index * 0.04, 0.4), duration: 0.3 }}
-      className={`bg-white dark:bg-gray-900 border overflow-hidden transition-all duration-350 group ${aesthetic.cardStyle}`}
-    >
-      {/* Image */}
-      <div
-        className={`relative overflow-hidden bg-gray-50 dark:bg-gray-800 ${compact ? "aspect-square" : "aspect-[4/3]"}`}
-      >
-        {product.images?.[0] ? (
-          <Image
-            src={product.images[0]}
-            alt={product.name}
-            fill
-            className="object-cover group-hover:scale-105 transition-transform duration-500"
-          />
-        ) : (
-          <ProductImageFallback
-            name={product.name}
-            icon={product.icon}
-            className="w-full h-full"
-            iconClassName={compact ? "w-8 h-8" : "w-10 h-10"}
-          />
-        )}
-        {/* Badges */}
-        {hasDiscount && (
-          <div className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-            -{product.discount}%
-          </div>
-        )}
-        {product.isFeatured && !compact && (
-          <div className="absolute top-2 right-2 bg-amber-500 text-white text-xs font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
-            <Star className="w-2.5 h-2.5 fill-white" />
-          </div>
-        )}
-        {!product.inStock && (
-          <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-            <span className="text-white text-xs font-bold bg-black/60 px-3 py-1 rounded-full">
-              {t("Out of Stock", "સ્ટૉક ખત્મ")}
-            </span>
-          </div>
-        )}
-      </div>
-
-      {/* Details */}
-      <div className={`${compact ? "p-2.5" : "p-3.5"}`}>
-        {category && (
-          <span className="text-[10px] uppercase font-black tracking-wider text-violet-600 dark:text-violet-400 block mb-1">
-            {locale === "gu" ? (category.nameGu ?? category.name) : category.name}
-          </span>
-        )}
-        <h3
-          className={`font-semibold text-foreground leading-tight truncate ${compact ? "text-xs" : "text-sm"}`}
-        >
-          {locale === "gu" ? (product.nameGu ?? product.name) : product.name}
-        </h3>
-
-        {!compact && product.description && (
-          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{product.description}</p>
-        )}
-
-        <div className="flex items-center gap-1.5 mt-1.5">
-          <span
-            className={`font-extrabold ${compact ? "text-sm" : "text-base"} text-violet-600 dark:text-violet-400`}
-          >
-            {formatCurrency(discountedPrice)}
-          </span>
-          {hasDiscount && product.originalPrice && (
-            <span className="text-xs text-muted-foreground line-through">
-              {formatCurrency(product.originalPrice)}
-            </span>
-          )}
+            <div className="flex items-center gap-2">
+              <span className="text-lg">🛒</span>
+              <span>{t("View Cart", "કાર્ટ જુઓ")}</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="w-6 h-6 bg-violet-600 rounded-full text-xs flex items-center justify-center text-white font-black">
+                {cartCount}
+              </span>
+              <span className="font-bold">{formatCurrency(cartTotal)}</span>
+            </div>
+          </button>
         </div>
+      )}
 
-        {!compact && (
-          <button
-            className={`mt-2.5 w-full h-8 text-xs font-bold rounded-xl transition-all duration-200 ${
-              !product.inStock
-                ? "bg-gray-100 dark:bg-gray-800 text-muted-foreground cursor-not-allowed"
-                : `${aesthetic.buttonClass} hover:opacity-90 active:scale-95`
-            }`}
-            disabled={!product.inStock}
-            onClick={() => onAdd(product)}
-          >
-            {!product.inStock ? t("Unavailable", "ઉપલબ્ધ નથી") : t("+ Add", "+ ઉમેરો")}
-          </button>
-        )}
+      {/* ─── Cart Sidebar Drawer ─────────────────────────────────────────── */}
+      <CartSidebar
+        showCart={showCart}
+        setShowCart={setShowCart}
+        cartCount={cartCount}
+        cart={cart}
+        locale={locale}
+        t={t}
+        updateQuantity={updateQuantity}
+        cartTotal={cartTotal}
+        session={session}
+        pendingCartKey={pendingCartKey}
+        router={router}
+        pathname={pathname}
+        setShowCheckoutModal={setShowCheckoutModal}
+        setCart={setCart}
+      />
 
-        {compact && product.inStock && (
-          <button
-            className={`mt-1.5 w-full h-7 text-xs font-bold rounded-lg transition-all duration-200 active:scale-95 ${aesthetic.buttonClass} hover:opacity-90`}
-            onClick={() => onAdd(product)}
-          >
-            {t("Add", "ઉમેરો")}
-          </button>
-        )}
-      </div>
-    </motion.div>
+      {/* ─── QR Code Modal ────────────────────────────────────────────────── */}
+      <QRModal
+        showQR={showQR}
+        setShowQR={setShowQR}
+        business={business}
+        storeUrl={storeUrl}
+        t={t}
+      />
+
+      {/* ─── Checkout Form Modal ──────────────────────────────────────────── */}
+      <CheckoutModal
+        showCheckoutModal={showCheckoutModal}
+        setShowCheckoutModal={setShowCheckoutModal}
+        formErrors={formErrors}
+        setFormErrors={setFormErrors}
+        checkoutForm={checkoutForm}
+        setCheckoutForm={setCheckoutForm}
+        handlePlaceOrder={handlePlaceOrder}
+        cart={cart}
+        cartTotal={cartTotal}
+        isSubmitting={isSubmitting}
+        t={t}
+        formatCurrency={formatCurrency}
+      />
+
+      {/* ─── Order Success Confirmation Receipt Modal ──────────────────────── */}
+      <SuccessModal
+        showSuccessModal={showSuccessModal}
+        setShowSuccessModal={setShowSuccessModal}
+        placedOrder={placedOrder}
+        setPlacedOrder={setPlacedOrder}
+        handleSuccessWhatsApp={handleSuccessWhatsApp}
+        business={business}
+        t={t}
+        formatCurrency={formatCurrency}
+      />
+    </div>
   );
 }

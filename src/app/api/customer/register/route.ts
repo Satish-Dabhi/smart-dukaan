@@ -3,6 +3,7 @@ import { connectDB } from "@/lib/db";
 import User from "@/models/User";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
+import { sendOtpEmail } from "@/lib/email";
 import { checkCustomerRegisterLimit, getClientIp } from "@/lib/ratelimit";
 
 const CustomerRegisterSchema = z.object({
@@ -42,15 +43,23 @@ export async function POST(req: NextRequest) {
 
     const hashedPassword = await bcrypt.hash(password, 12);
 
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const hashedOtp = await bcrypt.hash(otp, 10);
+
     const user = await User.create({
       name,
       email,
       password: hashedPassword,
       phone,
       role: "customer",
-      isVerified: true,
+      isVerified: false,
+      verificationOtp: hashedOtp,
+      verificationOtpExpires: new Date(Date.now() + 10 * 60 * 1000),
       authProvider: "credentials",
     });
+
+    // Send numeric OTP directly to the user's email
+    await sendOtpEmail(user.email, user.name, otp);
 
     return NextResponse.json(
       { success: true, data: { id: user._id, name: user.name, email: user.email } },

@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
+import { useLocale } from "next-intl";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,8 @@ type Tab = "register" | "login";
 
 export function CustomerAuthForm() {
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const locale = useLocale();
   const rawCallback = searchParams.get("callbackUrl") ?? "";
   const callbackUrl =
     rawCallback.startsWith("/") && !rawCallback.startsWith("//") ? rawCallback : "/";
@@ -65,15 +68,8 @@ export function CustomerAuthForm() {
         throw new Error(json.error || "Registration failed");
       }
 
-      toast.success("Account created! Signing you in...");
-      const result = await signIn("credentials", {
-        email: registerForm.email,
-        password: registerForm.password,
-        redirect: false,
-      });
-      if (result?.error) throw new Error("Sign-in after registration failed");
-
-      window.location.href = callbackUrl;
+      toast.success("Account created! Please verify your email.");
+      router.push(`/${locale}/auth/verify-email?email=${encodeURIComponent(registerForm.email)}`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Registration failed");
     } finally {
@@ -91,7 +87,18 @@ export function CustomerAuthForm() {
         redirect: false,
       });
       if (result?.error) {
-        toast.error("Invalid email or password");
+        if (result.error.includes("EmailUnverified")) {
+          // Trigger a new OTP email
+          await fetch("/api/auth/send-otp", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: loginForm.email }),
+          });
+          toast.info("Please verify your email address. A new OTP has been sent.");
+          router.push(`/${locale}/auth/verify-email?email=${encodeURIComponent(loginForm.email)}`);
+        } else {
+          toast.error("Invalid email or password");
+        }
         return;
       }
       window.location.href = callbackUrl;

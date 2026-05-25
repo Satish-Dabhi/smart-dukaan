@@ -19,6 +19,7 @@ export interface IBusinessDoc extends Document {
   tagline?: string;
   taglineGu?: string;
   theme: string;
+  productView?: string;
   status: "active" | "inactive" | "suspended";
   whatsappNumber?: string;
   mapUrl?: string;
@@ -80,6 +81,11 @@ const BusinessSchema = new Schema<IBusinessDoc>(
       type: String,
       enum: ["grocery", "cafe", "bakery", "restaurant", "medical", "salon", "retail", "minimal"],
       default: "minimal",
+    },
+    productView: {
+      type: String,
+      enum: ["card", "row", "compact"],
+      default: "card",
     },
     status: { type: String, enum: ["active", "inactive", "suspended"], default: "active" },
     whatsappNumber: { type: String },

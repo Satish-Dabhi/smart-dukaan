@@ -47,6 +47,7 @@ export interface IBusiness {
   tagline?: string;
   taglineGu?: string;
   theme: BusinessTheme;
+  productView?: "card" | "row" | "compact";
   status: BusinessStatus;
   whatsappNumber?: string;
   socialLinks?: {
