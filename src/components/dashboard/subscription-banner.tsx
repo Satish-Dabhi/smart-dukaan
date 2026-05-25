@@ -12,7 +12,7 @@ interface SubscriptionBannerProps {
   locale: string;
 }
 
-export function SubscriptionBanner({ plan, status, daysRemaining, locale }: SubscriptionBannerProps) {
+export function SubscriptionBanner({ status, daysRemaining, locale }: SubscriptionBannerProps) {
   const [dismissed, setDismissed] = useState(false);
 
   // Only show for trial (any stage) or expired
@@ -31,10 +31,10 @@ export function SubscriptionBanner({ plan, status, daysRemaining, locale }: Subs
         isExpired
           ? "bg-red-600 text-white"
           : isUrgent
-          ? "bg-amber-500 text-white"
-          : isWarning
-          ? "bg-amber-50 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 border-b border-amber-200 dark:border-amber-800"
-          : "bg-sky-50 dark:bg-sky-900/20 text-sky-800 dark:text-sky-300 border-b border-sky-200 dark:border-sky-800"
+            ? "bg-amber-500 text-white"
+            : isWarning
+              ? "bg-amber-50 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 border-b border-amber-200 dark:border-amber-800"
+              : "bg-sky-50 dark:bg-sky-900/20 text-sky-800 dark:text-sky-300 border-b border-sky-200 dark:border-sky-800"
       )}
     >
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
@@ -52,7 +52,8 @@ export function SubscriptionBanner({ plan, status, daysRemaining, locale }: Subs
               </>
             ) : daysRemaining !== null && daysRemaining <= 1 ? (
               <>
-                <span className="font-bold">Last day of your trial!</span> Upgrade today to avoid interruption.
+                <span className="font-bold">Last day of your trial!</span> Upgrade today to avoid
+                interruption.
               </>
             ) : (
               <>

@@ -23,6 +23,7 @@ const CheckoutSchema = z.object({
   customerPhone: z.string().optional(),
   customerEmail: z.string().email().optional().or(z.literal("")),
   paymentMethod: z.string().min(1).default("cash"),
+  discount: z.number().nonnegative().optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -46,7 +47,8 @@ export async function POST(req: NextRequest) {
     if (!parsed.success) {
       return NextResponse.json({ success: false, error: "Invalid request body" }, { status: 400 });
     }
-    const { items, customerName, customerPhone, customerEmail, paymentMethod } = parsed.data;
+    const { items, customerName, customerPhone, customerEmail, paymentMethod, discount } =
+      parsed.data;
 
     const businessId = sessionBusinessId;
 
@@ -123,7 +125,11 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const computedTotal = computedSubtotal + computedCgst + computedSgst;
+    const discountAmount = Math.max(0, discount ?? 0);
+    const computedTotal = Math.max(
+      0,
+      computedSubtotal - discountAmount + computedCgst + computedSgst
+    );
 
     // Upsert customer
     let customerId: string | undefined;
@@ -159,7 +165,7 @@ export async function POST(req: NextRequest) {
       customerEmail: customerEmail || undefined,
       items: invoiceItems,
       subtotal: computedSubtotal,
-      discountAmount: 0,
+      discountAmount,
       cgst: computedCgst,
       sgst: computedSgst,
       igst: 0,
@@ -237,7 +243,7 @@ export async function POST(req: NextRequest) {
           total: i.total,
         })),
         subtotal: computedSubtotal,
-        discount: 0,
+        discount: discountAmount,
         taxAmount: computedCgst + computedSgst,
         total: computedTotal,
         paymentMethod,

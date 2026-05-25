@@ -10,9 +10,65 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
-  Phone, MapPin, Share2, QrCode, MessageCircle,
-  Search, Star, ShoppingCart, X,
-  CheckCircle, Truck, Shield, Sun, Moon, Store, Loader2
+  Phone,
+  MapPin,
+  Share2,
+  QrCode,
+  MessageCircle,
+  Search,
+  Star,
+  ShoppingCart,
+  X,
+  CheckCircle,
+  Truck,
+  Shield,
+  Sun,
+  Moon,
+  Store,
+  Loader2,
+  LogIn,
+  LogOut,
+  Carrot,
+  Milk,
+  Coffee,
+  Cookie,
+  Pill,
+  Shirt,
+  Scissors,
+  Sparkles,
+  Package,
+  Leaf,
+  ShoppingBag,
+  Apple,
+  Cake,
+  Utensils,
+  Tv,
+  Candy,
+  BookOpen,
+  Flame,
+  Heart,
+  Tag,
+  Gift,
+  Gem,
+  Crown,
+  Banana,
+  Egg,
+  Wheat,
+  Grape,
+  Cherry,
+  CupSoda,
+  GlassWater,
+  Croissant,
+  IceCream,
+  Pizza,
+  Soup,
+  ChefHat,
+  Smartphone,
+  Laptop,
+  Headphones,
+  Home,
+  Smile,
+  Clock,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { formatCurrency, debounce } from "@/lib/utils";
@@ -39,6 +95,572 @@ const themeMap: Record<string, { from: string; to: string; accent: string }> = {
   minimal: { from: "from-violet-600", to: "to-purple-700", accent: "bg-violet-600" },
 };
 
+const themeAestheticMap: Record<
+  string,
+  {
+    fontFamily: string;
+    bgColor: string;
+    cardStyle: string;
+    isCulinaryMenu: boolean;
+    buttonClass: string;
+    badgeClass: string;
+  }
+> = {
+  grocery: {
+    fontFamily: "font-sans",
+    bgColor: "bg-emerald-50/20 dark:bg-emerald-950/5",
+    cardStyle:
+      "rounded-2xl border-emerald-100 dark:border-emerald-900/30 hover:border-emerald-300 dark:hover:border-emerald-700 shadow-sm",
+    isCulinaryMenu: false,
+    buttonClass: "bg-emerald-600 hover:bg-emerald-700 text-white",
+    badgeClass: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300",
+  },
+  cafe: {
+    fontFamily: "font-serif",
+    bgColor: "bg-[#FAF6F0] dark:bg-[#1C1917] text-stone-900 dark:text-stone-100",
+    cardStyle:
+      "rounded-xl border-amber-200 dark:border-amber-900/40 hover:border-amber-400 dark:hover:border-amber-700 shadow-md",
+    isCulinaryMenu: true,
+    buttonClass: "bg-amber-700 hover:bg-amber-800 text-white",
+    badgeClass: "bg-amber-100 text-amber-900 dark:bg-amber-950/60 dark:text-amber-300",
+  },
+  bakery: {
+    fontFamily: "font-sans",
+    bgColor: "bg-[#FFF8F8] dark:bg-[#1E1B1B] text-rose-950 dark:text-rose-50",
+    cardStyle:
+      "rounded-3xl border-rose-100 dark:border-rose-900/30 hover:border-rose-300 dark:hover:border-rose-700 shadow-sm",
+    isCulinaryMenu: false,
+    buttonClass: "bg-rose-500 hover:bg-rose-600 text-white rounded-2xl",
+    badgeClass: "bg-rose-100 text-rose-800 dark:bg-rose-950/50 dark:text-rose-300",
+  },
+  restaurant: {
+    fontFamily: "font-serif",
+    bgColor: "bg-[#FCFBF7] dark:bg-[#121212]",
+    cardStyle:
+      "rounded-lg border-red-200 dark:border-red-900/30 hover:border-red-400 dark:hover:border-red-700 shadow-md",
+    isCulinaryMenu: true,
+    buttonClass: "bg-red-600 hover:bg-red-700 text-white",
+    badgeClass: "bg-red-100 text-red-800 dark:bg-red-950/50 dark:text-red-300",
+  },
+  medical: {
+    fontFamily: "font-sans",
+    bgColor: "bg-slate-50 dark:bg-slate-950",
+    cardStyle:
+      "rounded-lg border-blue-100 dark:border-blue-900/30 hover:border-blue-300 dark:hover:border-blue-700 shadow-none",
+    isCulinaryMenu: false,
+    buttonClass: "bg-blue-600 hover:bg-blue-700 text-white",
+    badgeClass: "bg-blue-100 text-blue-800 dark:bg-blue-950/50 dark:text-blue-300",
+  },
+  salon: {
+    fontFamily: "font-serif",
+    bgColor: "bg-[#FAF5FF] dark:bg-[#181124] text-purple-950 dark:text-purple-50",
+    cardStyle:
+      "rounded-2xl border-purple-100 dark:border-purple-900/30 hover:border-purple-300 dark:hover:border-purple-700",
+    isCulinaryMenu: false,
+    buttonClass: "bg-purple-600 hover:bg-purple-700 text-white",
+    badgeClass: "bg-purple-100 text-purple-800 dark:bg-purple-950/50 dark:text-purple-300",
+  },
+  retail: {
+    fontFamily: "font-sans",
+    bgColor: "bg-white dark:bg-gray-950",
+    cardStyle:
+      "rounded-none border-gray-200 dark:border-gray-800 hover:border-gray-400 dark:hover:border-gray-600 shadow-none",
+    isCulinaryMenu: false,
+    buttonClass:
+      "bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wider rounded-none",
+    badgeClass: "bg-indigo-100 text-indigo-800 dark:bg-indigo-950/50 dark:text-indigo-300",
+  },
+  minimal: {
+    fontFamily: "font-sans",
+    bgColor: "bg-white dark:bg-gray-950",
+    cardStyle:
+      "rounded-xl border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white shadow-none",
+    isCulinaryMenu: false,
+    buttonClass:
+      "bg-black hover:bg-neutral-800 dark:bg-white dark:text-black dark:hover:bg-neutral-200 text-white",
+    badgeClass: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200",
+  },
+};
+
+// Helper to map category names dynamically to stunning retail icons & gradients
+function getCategoryIcon(name: string) {
+  const lower = name.toLowerCase();
+  if (
+    lower.includes("beverage") ||
+    lower.includes("drink") ||
+    lower.includes("soda") ||
+    lower.includes("juice") ||
+    lower.includes("cola")
+  ) {
+    return {
+      icon: CupSoda,
+      gradient:
+        "from-pink-500/10 to-orange-500/10 text-pink-600 dark:text-pink-400 border-pink-500/20",
+    };
+  }
+  if (
+    lower.includes("glasswater") ||
+    lower.includes("water") ||
+    lower.includes("mineral") ||
+    lower.includes("hydration")
+  ) {
+    return {
+      icon: GlassWater,
+      gradient:
+        "from-cyan-400/10 to-sky-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-400/20",
+    };
+  }
+  if (
+    lower.includes("coffee") ||
+    lower.includes("tea") ||
+    lower.includes("cafe") ||
+    lower.includes("chai")
+  ) {
+    return {
+      icon: Coffee,
+      gradient:
+        "from-orange-500/10 to-amber-600/10 text-orange-600 dark:text-orange-400 border-orange-500/20",
+    };
+  }
+  if (
+    lower.includes("bakery") ||
+    lower.includes("bread") ||
+    lower.includes("roti") ||
+    lower.includes("croissant")
+  ) {
+    return {
+      icon: Croissant,
+      gradient:
+        "from-amber-600/10 to-orange-500/10 text-amber-700 dark:text-amber-400 border-amber-600/20",
+    };
+  }
+  if (
+    lower.includes("cake") ||
+    lower.includes("sweet") ||
+    lower.includes("dessert") ||
+    lower.includes("pastry") ||
+    lower.includes("mithai")
+  ) {
+    return {
+      icon: Cake,
+      gradient:
+        "from-rose-500/10 to-pink-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20",
+    };
+  }
+  if (
+    lower.includes("icecream") ||
+    lower.includes("gelato") ||
+    lower.includes("kulfi") ||
+    lower.includes("cold dessert")
+  ) {
+    return {
+      icon: IceCream,
+      gradient:
+        "from-pink-400/10 to-rose-400/10 text-pink-500 dark:text-pink-400 border-pink-400/20",
+    };
+  }
+  if (lower.includes("banana")) {
+    return {
+      icon: Banana,
+      gradient:
+        "from-yellow-400/10 to-amber-400/10 text-yellow-600 dark:text-yellow-500 border-yellow-400/20",
+    };
+  }
+  if (lower.includes("grape") || lower.includes("wine")) {
+    return {
+      icon: Grape,
+      gradient:
+        "from-purple-500/10 to-violet-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20",
+    };
+  }
+  if (lower.includes("cherry") || lower.includes("berry")) {
+    return {
+      icon: Cherry,
+      gradient: "from-red-500/10 to-rose-600/10 text-red-600 dark:text-red-400 border-red-500/20",
+    };
+  }
+  if (
+    lower.includes("veg") ||
+    lower.includes("carrot") ||
+    lower.includes("onion") ||
+    lower.includes("potato") ||
+    lower.includes("sabji")
+  ) {
+    return {
+      icon: Carrot,
+      gradient:
+        "from-emerald-500/10 to-teal-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
+    };
+  }
+  if (lower.includes("fruit") || lower.includes("apple") || lower.includes("mango")) {
+    return {
+      icon: Apple,
+      gradient:
+        "from-emerald-500/10 to-teal-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
+    };
+  }
+  if (
+    lower.includes("dairy") ||
+    lower.includes("milk") ||
+    lower.includes("cheese") ||
+    lower.includes("curd") ||
+    lower.includes("butter")
+  ) {
+    return {
+      icon: Milk,
+      gradient: "from-sky-500/10 to-blue-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20",
+    };
+  }
+  if (lower.includes("egg") || lower.includes("poultry") || lower.includes("eggroll")) {
+    return {
+      icon: Egg,
+      gradient:
+        "from-yellow-500/10 to-orange-400/10 text-yellow-600 dark:text-yellow-500 border-yellow-500/20",
+    };
+  }
+  if (
+    lower.includes("grain") ||
+    lower.includes("wheat") ||
+    lower.includes("atta") ||
+    lower.includes("flour")
+  ) {
+    return {
+      icon: Wheat,
+      gradient:
+        "from-amber-500/10 to-yellow-600/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
+    };
+  }
+  if (
+    lower.includes("snack") ||
+    lower.includes("cookie") ||
+    lower.includes("biscuit") ||
+    lower.includes("chips") ||
+    lower.includes("namkeen")
+  ) {
+    return {
+      icon: Cookie,
+      gradient:
+        "from-rose-500/10 to-pink-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20",
+    };
+  }
+  if (
+    lower.includes("candy") ||
+    lower.includes("chocolate") ||
+    lower.includes("toffee") ||
+    lower.includes("lollipop")
+  ) {
+    return {
+      icon: Candy,
+      gradient:
+        "from-rose-500/10 to-pink-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20",
+    };
+  }
+  if (
+    lower.includes("soup") ||
+    lower.includes("broth") ||
+    lower.includes("hotpot") ||
+    lower.includes("maggi")
+  ) {
+    return {
+      icon: Soup,
+      gradient:
+        "from-amber-500/10 to-red-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
+    };
+  }
+  if (
+    lower.includes("pizza") ||
+    lower.includes("burger") ||
+    lower.includes("slice") ||
+    lower.includes("fastfood")
+  ) {
+    return {
+      icon: Pizza,
+      gradient: "from-red-500/10 to-yellow-500/10 text-red-600 dark:text-red-400 border-red-500/20",
+    };
+  }
+  if (
+    lower.includes("dining") ||
+    lower.includes("food") ||
+    lower.includes("lunch") ||
+    lower.includes("dinner") ||
+    lower.includes("meal")
+  ) {
+    return {
+      icon: Utensils,
+      gradient: "from-red-500/10 to-orange-500/10 text-red-600 dark:text-red-400 border-red-500/20",
+    };
+  }
+  if (
+    lower.includes("chef") ||
+    lower.includes("culinary") ||
+    lower.includes("catering") ||
+    lower.includes("cook")
+  ) {
+    return {
+      icon: ChefHat,
+      gradient:
+        "from-slate-500/10 to-zinc-500/10 text-slate-600 dark:text-slate-400 border-slate-500/20",
+    };
+  }
+  if (
+    lower.includes("medicine") ||
+    lower.includes("pharma") ||
+    lower.includes("health") ||
+    lower.includes("pill") ||
+    lower.includes("tablet")
+  ) {
+    return {
+      icon: Pill,
+      gradient:
+        "from-cyan-500/10 to-blue-600/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20",
+    };
+  }
+  if (
+    lower.includes("heart") ||
+    lower.includes("wellness") ||
+    lower.includes("organic care") ||
+    lower.includes("cardio")
+  ) {
+    return {
+      icon: Heart,
+      gradient: "from-red-500/10 to-pink-500/10 text-red-500 dark:text-red-400 border-red-500/20",
+    };
+  }
+  if (
+    lower.includes("cloth") ||
+    lower.includes("wear") ||
+    lower.includes("apparel") ||
+    lower.includes("shirt") ||
+    lower.includes("fashion")
+  ) {
+    return {
+      icon: Shirt,
+      gradient:
+        "from-violet-500/10 to-fuchsia-500/10 text-violet-600 dark:text-violet-400 border-violet-500/20",
+    };
+  }
+  if (
+    lower.includes("salon") ||
+    lower.includes("parlor") ||
+    lower.includes("hair") ||
+    lower.includes("grooming") ||
+    lower.includes("cut")
+  ) {
+    return {
+      icon: Scissors,
+      gradient:
+        "from-fuchsia-500/10 to-pink-500/10 text-fuchsia-600 dark:text-fuchsia-400 border-fuchsia-500/20",
+    };
+  }
+  if (
+    lower.includes("beauty") ||
+    lower.includes("cosmetic") ||
+    lower.includes("sparkle") ||
+    lower.includes("service")
+  ) {
+    return {
+      icon: Sparkles,
+      gradient:
+        "from-indigo-500/10 to-purple-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20",
+    };
+  }
+  if (
+    lower.includes("electronic") ||
+    lower.includes("tv") ||
+    lower.includes("appliance") ||
+    lower.includes("television")
+  ) {
+    return {
+      icon: Tv,
+      gradient:
+        "from-blue-500/10 to-indigo-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20",
+    };
+  }
+  if (
+    lower.includes("smartphone") ||
+    lower.includes("mobile") ||
+    lower.includes("phone") ||
+    lower.includes("cellphone")
+  ) {
+    return {
+      icon: Smartphone,
+      gradient:
+        "from-blue-500/10 to-indigo-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20",
+    };
+  }
+  if (lower.includes("laptop") || lower.includes("computer") || lower.includes("pc")) {
+    return {
+      icon: Laptop,
+      gradient:
+        "from-slate-600/10 to-zinc-700/10 text-slate-700 dark:text-slate-400 border-slate-600/20",
+    };
+  }
+  if (
+    lower.includes("headphones") ||
+    lower.includes("audio") ||
+    lower.includes("music") ||
+    lower.includes("sound")
+  ) {
+    return {
+      icon: Headphones,
+      gradient:
+        "from-purple-500/10 to-pink-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20",
+    };
+  }
+  if (
+    lower.includes("home") ||
+    lower.includes("decor") ||
+    lower.includes("household") ||
+    lower.includes("furniture")
+  ) {
+    return {
+      icon: Home,
+      gradient:
+        "from-teal-500/10 to-emerald-500/10 text-teal-600 dark:text-teal-400 border-teal-500/20",
+    };
+  }
+  if (
+    lower.includes("organic") ||
+    lower.includes("natural") ||
+    lower.includes("leaf") ||
+    lower.includes("herbal")
+  ) {
+    return {
+      icon: Leaf,
+      gradient:
+        "from-amber-500/10 to-yellow-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
+    };
+  }
+  if (
+    lower.includes("package") ||
+    lower.includes("box") ||
+    lower.includes("parcel") ||
+    lower.includes("delivery")
+  ) {
+    return {
+      icon: Package,
+      gradient:
+        "from-violet-500/10 to-indigo-500/10 text-violet-600 dark:text-violet-400 border-violet-500/20",
+    };
+  }
+  if (
+    lower.includes("shopping") ||
+    lower.includes("bag") ||
+    lower.includes("grocery bag") ||
+    lower.includes("carry bag")
+  ) {
+    return {
+      icon: ShoppingBag,
+      gradient:
+        "from-violet-500/10 to-indigo-500/10 text-violet-600 dark:text-violet-400 border-violet-500/20",
+    };
+  }
+  if (
+    lower.includes("flame") ||
+    lower.includes("spicy") ||
+    lower.includes("hot") ||
+    lower.includes("grill")
+  ) {
+    return {
+      icon: Flame,
+      gradient: "from-red-500/10 to-orange-500/10 text-red-600 dark:text-red-400 border-red-500/20",
+    };
+  }
+  if (
+    lower.includes("book") ||
+    lower.includes("stationery") ||
+    lower.includes("notebook") ||
+    lower.includes("read")
+  ) {
+    return {
+      icon: BookOpen,
+      gradient:
+        "from-amber-500/10 to-yellow-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
+    };
+  }
+  if (
+    lower.includes("tag") ||
+    lower.includes("deal") ||
+    lower.includes("sale") ||
+    lower.includes("discount") ||
+    lower.includes("coupon")
+  ) {
+    return {
+      icon: Tag,
+      gradient:
+        "from-slate-500/10 to-gray-600/10 text-slate-600 dark:text-slate-400 border-slate-500/20",
+    };
+  }
+  if (
+    lower.includes("gift") ||
+    lower.includes("present") ||
+    lower.includes("hamper") ||
+    lower.includes("flower")
+  ) {
+    return {
+      icon: Gift,
+      gradient:
+        "from-rose-500/10 to-red-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20",
+    };
+  }
+  if (
+    lower.includes("gem") ||
+    lower.includes("jewelry") ||
+    lower.includes("gold") ||
+    lower.includes("silver") ||
+    lower.includes("diamond")
+  ) {
+    return {
+      icon: Gem,
+      gradient:
+        "from-cyan-500/10 to-indigo-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20",
+    };
+  }
+  if (
+    lower.includes("crown") ||
+    lower.includes("luxury") ||
+    lower.includes("premium") ||
+    lower.includes("royal") ||
+    lower.includes("vip")
+  ) {
+    return {
+      icon: Crown,
+      gradient:
+        "from-amber-500/10 to-yellow-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
+    };
+  }
+  if (
+    lower.includes("clock") ||
+    lower.includes("time") ||
+    lower.includes("watch") ||
+    lower.includes("timer")
+  ) {
+    return {
+      icon: Clock,
+      gradient:
+        "from-indigo-500/10 to-blue-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20",
+    };
+  }
+  if (
+    lower.includes("smile") ||
+    lower.includes("fun") ||
+    lower.includes("toy") ||
+    lower.includes("kids") ||
+    lower.includes("happy")
+  ) {
+    return {
+      icon: Smile,
+      gradient:
+        "from-yellow-400/10 to-amber-500/10 text-amber-500 dark:text-amber-400 border-amber-500/20",
+    };
+  }
+  return {
+    icon: Store,
+    gradient:
+      "from-violet-500/10 to-indigo-500/10 text-violet-600 dark:text-violet-400 border-violet-500/20",
+  };
+}
+
 export function StorefrontPage({
   business,
   products,
@@ -49,6 +671,7 @@ export function StorefrontPage({
   const router = useRouter();
   const pathname = usePathname();
   const { data: session } = useSession();
+  const aesthetic = themeAestheticMap[business.theme ?? ""] ?? themeAestheticMap.minimal;
   const [cart, setCart] = useState<CartItem[]>([]);
   const [showCart, setShowCart] = useState(false);
   const [showQR, setShowQR] = useState(false);
@@ -73,8 +696,8 @@ export function StorefrontPage({
   const pendingCartKey = `sd_pending_cart_${business._id}`;
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setMounted(true);
+    const timer = setTimeout(() => setMounted(true), 0);
+    return () => clearTimeout(timer);
   }, []);
 
   // After returning from auth: restore saved cart and open checkout
@@ -85,25 +708,29 @@ export function StorefrontPage({
     try {
       const parsed = JSON.parse(saved) as CartItem[];
       if (Array.isArray(parsed) && parsed.length > 0) {
-        setCart(parsed);
-        setShowCheckoutModal(true);
+        const timer = setTimeout(() => {
+          setCart(parsed);
+          setShowCheckoutModal(true);
+        }, 0);
         localStorage.removeItem(pendingCartKey);
+        return () => clearTimeout(timer);
       }
     } catch {
       localStorage.removeItem(pendingCartKey);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session]);
+  }, [session, pendingCartKey]);
 
   // Pre-fill name from logged-in user
   useEffect(() => {
     if (session?.user?.name) {
-      setCheckoutForm((prev) => ({
-        ...prev,
-        customerName: prev.customerName || session.user.name || "",
-      }));
+      const timer = setTimeout(() => {
+        setCheckoutForm((prev) => ({
+          ...prev,
+          customerName: prev.customerName || session.user.name || "",
+        }));
+      }, 0);
+      return () => clearTimeout(timer);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.user?.name]);
 
   const handlePlaceOrder = async (e: React.FormEvent) => {
@@ -116,7 +743,10 @@ export function StorefrontPage({
     if (!checkoutForm.customerPhone.trim()) {
       errors.customerPhone = t("Phone number is required", "ફોન નંબર જરૂરી છે");
     } else if (!/^\d{10}$/.test(checkoutForm.customerPhone.replace(/[\s\-()]/g, ""))) {
-      errors.customerPhone = t("Enter a valid 10-digit mobile number", "10-અંકનો માન્ય મોબાઇલ નંબર દાખલ કરો");
+      errors.customerPhone = t(
+        "Enter a valid 10-digit mobile number",
+        "10-અંકનો માન્ય મોબાઇલ નંબર દાખલ કરો"
+      );
     }
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors);
@@ -128,16 +758,19 @@ export function StorefrontPage({
 
     try {
       const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-      const discount = cart.reduce((sum, item) => sum + (item.price * (item.discount / 100)) * item.quantity, 0);
+      const discount = cart.reduce(
+        (sum, item) => sum + item.price * (item.discount / 100) * item.quantity,
+        0
+      );
       const taxAmount = cart.reduce((sum, item) => {
         const priceAfterDiscount = item.price * (1 - item.discount / 100);
-        return sum + (priceAfterDiscount * (item.gst / 100)) * item.quantity;
+        return sum + priceAfterDiscount * (item.gst / 100) * item.quantity;
       }, 0);
       const total = subtotal - discount + taxAmount;
 
       const orderPayload = {
         businessId: business._id,
-        items: cart.map(item => ({
+        items: cart.map((item) => ({
           productId: item.productId,
           name: item.name,
           price: item.price,
@@ -174,7 +807,14 @@ export function StorefrontPage({
     } catch (err) {
       console.error(err);
       const errMsg = err instanceof Error ? err.message : String(err);
-      setFormErrors({ form: errMsg || t("Something went wrong. Please try again.", "કાંઈક ખોટું થયું. કૃપા કરીને ફરી પ્રયાસ કરો.") });
+      setFormErrors({
+        form:
+          errMsg ||
+          t(
+            "Something went wrong. Please try again.",
+            "કાંઈક ખોટું થયું. કૃપા કરીને ફરી પ્રયાસ કરો."
+          ),
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -268,8 +908,9 @@ export function StorefrontPage({
   const t = (en: string, gu: string) => (locale === "gu" ? gu : en);
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
-
+    <div
+      className={`min-h-screen ${aesthetic.bgColor} ${aesthetic.fontFamily} transition-colors duration-300`}
+    >
       {/* ─── Hero Banner ─────────────────────────────────────────────────── */}
       <div className={`relative bg-gradient-to-br ${theme.from} ${theme.to} overflow-hidden`}>
         {business.banner && (
@@ -285,7 +926,10 @@ export function StorefrontPage({
           <div className="flex flex-col sm:flex-row items-start sm:items-end gap-6">
             {/* Logo */}
             <div className="shrink-0">
-              <Link href={`/${locale}`} className="block hover:scale-[1.02] active:scale-95 transition-all">
+              <Link
+                href={`/${locale}/business/${business.slug}`}
+                className="block hover:scale-[1.02] active:scale-95 transition-all"
+              >
                 {business.logo ? (
                   <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-3xl bg-white/20 backdrop-blur-sm overflow-hidden border-2 border-white/30 shadow-2xl">
                     <Image
@@ -388,6 +1032,59 @@ export function StorefrontPage({
                       : t("Dark Mode", "ડાર્ક મોડ")}
                   </span>
                 </button>
+
+                {/* Account / Login Controls */}
+                {session ? (
+                  <div className="relative flex items-center gap-1.5 bg-white text-gray-900 px-4 py-2 rounded-full text-sm font-semibold shadow-md transition-all">
+                    <span>👤 {session.user.name || "Customer"}</span>
+                    {session.user.role === "customer" ? (
+                      <Link
+                        href={`/${locale}/account/orders`}
+                        className="bg-violet-600 hover:bg-violet-700 text-white px-2.5 py-1 rounded-full text-xs font-bold transition-colors ml-1"
+                      >
+                        {t("My Orders", "મારા ઓર્ડર")}
+                      </Link>
+                    ) : (
+                      <Link
+                        href={`/${locale}/dashboard`}
+                        className="bg-violet-600 hover:bg-violet-700 text-white px-2.5 py-1 rounded-full text-xs font-bold transition-colors ml-1"
+                      >
+                        {t("Dashboard", "ડૅશબોર્ડ")}
+                      </Link>
+                    )}
+                    <button
+                      onClick={() => {
+                        import("next-auth/react").then((m) => m.signOut());
+                      }}
+                      className="text-gray-400 hover:text-gray-600 transition-colors pl-1 border-l border-gray-200 ml-1"
+                      title={t("Sign Out", "લૉગ આઉટ")}
+                    >
+                      <LogOut className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="relative group">
+                    <button className="flex items-center gap-1.5 bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-md transition-all">
+                      <LogIn className="w-3.5 h-3.5" />
+                      <span>{t("Login", "લૉગ ઇન")}</span>
+                    </button>
+                    {/* Hover Dropdown */}
+                    <div className="absolute left-0 mt-1 w-48 rounded-xl bg-white dark:bg-gray-800 shadow-xl border border-gray-100 dark:border-gray-700 py-1 z-50 hidden group-hover:block hover:block">
+                      <Link
+                        href={`/${locale}/auth/customer-auth?callbackUrl=${encodeURIComponent(pathname)}`}
+                        className="block px-4 py-2 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                      >
+                        🛍️ {t("Customer Sign In", "ગ્રાહક લૉગ ઇન")}
+                      </Link>
+                      <Link
+                        href={`/${locale}/auth/login?callbackUrl=${encodeURIComponent(pathname)}`}
+                        className="block px-4 py-2 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border-t border-gray-100 dark:border-gray-700"
+                      >
+                        💼 {t("Merchant Portal", "વેપારી પોર્ટલ")}
+                      </Link>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -460,10 +1157,11 @@ export function StorefrontPage({
             <div className="flex gap-2 mt-3 overflow-x-auto pb-1 scrollbar-none">
               <button
                 onClick={() => updateFilters({ category: undefined })}
-                className={`shrink-0 px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${!filters.category
+                className={`shrink-0 px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                  !filters.category
                     ? "bg-violet-600 text-white shadow-md shadow-violet-200 dark:shadow-violet-900/30"
                     : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
-                  }`}
+                }`}
               >
                 {t("All", "બધું")}
               </button>
@@ -473,12 +1171,13 @@ export function StorefrontPage({
                   onClick={() =>
                     updateFilters({ category: filters.category === cat._id ? undefined : cat._id })
                   }
-                  className={`shrink-0 px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${filters.category === cat._id
+                  className={`shrink-0 px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                    filters.category === cat._id
                       ? "bg-violet-600 text-white shadow-md shadow-violet-200 dark:shadow-violet-900/30"
                       : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
-                    }`}
+                  }`}
                 >
-                  {locale === "gu" ? cat.nameGu ?? cat.name : cat.name}
+                  {locale === "gu" ? (cat.nameGu ?? cat.name) : cat.name}
                 </button>
               ))}
             </div>
@@ -487,6 +1186,76 @@ export function StorefrontPage({
       </div>
 
       <div className="max-w-5xl mx-auto px-4 py-8 space-y-12">
+        {/* Category Circle Cards Showcase */}
+        {categories.length > 0 && (
+          <section className="animate-fadeIn">
+            <h2 className="text-lg font-bold text-foreground mb-5 flex items-center gap-2">
+              <Store className="w-5 h-5 text-violet-600 dark:text-violet-400" />
+              {t("Browse Categories", "શ્રેણીઓ બ્રાઉઝ કરો")}
+            </h2>
+            <div className="flex gap-4 overflow-x-auto pb-4 pt-1 scrollbar-none -mx-4 px-4 sm:mx-0 sm:px-0">
+              {/* "All" Card */}
+              <button
+                onClick={() => updateFilters({ category: undefined })}
+                className="shrink-0 flex flex-col items-center gap-2 group focus:outline-none"
+              >
+                <div
+                  className={`w-16 h-16 rounded-full flex items-center justify-center border transition-all duration-300 ${
+                    !filters.category
+                      ? "bg-violet-600 border-violet-600 text-white shadow-lg shadow-violet-200 dark:shadow-violet-900/30 scale-105"
+                      : "bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-800 hover:border-violet-300 dark:hover:border-violet-800 hover:shadow-md text-gray-500 hover:text-violet-600"
+                  }`}
+                >
+                  <Store className="w-6 h-6 transition-transform group-hover:scale-110" />
+                </div>
+                <span
+                  className={`text-xs font-semibold tracking-wide transition-colors ${
+                    !filters.category
+                      ? "text-violet-600 dark:text-violet-400 font-bold"
+                      : "text-gray-600 dark:text-gray-400 group-hover:text-violet-600"
+                  }`}
+                >
+                  {t("All Products", "બધા ઉત્પાદનો")}
+                </span>
+              </button>
+
+              {/* Individual Category Cards */}
+              {categories.map((cat) => {
+                const isSelected = filters.category === cat._id;
+                const { icon: IconComp, gradient } = getCategoryIcon(cat.name);
+
+                return (
+                  <button
+                    key={cat._id}
+                    onClick={() => updateFilters({ category: isSelected ? undefined : cat._id })}
+                    className="shrink-0 flex flex-col items-center gap-2 group focus:outline-none"
+                  >
+                    <div
+                      className={`w-16 h-16 rounded-full flex items-center justify-center border transition-all duration-300 ${
+                        isSelected
+                          ? "bg-violet-600 border-violet-600 text-white shadow-lg shadow-violet-200 dark:shadow-violet-900/30 scale-105"
+                          : `bg-gradient-to-br ${gradient} border-gray-100 dark:border-gray-800 hover:border-violet-300 dark:hover:border-violet-800 hover:shadow-md text-current`
+                      }`}
+                    >
+                      <IconComp
+                        className={`w-6 h-6 transition-transform group-hover:scale-110 ${isSelected ? "text-white" : ""}`}
+                      />
+                    </div>
+                    <span
+                      className={`text-xs font-semibold tracking-wide transition-colors ${
+                        isSelected
+                          ? "text-violet-600 dark:text-violet-400 font-bold"
+                          : "text-gray-600 dark:text-gray-400 group-hover:text-violet-600"
+                      }`}
+                    >
+                      {locale === "gu" ? (cat.nameGu ?? cat.name) : cat.name}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        )}
 
         {/* ─── Featured Products (if no active filter) ─────────────────── */}
         {!filters.category && !filters.q && featuredProducts.length > 0 && (
@@ -506,6 +1275,7 @@ export function StorefrontPage({
                   index={i}
                   onAdd={addToCart}
                   compact
+                  categories={categories}
                 />
               ))}
             </div>
@@ -521,9 +1291,9 @@ export function StorefrontPage({
                   ? t(`Results for "${filters.q}"`, `"${filters.q}" માટે પરિણામ`)
                   : categories.find((c) => c._id === filters.category)
                     ? t(
-                      `${categories.find((c) => c._id === filters.category)?.name}`,
-                      `${categories.find((c) => c._id === filters.category)?.nameGu ?? ""}`
-                    )
+                        `${categories.find((c) => c._id === filters.category)?.name}`,
+                        `${categories.find((c) => c._id === filters.category)?.nameGu ?? ""}`
+                      )
                     : t("Products", "ઉત્પાદનો")}
               </h2>
               <Badge variant="secondary">{displayProducts.length}</Badge>
@@ -551,6 +1321,112 @@ export function StorefrontPage({
                 </Button>
               )}
             </div>
+          ) : aesthetic.isCulinaryMenu ? (
+            <div className="max-w-2xl mx-auto space-y-6 bg-white dark:bg-stone-900 rounded-3xl p-6 sm:p-8 border border-amber-100/50 dark:border-stone-800 shadow-xl shadow-amber-500/5">
+              {displayProducts.map((product) => {
+                const discountedPrice = product.price * (1 - (product.discount ?? 0) / 100);
+                const hasDiscount = (product.discount ?? 0) > 0;
+                return (
+                  <div
+                    key={product._id}
+                    className="flex items-start justify-between gap-4 py-4 border-b border-dashed border-stone-200 dark:border-stone-850 last:border-none group"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-baseline gap-2">
+                        <h3 className="text-base sm:text-lg font-extrabold text-stone-900 dark:text-stone-100 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
+                          {locale === "gu" ? (product.nameGu ?? product.name) : product.name}
+                        </h3>
+                        {/* Show category label if present */}
+                        {(() => {
+                          const cat = categories.find((c) => c._id === product.categoryId);
+                          if (cat) {
+                            return (
+                              <span className="text-[9px] uppercase font-black px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-stone-850 dark:text-amber-300">
+                                {locale === "gu" ? (cat.nameGu ?? cat.name) : cat.name}
+                              </span>
+                            );
+                          }
+                          return null;
+                        })()}
+                        <div className="flex-1 border-b border-dotted border-stone-300 dark:border-stone-700 mx-2" />
+                        <div className="shrink-0 text-right">
+                          <span className="font-extrabold text-amber-700 dark:text-amber-500 text-base sm:text-lg">
+                            {formatCurrency(discountedPrice)}
+                          </span>
+                          {hasDiscount && product.originalPrice && (
+                            <span className="text-xs text-muted-foreground line-through block">
+                              {formatCurrency(product.originalPrice)}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      {product.description && (
+                        <p className="text-xs sm:text-sm text-stone-500 dark:text-stone-400 mt-1 line-clamp-2 pr-4 sm:pr-8 leading-relaxed">
+                          {product.description}
+                        </p>
+                      )}
+                      <div className="flex items-center gap-2 mt-2.5 flex-wrap">
+                        {product.unit && (
+                          <Badge
+                            variant="secondary"
+                            className="text-[10px] px-2 py-0.5 font-medium bg-stone-100 text-stone-700 dark:bg-stone-800 dark:text-stone-300"
+                          >
+                            {product.unit}
+                          </Badge>
+                        )}
+                        {!product.inStock && (
+                          <Badge
+                            variant="destructive"
+                            className="text-[10px] px-2 py-0.5 font-medium"
+                          >
+                            {t("Out of Stock", "સ્ટૉક ખાલી")}
+                          </Badge>
+                        )}
+                        {hasDiscount && (
+                          <Badge
+                            variant="secondary"
+                            className="bg-red-50 text-red-600 dark:bg-red-950/20 dark:text-red-400 text-[10px] px-2 py-0.5 font-bold"
+                          >
+                            {product.discount}% OFF
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="shrink-0 flex flex-col items-center gap-2">
+                      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden bg-gray-50 dark:bg-gray-800 relative border border-gray-100 dark:border-gray-800 shadow-sm shrink-0">
+                        {product.images?.[0] ? (
+                          <Image
+                            src={product.images[0]}
+                            alt={product.name}
+                            fill
+                            className="object-cover"
+                          />
+                        ) : (
+                          <ProductImageFallback
+                            name={product.name}
+                            icon={product.icon}
+                            className="w-full h-full"
+                            iconClassName="w-6 h-6 sm:w-8 sm:h-8"
+                          />
+                        )}
+                      </div>
+                      <button
+                        disabled={!product.inStock}
+                        onClick={() => addToCart(product)}
+                        className={`px-3 py-1 rounded-lg text-[10px] sm:text-xs font-bold shadow-sm transition-all duration-200 ${
+                          !product.inStock
+                            ? "bg-gray-100 dark:bg-gray-850 text-muted-foreground cursor-not-allowed"
+                            : `${aesthetic.buttonClass} hover:opacity-90 active:scale-95`
+                        }`}
+                      >
+                        {!product.inStock ? t("Unavailable", "ઉપલબ્ધ નથી") : t("+ Add", "+ ઉમેરો")}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
               {displayProducts.map((product, i) => (
@@ -560,6 +1436,8 @@ export function StorefrontPage({
                   locale={locale}
                   index={i}
                   onAdd={addToCart}
+                  themeName={business.theme}
+                  categories={categories}
                 />
               ))}
             </div>
@@ -573,9 +1451,7 @@ export function StorefrontPage({
               {t("About Us", "અમારા વિશે")}
             </h2>
             {business.description && (
-              <p className="text-muted-foreground leading-relaxed mb-4">
-                {business.description}
-              </p>
+              <p className="text-muted-foreground leading-relaxed mb-4">{business.description}</p>
             )}
             <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
               {business.address && (
@@ -587,7 +1463,10 @@ export function StorefrontPage({
                 </div>
               )}
               {business.phone && (
-                <a href={`tel:${business.phone}`} className="flex items-center gap-2 hover:text-primary transition-colors">
+                <a
+                  href={`tel:${business.phone}`}
+                  className="flex items-center gap-2 hover:text-primary transition-colors"
+                >
                   <Phone className="w-4 h-4 text-primary" />
                   {business.phone}
                 </a>
@@ -692,7 +1571,7 @@ export function StorefrontPage({
                     )}
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-foreground truncate">
-                        {locale === "gu" ? item.nameGu ?? item.name : item.name}
+                        {locale === "gu" ? (item.nameGu ?? item.name) : item.name}
                       </p>
                       <p className="text-xs text-violet-600 font-medium">
                         {formatCurrency(item.price * (1 - item.discount / 100))}
@@ -721,9 +1600,7 @@ export function StorefrontPage({
               {/* Cart footer */}
               <div className="p-5 border-t border-gray-100 dark:border-gray-800 space-y-4">
                 <div className="flex justify-between items-center">
-                  <span className="font-semibold text-foreground">
-                    {t("Total", "કુલ")}
-                  </span>
+                  <span className="font-semibold text-foreground">{t("Total", "કુલ")}</span>
                   <span className="text-xl font-black text-violet-600">
                     {formatCurrency(cartTotal)}
                   </span>
@@ -804,7 +1681,10 @@ export function StorefrontPage({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-            onClick={() => { setShowCheckoutModal(false); setFormErrors({}); }}
+            onClick={() => {
+              setShowCheckoutModal(false);
+              setFormErrors({});
+            }}
           >
             <motion.div
               initial={{ scale: 0.95, y: 20 }}
@@ -819,11 +1699,17 @@ export function StorefrontPage({
                     {t("Complete Your Order", "તમારો ઓર્ડર પૂર્ણ કરો")}
                   </h3>
                   <p className="text-xs text-muted-foreground mt-1">
-                    {t("Enter your details to finalize the purchase", "ખરીદી પૂર્ણ કરવા માટે વિગતો દાખલ કરો")}
+                    {t(
+                      "Enter your details to finalize the purchase",
+                      "ખરીદી પૂર્ણ કરવા માટે વિગતો દાખલ કરો"
+                    )}
                   </p>
                 </div>
                 <button
-                  onClick={() => { setShowCheckoutModal(false); setFormErrors({}); }}
+                  onClick={() => {
+                    setShowCheckoutModal(false);
+                    setFormErrors({});
+                  }}
                   className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
                 >
                   <X className="w-4 h-4" />
@@ -840,8 +1726,9 @@ export function StorefrontPage({
                     placeholder={t("Enter your name", "તમારું નામ દાખલ કરો")}
                     value={checkoutForm.customerName}
                     onChange={(e) => {
-                      setCheckoutForm(prev => ({ ...prev, customerName: e.target.value }));
-                      if (formErrors.customerName) setFormErrors(prev => ({ ...prev, customerName: "" }));
+                      setCheckoutForm((prev) => ({ ...prev, customerName: e.target.value }));
+                      if (formErrors.customerName)
+                        setFormErrors((prev) => ({ ...prev, customerName: "" }));
                     }}
                     className={`h-11 rounded-xl focus-visible:ring-violet-500 ${formErrors.customerName ? "border-destructive" : ""}`}
                   />
@@ -860,8 +1747,9 @@ export function StorefrontPage({
                     placeholder={t("Enter 10-digit mobile number", "10-અંકનો મોબાઇલ નંબર")}
                     value={checkoutForm.customerPhone}
                     onChange={(e) => {
-                      setCheckoutForm(prev => ({ ...prev, customerPhone: e.target.value }));
-                      if (formErrors.customerPhone) setFormErrors(prev => ({ ...prev, customerPhone: "" }));
+                      setCheckoutForm((prev) => ({ ...prev, customerPhone: e.target.value }));
+                      if (formErrors.customerPhone)
+                        setFormErrors((prev) => ({ ...prev, customerPhone: "" }));
                     }}
                     className={`h-11 rounded-xl focus-visible:ring-violet-500 ${formErrors.customerPhone ? "border-destructive" : ""}`}
                   />
@@ -877,9 +1765,14 @@ export function StorefrontPage({
                   <textarea
                     rows={3}
                     required
-                    placeholder={t("E.g., Table 4, Home Delivery Address, or special requests...", "દા.ત., ટેબલ 4, ડિલિવરી સરનામું...")}
+                    placeholder={t(
+                      "E.g., Table 4, Home Delivery Address, or special requests...",
+                      "દા.ત., ટેબલ 4, ડિલિવરી સરનામું..."
+                    )}
                     value={checkoutForm.notes}
-                    onChange={(e) => setCheckoutForm(prev => ({ ...prev, notes: e.target.value }))}
+                    onChange={(e) =>
+                      setCheckoutForm((prev) => ({ ...prev, notes: e.target.value }))
+                    }
                     className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                   />
                 </div>
@@ -891,22 +1784,26 @@ export function StorefrontPage({
                   <div className="grid grid-cols-2 gap-3">
                     <button
                       type="button"
-                      onClick={() => setCheckoutForm(prev => ({ ...prev, paymentMethod: "cod" }))}
-                      className={`flex flex-col items-center justify-center p-3 rounded-2xl border text-sm font-semibold transition-all ${checkoutForm.paymentMethod === "cod"
+                      onClick={() => setCheckoutForm((prev) => ({ ...prev, paymentMethod: "cod" }))}
+                      className={`flex flex-col items-center justify-center p-3 rounded-2xl border text-sm font-semibold transition-all ${
+                        checkoutForm.paymentMethod === "cod"
                           ? "border-violet-600 bg-violet-50/50 dark:bg-violet-950/20 text-violet-600"
                           : "border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 text-muted-foreground"
-                        }`}
+                      }`}
                     >
                       <Truck className="w-5 h-5 mb-1 text-violet-500" />
                       {t("Cash on Delivery", "કેશ ઓન ડિલિવરી")}
                     </button>
                     <button
                       type="button"
-                      onClick={() => setCheckoutForm(prev => ({ ...prev, paymentMethod: "pay_at_store" }))}
-                      className={`flex flex-col items-center justify-center p-3 rounded-2xl border text-sm font-semibold transition-all ${checkoutForm.paymentMethod === "pay_at_store"
+                      onClick={() =>
+                        setCheckoutForm((prev) => ({ ...prev, paymentMethod: "pay_at_store" }))
+                      }
+                      className={`flex flex-col items-center justify-center p-3 rounded-2xl border text-sm font-semibold transition-all ${
+                        checkoutForm.paymentMethod === "pay_at_store"
                           ? "border-violet-600 bg-violet-50/50 dark:bg-violet-950/20 text-violet-600"
                           : "border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 text-muted-foreground"
-                        }`}
+                      }`}
                     >
                       <Store className="w-5 h-5 mb-1 text-violet-500" />
                       {t("Pay at Store", "દુકાન પર ચૂકવો")}
@@ -947,7 +1844,10 @@ export function StorefrontPage({
                       {t("Placing Order...", "ઓર્ડર થઈ રહ્યો છે...")}
                     </>
                   ) : (
-                    t(`Place Order - ${formatCurrency(cartTotal)}`, `ઓર્ડર સબમિટ કરો - ${formatCurrency(cartTotal)}`)
+                    t(
+                      `Place Order - ${formatCurrency(cartTotal)}`,
+                      `ઓર્ડર સબમિટ કરો - ${formatCurrency(cartTotal)}`
+                    )
                   )}
                 </Button>
               </form>
@@ -979,7 +1879,10 @@ export function StorefrontPage({
                 {t("Order Placed!", "ઓર્ડર સફળતાપૂર્વક મૂકાયો!")}
               </h3>
               <p className="text-sm text-emerald-600 dark:text-emerald-400 font-semibold mb-4">
-                {t(`Order Number: ${placedOrder.orderNumber}`, `ઓર્ડર નંબર: ${placedOrder.orderNumber}`)}
+                {t(
+                  `Order Number: ${placedOrder.orderNumber}`,
+                  `ઓર્ડર નંબર: ${placedOrder.orderNumber}`
+                )}
               </p>
 
               <div className="text-left bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-4 mb-6 space-y-2 border border-gray-100 dark:border-gray-800">
@@ -992,13 +1895,17 @@ export function StorefrontPage({
                       <span className="truncate max-w-[200px]">
                         {item.quantity}x {item.name}
                       </span>
-                      <span className="font-medium">{formatCurrency(item.price * item.quantity)}</span>
+                      <span className="font-medium">
+                        {formatCurrency(item.price * item.quantity)}
+                      </span>
                     </div>
                   ))}
                 </div>
                 <div className="border-t border-gray-200 dark:border-gray-700 pt-2 flex justify-between text-sm font-bold text-foreground">
                   <span>{t("Total Paid", "કુલ ચૂકવેલ")}</span>
-                  <span className="text-violet-600 dark:text-violet-400">{formatCurrency(placedOrder.total)}</span>
+                  <span className="text-violet-600 dark:text-violet-400">
+                    {formatCurrency(placedOrder.total)}
+                  </span>
                 </div>
               </div>
 
@@ -1041,22 +1948,36 @@ interface ProductCardProps {
   index: number;
   onAdd: (product: IProduct) => void;
   compact?: boolean;
+  themeName?: string;
+  categories: ICategory[];
 }
 
-function ProductCard({ product, locale, index, onAdd, compact = false }: ProductCardProps) {
+function ProductCard({
+  product,
+  locale,
+  index,
+  onAdd,
+  compact = false,
+  themeName,
+  categories,
+}: ProductCardProps) {
   const t = (en: string, gu: string) => (locale === "gu" ? gu : en);
   const discountedPrice = product.price * (1 - (product.discount ?? 0) / 100);
   const hasDiscount = (product.discount ?? 0) > 0;
+  const aesthetic = themeAestheticMap[themeName ?? ""] ?? themeAestheticMap.minimal;
+  const category = categories?.find((c) => c._id === product.categoryId);
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: Math.min(index * 0.04, 0.4), duration: 0.3 }}
-      className="bg-white dark:bg-gray-900 rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-800 hover:border-violet-200 dark:hover:border-violet-800 hover:shadow-lg hover:shadow-violet-100 dark:hover:shadow-violet-900/20 transition-all duration-300 group"
+      className={`bg-white dark:bg-gray-900 border overflow-hidden transition-all duration-350 group ${aesthetic.cardStyle}`}
     >
       {/* Image */}
-      <div className={`relative overflow-hidden bg-gray-50 dark:bg-gray-800 ${compact ? "aspect-square" : "aspect-[4/3]"}`}>
+      <div
+        className={`relative overflow-hidden bg-gray-50 dark:bg-gray-800 ${compact ? "aspect-square" : "aspect-[4/3]"}`}
+      >
         {product.images?.[0] ? (
           <Image
             src={product.images[0]}
@@ -1067,6 +1988,7 @@ function ProductCard({ product, locale, index, onAdd, compact = false }: Product
         ) : (
           <ProductImageFallback
             name={product.name}
+            icon={product.icon}
             className="w-full h-full"
             iconClassName={compact ? "w-8 h-8" : "w-10 h-10"}
           />
@@ -1093,8 +2015,15 @@ function ProductCard({ product, locale, index, onAdd, compact = false }: Product
 
       {/* Details */}
       <div className={`${compact ? "p-2.5" : "p-3.5"}`}>
-        <h3 className={`font-semibold text-foreground leading-tight truncate ${compact ? "text-xs" : "text-sm"}`}>
-          {locale === "gu" ? product.nameGu ?? product.name : product.name}
+        {category && (
+          <span className="text-[10px] uppercase font-black tracking-wider text-violet-600 dark:text-violet-400 block mb-1">
+            {locale === "gu" ? (category.nameGu ?? category.name) : category.name}
+          </span>
+        )}
+        <h3
+          className={`font-semibold text-foreground leading-tight truncate ${compact ? "text-xs" : "text-sm"}`}
+        >
+          {locale === "gu" ? (product.nameGu ?? product.name) : product.name}
         </h3>
 
         {!compact && product.description && (
@@ -1102,7 +2031,9 @@ function ProductCard({ product, locale, index, onAdd, compact = false }: Product
         )}
 
         <div className="flex items-center gap-1.5 mt-1.5">
-          <span className={`font-bold text-violet-600 dark:text-violet-400 ${compact ? "text-sm" : "text-base"}`}>
+          <span
+            className={`font-extrabold ${compact ? "text-sm" : "text-base"} text-violet-600 dark:text-violet-400`}
+          >
             {formatCurrency(discountedPrice)}
           </span>
           {hasDiscount && product.originalPrice && (
@@ -1114,10 +2045,11 @@ function ProductCard({ product, locale, index, onAdd, compact = false }: Product
 
         {!compact && (
           <button
-            className={`mt-2.5 w-full h-8 text-xs font-semibold rounded-xl transition-all duration-200 ${!product.inStock
+            className={`mt-2.5 w-full h-8 text-xs font-bold rounded-xl transition-all duration-200 ${
+              !product.inStock
                 ? "bg-gray-100 dark:bg-gray-800 text-muted-foreground cursor-not-allowed"
-                : "bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-300 hover:bg-violet-600 hover:text-white active:scale-95"
-              }`}
+                : `${aesthetic.buttonClass} hover:opacity-90 active:scale-95`
+            }`}
             disabled={!product.inStock}
             onClick={() => onAdd(product)}
           >
@@ -1127,7 +2059,7 @@ function ProductCard({ product, locale, index, onAdd, compact = false }: Product
 
         {compact && product.inStock && (
           <button
-            className="mt-1.5 w-full h-7 text-xs font-semibold rounded-lg bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-300 hover:bg-violet-600 hover:text-white transition-all duration-200 active:scale-95"
+            className={`mt-1.5 w-full h-7 text-xs font-bold rounded-lg transition-all duration-200 active:scale-95 ${aesthetic.buttonClass} hover:opacity-90`}
             onClick={() => onAdd(product)}
           >
             {t("Add", "ઉમેરો")}

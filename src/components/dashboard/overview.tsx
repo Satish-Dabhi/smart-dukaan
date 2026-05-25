@@ -326,12 +326,16 @@ export function DashboardOverview({ data }: Props) {
                     />
                     <YAxis
                       tick={{ fontSize: 11 }}
-                      tickFormatter={(val) => `₹${(val / 1000).toFixed(0)}k`}
+                      tickFormatter={(val) =>
+                        val >= 1000 ? `₹${(val / 1000).toFixed(1).replace(/\.0$/, "")}k` : `₹${val}`
+                      }
                       className="text-gray-400"
                     />
                     <Tooltip
-                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                      formatter={(val: any) => [formatCurrency(val), t("revenue")]}
+                      formatter={(val: unknown) => [
+                        formatCurrency(Number(val as number)),
+                        t("revenue"),
+                      ]}
                       labelFormatter={(label) => formatDate(label)}
                       contentStyle={{ borderRadius: "12px", border: "1px solid #e5e7eb" }}
                     />

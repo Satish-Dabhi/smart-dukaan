@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
+import Image from "next/image";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
@@ -42,6 +43,7 @@ export function ProductsManager({ businessId }: Props) {
   const [editingProduct, setEditingProduct] = useState<IProduct | null>(null);
   const [page, setPage] = useState(1);
   const [confirmDelete, setConfirmDelete] = useState<{ id: string; name: string } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const t = useTranslations("products");
   const tCommon = useTranslations("common");
@@ -84,6 +86,140 @@ export function ProductsManager({ businessId }: Props) {
     setConfirmDelete({ id, name });
   };
 
+  const handleExport = async () => {
+    try {
+      const toastId = toast.loading("Exporting products to Excel...");
+      const res = await fetch(`/api/products?limit=1000`);
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? "Failed to fetch products for export");
+
+      const productsToExport = json.data ?? [];
+      if (productsToExport.length === 0) {
+        toast.error("No products to export", { id: toastId });
+        return;
+      }
+
+      // Map products to a flat Excel-friendly structure
+      const rows = productsToExport.map((p: IProduct & { categoryId?: { name?: string } }) => ({
+        "Product Name": p.name,
+        "Name (Gujarati)": p.nameGu ?? "",
+        Description: p.description ?? "",
+        Price: p.price,
+        "Original Price": p.originalPrice ?? "",
+        "Discount %": p.discount ?? 0,
+        Stock: p.stock,
+        "Min Stock": p.minStock ?? 5,
+        SKU: p.sku ?? "",
+        Barcode: p.barcode ?? "",
+        "GST %": p.gstPercentage ?? 18,
+        "HSN Code": p.hsnCode ?? "",
+        Unit: p.unit ?? "pcs",
+        Status: p.status ?? "active",
+        "Featured (Y/N)": p.isFeatured ? "Y" : "N",
+        Category: p.categoryId?.name ?? "",
+      }));
+
+      const XLSX = await import("xlsx");
+      const worksheet = XLSX.utils.json_to_sheet(rows);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Products");
+
+      // Set column widths for readability
+      const maxLens = rows.reduce(
+        (acc: Record<string, number>, row: Record<string, string | number>) => {
+          Object.keys(row).forEach((key) => {
+            const val = String(row[key]);
+            acc[key] = Math.max(acc[key] || 10, val.length);
+          });
+          return acc;
+        },
+        {} as Record<string, number>
+      );
+      worksheet["!cols"] = Object.keys(maxLens).map((key) => ({
+        wch: Math.min(30, maxLens[key] + 2),
+      }));
+
+      XLSX.writeFile(workbook, `Products-${Date.now()}.xlsx`);
+      toast.success("Products exported successfully!", { id: toastId });
+    } catch (error) {
+      console.error("Export failed:", error);
+      toast.error("Failed to export products", {
+        description: error instanceof Error ? error.message : "",
+      });
+    }
+  };
+
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Reset file input value so the same file can be selected again
+    e.target.value = "";
+
+    const toastId = toast.loading("Reading Excel file...");
+    try {
+      const XLSX = await import("xlsx");
+      const reader = new FileReader();
+
+      reader.onload = async (evt) => {
+        try {
+          const bstr = evt.target?.result;
+          const workbook = XLSX.read(bstr, { type: "binary" });
+          const sheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[sheetName];
+          const rawData = XLSX.utils.sheet_to_json(worksheet);
+
+          if (rawData.length === 0) {
+            toast.error("Excel sheet is empty", { id: toastId });
+            return;
+          }
+
+          toast.loading(`Importing ${rawData.length} products...`, { id: toastId });
+
+          const response = await fetch("/api/products/import", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ products: rawData }),
+          });
+
+          const json = await response.json();
+          if (!response.ok) {
+            if (json.details && Array.isArray(json.details)) {
+              // Show the first few errors
+              const errorMsgs = json.details
+                .slice(0, 3)
+                .map(
+                  (err: { row: number; issues: string[] }) =>
+                    `Row ${err.row}: ${err.issues.join(", ")}`
+                )
+                .join("\n");
+              throw new Error(
+                `Import failed:\n${errorMsgs}${json.details.length > 3 ? `\n...and ${json.details.length - 3} more errors` : ""}`
+              );
+            }
+            throw new Error(json.error ?? "Failed to import products");
+          }
+
+          toast.success(json.message ?? "Products imported successfully!", { id: toastId });
+          queryClient.invalidateQueries({ queryKey: ["products"] });
+        } catch (err) {
+          console.error("Error processing import:", err);
+          const errMsg = err instanceof Error ? err.message : "Failed to process import";
+          toast.error(errMsg, { id: toastId, duration: 8000 });
+        }
+      };
+
+      reader.readAsBinaryString(file);
+    } catch (err) {
+      console.error("Import failed:", err);
+      toast.error("Failed to read file", { id: toastId });
+    }
+  };
+
   const products: IProduct[] = data?.data ?? [];
   const meta = data?.meta;
 
@@ -104,11 +240,18 @@ export function ProductsManager({ businessId }: Props) {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="gap-2">
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileChange}
+            accept=".xlsx, .xls"
+            className="hidden"
+          />
+          <Button variant="outline" size="sm" className="gap-2" onClick={handleImportClick}>
             <Upload className="w-4 h-4" />
             {t("import")}
           </Button>
-          <Button variant="outline" size="sm" className="gap-2">
+          <Button variant="outline" size="sm" className="gap-2" onClick={handleExport}>
             <Download className="w-4 h-4" />
             {t("export")}
           </Button>
@@ -195,11 +338,13 @@ export function ProductsManager({ businessId }: Props) {
                 <Card className="group overflow-hidden hover:shadow-lg hover:border-violet-200 dark:hover:border-violet-800 transition-all duration-300">
                   <div className="aspect-square relative bg-gray-100 dark:bg-gray-800 overflow-hidden">
                     {product.images?.[0] ? (
-                      /* eslint-disable-next-line @next/next/no-img-element */
-                      <img
+                      <Image
                         src={product.images[0]}
                         alt={product.name}
+                        width={250}
+                        height={250}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        unoptimized
                       />
                     ) : (
                       <ProductImageFallback

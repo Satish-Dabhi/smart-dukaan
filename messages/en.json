@@ -218,7 +218,8 @@
     "productUpdatedToast": "Product updated!",
     "productCreatedToast": "Product created!",
     "saveChanges": "Save Changes",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "searchPlaceholder": "Search products..."
   },
   "pos": {
     "title": "POS Billing",
@@ -431,6 +432,7 @@
     "noOrdersSub": "Orders will appear here after billing",
     "thOrder": "Order",
     "thCustomer": "Customer",
+    "thSource": "Source",
     "thItems": "Items",
     "thTotal": "Total",
     "thStatus": "Status",

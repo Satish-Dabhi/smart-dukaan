@@ -21,6 +21,7 @@ export const ProductSchema = z.object({
   hsnCode: z.string().optional(),
   unit: z.string().optional(),
   tags: z.array(z.string()).optional(),
+  icon: z.string().optional(),
 });
 
 export type ProductInput = z.infer<typeof ProductSchema>;
@@ -40,7 +41,7 @@ export const BusinessSchema = z.object({
   tagline: z.string().optional(),
   taglineGu: z.string().optional(),
   theme: z.string().optional(),
-  whatsappNumber: z.string().optional(),
+  whatsappNumber: z.string().min(10, "WhatsApp number must be at least 10 digits"),
   logo: z.string().url().optional().or(z.literal("")),
   banner: z.string().url().optional().or(z.literal("")),
 });
@@ -63,7 +64,7 @@ export const BusinessUpdateSchema = z
     tagline: z.string().optional(),
     taglineGu: z.string().optional(),
     theme: z.string().optional(),
-    whatsappNumber: z.string().optional(),
+    whatsappNumber: z.string().min(10, "WhatsApp number must be at least 10 digits").optional(),
     mapUrl: z.string().optional(),
     logo: z.string().url().optional().or(z.literal("")),
     banner: z.string().url().optional().or(z.literal("")),

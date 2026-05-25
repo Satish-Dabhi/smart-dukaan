@@ -4,7 +4,15 @@ export type ProductStatus = "active" | "inactive" | "out_of_stock";
 export type OrderStatus = "placed" | "delivered";
 export type InvoiceStatus = "draft" | "paid" | "unpaid" | "cancelled" | "refunded";
 export type PaymentMethod = "cash" | "upi" | "card" | "razorpay" | "paytm" | "phonepe";
-export type BusinessTheme = "grocery" | "cafe" | "bakery" | "restaurant" | "medical" | "salon" | "retail" | "minimal";
+export type BusinessTheme =
+  | "grocery"
+  | "cafe"
+  | "bakery"
+  | "restaurant"
+  | "medical"
+  | "salon"
+  | "retail"
+  | "minimal";
 
 export interface IUser {
   _id: string;
@@ -101,6 +109,7 @@ export interface IProduct {
   unit?: string;
   weight?: number;
   tags?: string[];
+  icon?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -274,6 +283,7 @@ export interface CartItem {
   gst: number;
   image?: string;
   stock: number;
+  icon?: string;
 }
 
 export interface PaginationMeta {

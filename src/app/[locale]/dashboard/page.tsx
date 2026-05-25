@@ -29,14 +29,25 @@ async function getBusinessDashboardData(businessIdStr: string) {
   const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
 
   const [
-    totalOrders, monthOrders, lastMonthOrders,
-    totalRevenue, monthRevenue, lastMonthRevenue,
-    totalProducts, totalCustomers,
-    recentOrders, lowStockProducts, revenueByDay, topProducts,
+    totalOrders,
+    monthOrders,
+    lastMonthOrders,
+    totalRevenue,
+    monthRevenue,
+    lastMonthRevenue,
+    totalProducts,
+    totalCustomers,
+    recentOrders,
+    lowStockProducts,
+    revenueByDay,
+    topProducts,
   ] = await Promise.all([
     Order.countDocuments({ businessId }),
     Order.countDocuments({ businessId, createdAt: { $gte: startOfMonth } }),
-    Order.countDocuments({ businessId, createdAt: { $gte: startOfLastMonth, $lte: endOfLastMonth } }),
+    Order.countDocuments({
+      businessId,
+      createdAt: { $gte: startOfLastMonth, $lte: endOfLastMonth },
+    }),
     Invoice.aggregate([
       { $match: { businessId, status: "paid" } },
       { $group: { _id: null, total: { $sum: "$total" } } },
@@ -46,7 +57,13 @@ async function getBusinessDashboardData(businessIdStr: string) {
       { $group: { _id: null, total: { $sum: "$total" } } },
     ]),
     Invoice.aggregate([
-      { $match: { businessId, status: "paid", createdAt: { $gte: startOfLastMonth, $lte: endOfLastMonth } } },
+      {
+        $match: {
+          businessId,
+          status: "paid",
+          createdAt: { $gte: startOfLastMonth, $lte: endOfLastMonth },
+        },
+      },
       { $group: { _id: null, total: { $sum: "$total" } } },
     ]),
     Product.countDocuments({ businessId, status: "active" }),
@@ -109,13 +126,9 @@ async function getBusinessDashboardData(businessIdStr: string) {
   const currentRevenue = monthRevenue[0]?.total ?? 0;
   const previousRevenue = lastMonthRevenue[0]?.total ?? 0;
   const revenueGrowth =
-    previousRevenue === 0
-      ? 100
-      : ((currentRevenue - previousRevenue) / previousRevenue) * 100;
+    previousRevenue === 0 ? 100 : ((currentRevenue - previousRevenue) / previousRevenue) * 100;
   const ordersGrowth =
-    lastMonthOrders === 0
-      ? 100
-      : ((monthOrders - lastMonthOrders) / lastMonthOrders) * 100;
+    lastMonthOrders === 0 ? 100 : ((monthOrders - lastMonthOrders) / lastMonthOrders) * 100;
 
   return {
     stats: {
@@ -132,7 +145,7 @@ async function getBusinessDashboardData(businessIdStr: string) {
     lowStockProducts: JSON.parse(JSON.stringify(lowStockProducts)),
     revenueByDay: revenueByDay.map((d) => ({ date: d._id, value: d.revenue })),
     topProducts: topProducts.map((p) => ({
-      _id: p._id,
+      _id: p._id.toString(),
       name: p.product.name,
       image: p.product.images?.[0],
       totalSold: p.totalSold,
@@ -155,10 +168,15 @@ async function getAdminDashboardData() {
   const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
 
   const [
-    totalUsers, totalVerifiedUsers, totalBusinesses,
-    planStats, statusStats,
-    recentUsers, recentBusinesses,
-    userGrowth, bizGrowth,
+    totalUsers,
+    totalVerifiedUsers,
+    totalBusinesses,
+    planStats,
+    statusStats,
+    recentUsers,
+    recentBusinesses,
+    userGrowth,
+    bizGrowth,
   ] = await Promise.all([
     User.countDocuments(),
     User.countDocuments({ isVerified: true }),
@@ -166,15 +184,17 @@ async function getAdminDashboardData() {
     Business.aggregate([{ $group: { _id: "$subscriptionPlan", count: { $sum: 1 } } }]),
     Business.aggregate([{ $group: { _id: "$status", count: { $sum: 1 } } }]),
     User.find()
-      .select({ password: 0, verificationOtp: 0, verificationOtpExpires: 0, resetPasswordOtp: 0, resetPasswordOtpExpires: 0 })
+      .select({
+        password: 0,
+        verificationOtp: 0,
+        verificationOtpExpires: 0,
+        resetPasswordOtp: 0,
+        resetPasswordOtpExpires: 0,
+      })
       .sort({ createdAt: -1 })
       .limit(6)
       .lean(),
-    Business.find()
-      .populate("ownerId", "name email")
-      .sort({ createdAt: -1 })
-      .limit(6)
-      .lean(),
+    Business.find().populate("ownerId", "name email").sort({ createdAt: -1 }).limit(6).lean(),
     User.aggregate([
       { $match: { createdAt: { $gte: fourteenDaysAgo } } },
       {
@@ -205,8 +225,7 @@ async function getAdminDashboardData() {
 
   const statusBreakdown = { active: 0, inactive: 0, suspended: 0 };
   statusStats.forEach((s) => {
-    if (s._id in statusBreakdown)
-      statusBreakdown[s._id as keyof typeof statusBreakdown] = s.count;
+    if (s._id in statusBreakdown) statusBreakdown[s._id as keyof typeof statusBreakdown] = s.count;
   });
 
   const growthMap: Record<string, { date: string; users: number; businesses: number }> = {};
@@ -220,7 +239,13 @@ async function getAdminDashboardData() {
   const growth = Object.values(growthMap).sort((a, b) => a.date.localeCompare(b.date));
 
   return {
-    stats: { totalUsers, totalVerifiedUsers, totalBusinesses, subscriptionsBreakdown, statusBreakdown },
+    stats: {
+      totalUsers,
+      totalVerifiedUsers,
+      totalBusinesses,
+      subscriptionsBreakdown,
+      statusBreakdown,
+    },
     recent: {
       users: JSON.parse(JSON.stringify(recentUsers)),
       businesses: JSON.parse(JSON.stringify(recentBusinesses)),

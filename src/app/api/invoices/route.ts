@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
     const limit = parseInt(searchParams.get("limit") ?? "20");
     const skip = (page - 1) * limit;
 
-    const query: Record<string, unknown> = { businessId };
+    const query: Record<string, unknown> = { businessId, orderId: { $exists: false } };
 
     const status = searchParams.get("status");
     if (status) query.status = status;

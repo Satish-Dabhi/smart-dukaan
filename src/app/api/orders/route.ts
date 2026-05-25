@@ -11,6 +11,7 @@ import { sendOrderConfirmationEmail } from "@/lib/email";
 import { escapeRegex } from "@/lib/utils";
 import mongoose from "mongoose";
 import { z } from "zod";
+import { redis } from "@/lib/redis";
 
 const OrderItemSchema = z.object({
   productId: z.string().min(1),
@@ -60,12 +61,7 @@ export async function GET(req: NextRequest) {
 
     await connectDB();
     const [orders, total] = await Promise.all([
-      Order.find(query)
-        .select("-__v")
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit)
-        .lean(),
+      Order.find(query).select("-__v").sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
       Order.countDocuments(query),
     ]);
 
@@ -106,7 +102,10 @@ export async function POST(req: NextRequest) {
     // Verify the business is active — don't trust a suspended/inactive business
     const business = await Business.findById(businessId).select("status settings name").lean();
     if (!business || business.status !== "active") {
-      return NextResponse.json({ success: false, error: "Business not found or inactive" }, { status: 404 });
+      return NextResponse.json(
+        { success: false, error: "Business not found or inactive" },
+        { status: 404 }
+      );
     }
 
     // Server-side: load all products in ONE query (prevents N+1 and prevents client price manipulation)
@@ -275,6 +274,17 @@ export async function POST(req: NextRequest) {
       type: "order",
       link: "/dashboard/orders",
     });
+
+    if (redis) {
+      try {
+        await Promise.all([
+          redis.del(`notifications:${businessId}`),
+          redis.del(`notifications:${businessId}:unread`),
+        ]);
+      } catch (cacheError) {
+        console.error("Redis cache eviction error on new order:", cacheError);
+      }
+    }
 
     if (customerEmail) {
       sendOrderConfirmationEmail(customerEmail, {

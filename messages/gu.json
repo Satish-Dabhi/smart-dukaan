@@ -218,7 +218,8 @@
     "productUpdatedToast": "ઉત્પાદન અપડેટ થયું!",
     "productCreatedToast": "ઉત્પાદન બનાવવામાં આવ્યું!",
     "saveChanges": "ફેરફારો સાચવો",
-    "cancel": "રદ કરો"
+    "cancel": "રદ કરો",
+    "searchPlaceholder": "ઉત્પાદનો શોધો..."
   },
   "pos": {
     "title": "POS બિલિંગ",
@@ -431,6 +432,7 @@
     "noOrdersSub": "બિલિંગ પછી ઓર્ડર્સ અહીં દેખાશે",
     "thOrder": "ઓર્ડર",
     "thCustomer": "ગ્રાહક",
+    "thSource": "સ્રોત",
     "thItems": "વસ્તુઓ",
     "thTotal": "કુલ",
     "thStatus": "સ્થિતિ",

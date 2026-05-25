@@ -22,6 +22,7 @@ export interface IProductDoc extends Document {
   unit?: string;
   weight?: number;
   tags?: string[];
+  icon?: string;
   totalSold: number;
   createdAt: Date;
   updatedAt: Date;
@@ -54,6 +55,7 @@ const ProductSchema = new Schema<IProductDoc>(
     unit: { type: String, default: "pcs" },
     weight: { type: Number },
     tags: [{ type: String }],
+    icon: { type: String },
     totalSold: { type: Number, default: 0 },
   },
   { timestamps: true }

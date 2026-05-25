@@ -2,11 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { connectDB } from "@/lib/db";
 import Notification from "@/models/Notification";
+import { redis } from "@/lib/redis";
 
-export async function PATCH(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await auth();
     const businessId = session?.user?.businessId;
@@ -24,7 +22,21 @@ export async function PATCH(
     );
 
     if (!notification) {
-      return NextResponse.json({ success: false, error: "Notification not found" }, { status: 404 });
+      return NextResponse.json(
+        { success: false, error: "Notification not found" },
+        { status: 404 }
+      );
+    }
+
+    if (redis) {
+      try {
+        await Promise.all([
+          redis.del(`notifications:${businessId}`),
+          redis.del(`notifications:${businessId}:unread`),
+        ]);
+      } catch (cacheError) {
+        console.error("Redis cache eviction error on PATCH:", cacheError);
+      }
     }
 
     return NextResponse.json({ success: true, data: notification });

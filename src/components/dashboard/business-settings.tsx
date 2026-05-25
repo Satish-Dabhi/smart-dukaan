@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { motion } from "framer-motion";
@@ -24,7 +24,7 @@ const schema = z.object({
   gstNumber: z.string().optional(),
   description: z.string().optional(),
   tagline: z.string().optional(),
-  whatsappNumber: z.string().optional(),
+  whatsappNumber: z.string().min(10, "WhatsApp number must be at least 10 digits"),
   theme: z.string().optional(),
   primaryColor: z.string().optional(),
 });
@@ -42,11 +42,7 @@ const themes = [
   { value: "minimal", label: "⬡ Minimal", description: "Clean violet gradient" },
 ];
 
-interface Props {
-  userId?: string;
-}
-
-export function BusinessSettings(_props: Props) {
+export function BusinessSettings() {
   const queryClient = useQueryClient();
   const [isCreating, setIsCreating] = useState(false);
   const t = useTranslations("settings");
@@ -64,8 +60,8 @@ export function BusinessSettings(_props: Props) {
   const {
     register,
     handleSubmit,
-    watch,
     setValue,
+    control,
     formState: { errors },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -88,8 +84,11 @@ export function BusinessSettings(_props: Props) {
       : undefined,
   });
 
-  // eslint-disable-next-line react-hooks/incompatible-library
-  const selectedTheme = watch("theme");
+  const selectedTheme = useWatch({
+    control,
+    name: "theme",
+    defaultValue: "minimal",
+  });
 
   const locale = useLocale();
 
@@ -189,7 +188,7 @@ export function BusinessSettings(_props: Props) {
               { name: "phone" as const, label: t("phoneRequired"), placeholder: "+91 9876543210" },
               {
                 name: "whatsappNumber" as const,
-                label: t("whatsappNumber"),
+                label: t("whatsappNumber") + " *",
                 placeholder: "+91 9876543210",
               },
               { name: "gstNumber" as const, label: t("gstNumber"), placeholder: "22AAAAA0000A1Z5" },

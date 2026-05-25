@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useMemo } from "react";
+import Image from "next/image";
 import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
@@ -224,8 +225,8 @@ export function POSSystem({ businessId }: POSProps) {
       const phone = cleaned.startsWith("+")
         ? cleaned.slice(1)
         : cleaned.length === 10
-        ? `91${cleaned}`
-        : cleaned;
+          ? `91${cleaned}`
+          : cleaned;
       waUrl = `https://wa.me/${phone}?text=${message}`;
     }
 
@@ -261,11 +262,13 @@ export function POSSystem({ businessId }: POSProps) {
               >
                 <div className="aspect-square w-full bg-gray-100 dark:bg-gray-800 rounded-lg mb-2 overflow-hidden">
                   {product.images?.[0] ? (
-                    /* eslint-disable-next-line @next/next/no-img-element */
-                    <img
+                    <Image
                       src={product.images[0]}
                       alt={product.name}
+                      width={160}
+                      height={160}
                       className="w-full h-full object-cover"
+                      unoptimized
                     />
                   ) : (
                     <ProductImageFallback
@@ -617,11 +620,7 @@ export function POSSystem({ businessId }: POSProps) {
                 >
                   New Bill
                 </Button>
-                <Button
-                  variant="gradient"
-                  className="flex-1 gap-2"
-                  onClick={() => handlePrint()}
-                >
+                <Button variant="gradient" className="flex-1 gap-2" onClick={() => handlePrint()}>
                   <Printer className="w-4 h-4" />
                   Print
                 </Button>

@@ -18,11 +18,13 @@ export function Navbar() {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setMounted(true);
+    const timer = setTimeout(() => setMounted(true), 0);
     const handler = () => setIsScrolled(window.scrollY > 20);
     window.addEventListener("scroll", handler);
-    return () => window.removeEventListener("scroll", handler);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("scroll", handler);
+    };
   }, []);
 
   const navLinks = [
@@ -86,7 +88,12 @@ export function Navbar() {
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
               aria-label="Toggle theme"
             >
-              {mounted && (theme === "dark" ? <Sun className="w-4 h-4 text-amber-500" /> : <Moon className="w-4 h-4 text-violet-600" />)}
+              {mounted &&
+                (theme === "dark" ? (
+                  <Sun className="w-4 h-4 text-amber-500" />
+                ) : (
+                  <Moon className="w-4 h-4 text-violet-600" />
+                ))}
               {!mounted && <div className="w-4 h-4" />}
             </Button>
             <Link href={`/${locale}/auth/login`}>

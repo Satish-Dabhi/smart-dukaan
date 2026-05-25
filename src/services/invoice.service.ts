@@ -22,9 +22,9 @@ export async function getInvoices({
   endDate,
 }: GetInvoicesParams): Promise<{ data: IInvoice[]; meta: PaginationMeta }> {
   await connectDB();
-  
+
   const skip = (page - 1) * limit;
-  const query: Record<string, unknown> = { businessId };
+  const query: Record<string, unknown> = { businessId, orderId: { $exists: false } };
 
   if (status) {
     query.status = status;
@@ -41,7 +41,8 @@ export async function getInvoices({
   if (startDate || endDate) {
     query.createdAt = {};
     if (startDate) (query.createdAt as Record<string, unknown>).$gte = new Date(startDate);
-    if (endDate) (query.createdAt as Record<string, unknown>).$lte = new Date(endDate + "T23:59:59");
+    if (endDate)
+      (query.createdAt as Record<string, unknown>).$lte = new Date(endDate + "T23:59:59");
   }
 
   const [invoices, total] = await Promise.all([

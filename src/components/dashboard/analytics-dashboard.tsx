@@ -4,8 +4,18 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
-  AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
-  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
+  AreaChart,
+  Area,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -14,7 +24,16 @@ import { useLocale, useTranslations } from "next-intl";
 import { BlankChartState } from "./overview";
 import { TrendingUp, ShoppingBag, BarChart3, Clock, Layers } from "lucide-react";
 
-const COLORS = ["#7c3aed", "#db2777", "#0ea5e9", "#10b981", "#f59e0b", "#ef4444", "#6366f1", "#14b8a6"];
+const COLORS = [
+  "#7c3aed",
+  "#db2777",
+  "#0ea5e9",
+  "#10b981",
+  "#f59e0b",
+  "#ef4444",
+  "#6366f1",
+  "#14b8a6",
+];
 
 export function AnalyticsDashboard() {
   const [period, setPeriod] = useState("30");
@@ -79,7 +98,9 @@ export function AnalyticsDashboard() {
             <Card>
               <CardHeader>
                 <CardTitle>{t("revenueOverTime")}</CardTitle>
-                <CardDescription>{t("dailyRevenuePastDays", { count: Number(period) })}</CardDescription>
+                <CardDescription>
+                  {t("dailyRevenuePastDays", { count: Number(period) })}
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 {!data?.revenueByDay || data.revenueByDay.length === 0 ? (
@@ -100,16 +121,26 @@ export function AnalyticsDashboard() {
                           <stop offset="95%" stopColor="#7c3aed" stopOpacity={0} />
                         </linearGradient>
                       </defs>
-                      <CartesianGrid strokeDasharray="3 3" className="stroke-gray-100 dark:stroke-gray-800" />
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        className="stroke-gray-100 dark:stroke-gray-800"
+                      />
                       <XAxis
                         dataKey="date"
                         tick={{ fontSize: 11 }}
                         tickFormatter={(v) => formatDate(v)}
                       />
-                      <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}k`} />
+                      <YAxis
+                        tick={{ fontSize: 11 }}
+                        tickFormatter={(v) =>
+                          v >= 1000 ? `₹${(v / 1000).toFixed(1).replace(/\.0$/, "")}k` : `₹${v}`
+                        }
+                      />
                       <Tooltip
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        formatter={(v: any) => [formatCurrency(v), t("revenue")]}
+                        formatter={(v: unknown) => [
+                          formatCurrency(Number(v as number)),
+                          t("revenue"),
+                        ]}
                         labelFormatter={(l) => formatDate(l)}
                       />
                       <Area
@@ -128,7 +159,11 @@ export function AnalyticsDashboard() {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Orders by status */}
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+            >
               <Card>
                 <CardHeader>
                   <CardTitle>{t("ordersByStatus")}</CardTitle>
@@ -153,10 +188,13 @@ export function AnalyticsDashboard() {
                           cx="50%"
                           cy="50%"
                           outerRadius={90}
-                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                          label={({ status, percent }: any) =>
-                            `${status} ${((percent ?? 0) * 100).toFixed(0)}%`
-                          }
+                          label={({
+                            name,
+                            percent,
+                          }: {
+                            name?: string | number;
+                            percent?: number;
+                          }) => `${name ?? ""} ${((percent ?? 0) * 100).toFixed(0)}%`}
                         >
                           {data.ordersByStatus.map((_: unknown, i: number) => (
                             <Cell key={i} fill={COLORS[i % COLORS.length]} />
@@ -171,7 +209,11 @@ export function AnalyticsDashboard() {
             </motion.div>
 
             {/* Revenue by category */}
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15 }}
+            >
               <Card>
                 <CardHeader>
                   <CardTitle>{t("revenueByCategory")}</CardTitle>
@@ -189,11 +231,29 @@ export function AnalyticsDashboard() {
                   ) : (
                     <ResponsiveContainer width="100%" height={240}>
                       <BarChart data={data.revenueByCategory} layout="vertical">
-                        <CartesianGrid strokeDasharray="3 3" className="stroke-gray-100 dark:stroke-gray-800" />
-                        <XAxis type="number" tick={{ fontSize: 11 }} tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}k`} />
-                        <YAxis type="category" dataKey="category" tick={{ fontSize: 11 }} width={90} />
-                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                        <Tooltip formatter={(v: any) => [formatCurrency(v), t("revenue")]} />
+                        <CartesianGrid
+                          strokeDasharray="3 3"
+                          className="stroke-gray-100 dark:stroke-gray-800"
+                        />
+                        <XAxis
+                          type="number"
+                          tick={{ fontSize: 11 }}
+                          tickFormatter={(v) =>
+                            v >= 1000 ? `₹${(v / 1000).toFixed(1).replace(/\.0$/, "")}k` : `₹${v}`
+                          }
+                        />
+                        <YAxis
+                          type="category"
+                          dataKey="category"
+                          tick={{ fontSize: 11 }}
+                          width={90}
+                        />
+                        <Tooltip
+                          formatter={(v: unknown) => [
+                            formatCurrency(Number(v as number)),
+                            t("revenue"),
+                          ]}
+                        />
                         <Bar dataKey="revenue" fill="#7c3aed" radius={[0, 4, 4, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
@@ -203,7 +263,11 @@ export function AnalyticsDashboard() {
             </motion.div>
 
             {/* Peak hours */}
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+            >
               <Card>
                 <CardHeader>
                   <CardTitle>{t("peakHours")}</CardTitle>
@@ -222,7 +286,10 @@ export function AnalyticsDashboard() {
                   ) : (
                     <ResponsiveContainer width="100%" height={200}>
                       <BarChart data={data.peakHours}>
-                        <CartesianGrid strokeDasharray="3 3" className="stroke-gray-100 dark:stroke-gray-800" />
+                        <CartesianGrid
+                          strokeDasharray="3 3"
+                          className="stroke-gray-100 dark:stroke-gray-800"
+                        />
                         <XAxis
                           dataKey="hour"
                           tick={{ fontSize: 11 }}
@@ -239,7 +306,11 @@ export function AnalyticsDashboard() {
             </motion.div>
 
             {/* Top products */}
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.25 }}
+            >
               <Card>
                 <CardHeader>
                   <CardTitle>{t("topProducts")}</CardTitle>
@@ -257,26 +328,37 @@ export function AnalyticsDashboard() {
                     />
                   ) : (
                     <div className="space-y-3">
-                      {data.topProducts.slice(0, 5).map((
-                        product: { id: string; name: string; totalSold: number; revenue: number },
-                        i: number
-                      ) => (
-                        <div key={product.id} className="flex items-center gap-3">
-                          <div
-                            className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold"
-                            style={{ background: COLORS[i % COLORS.length] }}
-                          >
-                            {i + 1}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">{product.name}</p>
-                            <p className="text-xs text-gray-500">{t("unitsSoldCount", { count: product.totalSold })}</p>
-                          </div>
-                          <p className="text-sm font-bold text-gray-900 dark:text-white">
-                            {formatCurrency(product.revenue)}
-                          </p>
-                        </div>
-                      ))}
+                      {data.topProducts
+                        .slice(0, 5)
+                        .map(
+                          (
+                            product: {
+                              id: string;
+                              name: string;
+                              totalSold: number;
+                              revenue: number;
+                            },
+                            i: number
+                          ) => (
+                            <div key={product.id} className="flex items-center gap-3">
+                              <div
+                                className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold"
+                                style={{ background: COLORS[i % COLORS.length] }}
+                              >
+                                {i + 1}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium truncate">{product.name}</p>
+                                <p className="text-xs text-gray-500">
+                                  {t("unitsSoldCount", { count: product.totalSold })}
+                                </p>
+                              </div>
+                              <p className="text-sm font-bold text-gray-900 dark:text-white">
+                                {formatCurrency(product.revenue)}
+                              </p>
+                            </div>
+                          )
+                        )}
                     </div>
                   )}
                 </CardContent>

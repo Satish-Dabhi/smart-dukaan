@@ -1,10 +1,12 @@
 "use client";
 
 import { useRef } from "react";
+import Image from "next/image";
 import { useReactToPrint } from "react-to-print";
 import { Printer, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface InvoiceItem {
   name: string;
@@ -64,16 +66,25 @@ export function InvoicePrintPage({ invoice, business }: Props) {
 
   const handleDownloadPdf = async () => {
     if (!printRef.current) return;
-    const { default: html2canvas } = await import("html2canvas");
-    const { default: jsPDF } = await import("jspdf");
+    const toastId = toast.loading("Generating high-resolution PDF...");
+    try {
+      const html2canvasModule = await import("html2canvas");
+      const html2canvas = html2canvasModule.default || html2canvasModule;
+      const jspdfModule = await import("jspdf");
+      const jsPDF = jspdfModule.jsPDF || jspdfModule.default || jspdfModule;
 
-    const canvas = await html2canvas(printRef.current, { scale: 2, useCORS: true });
-    const imgData = canvas.toDataURL("image/png");
-    const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const imgHeight = (canvas.height * pageWidth) / canvas.width;
-    pdf.addImage(imgData, "PNG", 0, 0, pageWidth, imgHeight);
-    pdf.save(`Invoice-${invoice.invoiceNumber}.pdf`);
+      const canvas = await html2canvas(printRef.current, { scale: 2, useCORS: true });
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const imgHeight = (canvas.height * pageWidth) / canvas.width;
+      pdf.addImage(imgData, "PNG", 0, 0, pageWidth, imgHeight);
+      pdf.save(`Invoice-${invoice.invoiceNumber}.pdf`);
+      toast.success("PDF downloaded successfully!", { id: toastId });
+    } catch (err) {
+      console.error("PDF generation failed:", err);
+      toast.error("Failed to generate PDF. Please try printing instead.", { id: toastId });
+    }
   };
 
   const paymentLabel: Record<string, string> = {
@@ -119,13 +130,23 @@ export function InvoicePrintPage({ invoice, business }: Props) {
           <div className="flex items-start justify-between">
             <div>
               {business.logo ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={business.logo} alt={business.name} className="h-12 mb-2 object-contain" />
+                <Image
+                  src={business.logo}
+                  alt={business.name}
+                  width={192}
+                  height={48}
+                  className="h-12 mb-2 object-contain"
+                  unoptimized
+                />
               ) : (
                 <div className="text-2xl font-black mb-1">{business.name}</div>
               )}
-              <p className="text-violet-100 text-sm">{business.address}, {business.city}</p>
-              <p className="text-violet-100 text-sm">{business.state} - {business.pincode}</p>
+              <p className="text-violet-100 text-sm">
+                {business.address}, {business.city}
+              </p>
+              <p className="text-violet-100 text-sm">
+                {business.state} - {business.pincode}
+              </p>
               <p className="text-violet-100 text-sm">{business.phone}</p>
               {business.gstNumber && (
                 <p className="text-violet-100 text-sm mt-1">GSTIN: {business.gstNumber}</p>
@@ -146,8 +167,12 @@ export function InvoicePrintPage({ invoice, business }: Props) {
 
         {/* Bill To */}
         <div className="px-8 py-4 border-b border-gray-100">
-          <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Bill To</p>
-          <p className="font-semibold text-gray-800">{invoice.customerName ?? "Walk-in Customer"}</p>
+          <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">
+            Bill To
+          </p>
+          <p className="font-semibold text-gray-800">
+            {invoice.customerName ?? "Walk-in Customer"}
+          </p>
           {invoice.customerPhone && (
             <p className="text-sm text-gray-500">{invoice.customerPhone}</p>
           )}

@@ -61,7 +61,7 @@ export default async function BusinessStorefront({ params, searchParams }: Props
   ]);
 
   // Strip exact stock counts — only expose inStock boolean to the public client.
-  const publicProducts = products.map(({ stock, minStock, ...rest }) => ({
+  const publicProducts = products.map(({ stock, ...rest }) => ({
     ...rest,
     inStock: stock > 0,
   }));

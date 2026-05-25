@@ -6,6 +6,7 @@ import { connectDB } from "@/lib/db";
 import User from "@/models/User";
 import bcrypt from "bcryptjs";
 import { authConfig } from "./auth.config";
+import { headers } from "next/headers";
 
 const client = new MongoClient(process.env.MONGODB_URI!);
 
@@ -55,10 +56,29 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
       if (account?.provider === "google") {
         await connectDB();
+        let isCustomerAuth = false;
+        try {
+          const reqHeaders = await headers();
+          const referer = reqHeaders.get("referer") || "";
+          isCustomerAuth = referer.includes("customer-auth");
+        } catch (e) {
+          console.error("[AUTH] Failed to read referer header in next/headers", e);
+        }
+
+        const existingUser = await User.findOne({ email: token.email });
+        const updateFields: {
+          isVerified: boolean;
+          authProvider: string;
+          role?: string;
+        } = { isVerified: true, authProvider: "google" };
+        if (isCustomerAuth && (!existingUser || existingUser.role === "business_owner")) {
+          updateFields.role = "customer";
+        }
+
         // Google has already verified the email — always mark as verified and track provider.
         const dbUser = await User.findOneAndUpdate(
           { email: token.email },
-          { $set: { isVerified: true, authProvider: "google" } },
+          { $set: updateFields },
           { new: true }
         );
         if (dbUser) {

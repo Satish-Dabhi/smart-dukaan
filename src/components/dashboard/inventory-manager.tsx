@@ -1,4 +1,5 @@
 import { getTranslations, getLocale } from "next-intl/server";
+import Image from "next/image";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { SearchInput } from "@/components/shared/search-input";
@@ -91,11 +92,13 @@ export async function InventoryManager({ page, q, filter }: InventoryManagerProp
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-3">
                               {product.images?.[0] ? (
-                                /* eslint-disable-next-line @next/next/no-img-element */
-                                <img
+                                <Image
                                   src={product.images[0]}
                                   alt={product.name}
+                                  width={40}
+                                  height={40}
                                   className="w-10 h-10 rounded-lg object-cover"
+                                  unoptimized
                                 />
                               ) : (
                                 <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0">

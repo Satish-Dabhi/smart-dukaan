@@ -1,11 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { connectDB } from "@/lib/db";
-import Product from "@/models/Product";
-import "@/models/Category";
-import { z } from "zod";
 import { ProductSchema } from "@/lib/schemas";
-import { escapeRegex } from "@/lib/utils";
+import "@/models/Category";
+import Product from "@/models/Product";
+import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 
 // Whitelist of fields the client is allowed to sort by
 const ALLOWED_SORT_FIELDS = new Set([

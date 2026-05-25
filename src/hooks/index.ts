@@ -1,5 +1,4 @@
 "use client";
-/* eslint-disable react-hooks/refs */
 
 import { useEffect, useRef, useState, useCallback } from "react";
 
@@ -19,7 +18,10 @@ export function useDebouncedCallback<Args extends unknown[]>(
   delay: number = 300
 ): (...args: Args) => void {
   const fnRef = useRef(fn);
-  fnRef.current = fn;
+
+  useEffect(() => {
+    fnRef.current = fn;
+  }, [fn]);
 
   const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
@@ -33,11 +35,15 @@ export function useDebouncedCallback<Args extends unknown[]>(
 }
 
 export function usePrevious<T>(value: T): T | undefined {
-  const ref = useRef<T | undefined>(undefined);
-  useEffect(() => {
-    ref.current = value;
-  });
-  return ref.current;
+  const [current, setCurrent] = useState<T>(value);
+  const [previous, setPrevious] = useState<T | undefined>(undefined);
+
+  if (value !== current) {
+    setPrevious(current);
+    setCurrent(value);
+  }
+
+  return previous;
 }
 
 export function useIsMounted(): () => boolean {

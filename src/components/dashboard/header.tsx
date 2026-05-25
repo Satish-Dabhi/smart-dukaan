@@ -1,5 +1,4 @@
 "use client";
-/* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/set-state-in-effect */
 
 import { Session } from "next-auth";
 import { signOut } from "next-auth/react";
@@ -7,12 +6,37 @@ import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getInitials } from "@/lib/utils";
-import { Bell, Sun, Moon, LogOut, Settings, User, ChevronDown, Globe, Menu, ShoppingBag, AlertTriangle, Info, Check } from "lucide-react";
-import { useState, useEffect } from "react";
+import {
+  Bell,
+  Sun,
+  Moon,
+  LogOut,
+  Settings,
+  User,
+  ChevronDown,
+  Globe,
+  Menu,
+  ShoppingBag,
+  AlertTriangle,
+  Info,
+  Check,
+} from "lucide-react";
+import { useState } from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+
+interface INotification {
+  _id: string;
+  read: boolean;
+  type: string;
+  title: string;
+  message: string;
+  link?: string;
+  createdAt: string;
+}
 
 interface HeaderProps {
   session: Session;
@@ -30,42 +54,62 @@ export function DashboardHeader({ session, locale, onMenuClick }: HeaderProps) {
   const user = session.user;
 
   const router = useRouter();
-  const [notifications, setNotifications] = useState<any[]>([]);
+  const queryClient = useQueryClient();
   const [showNotifications, setShowNotifications] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
 
-  const fetchNotifications = async () => {
-    try {
+  // Fetch notifications using React Query
+  const { data: notifications = [] } = useQuery<INotification[]>({
+    queryKey: ["notifications"],
+    queryFn: async () => {
       const res = await fetch("/api/notifications");
-      if (res.ok) {
-        const json = await res.json();
-        if (json.success) {
-          setNotifications(json.data);
-          setUnreadCount(json.data.filter((n: any) => !n.read).length);
-        }
-      }
-    } catch (error) {
-      console.error("Error fetching notifications:", error);
-    }
-  };
+      if (!res.ok) throw new Error("Failed to fetch notifications");
+      const json = await res.json();
+      return json.success ? json.data : [];
+    },
+    refetchInterval: 30000, // Poll every 30s, automatically paused when tab is blurred/inactive!
+    refetchOnWindowFocus: true, // Fetch immediately when tab becomes focused again
+    staleTime: 10000, // Prevent redundant refetching on rapid header clicks
+  });
 
-  useEffect(() => {
-    fetchNotifications();
-    // Setup simple polling every 15 seconds to fetch new orders/low stock alerts dynamically!
-    const interval = setInterval(fetchNotifications, 15000);
-    return () => clearInterval(interval);
-  }, []);
+  const unreadCount = notifications.filter((n: INotification) => !n.read).length;
 
-  const handleNotificationClick = async (notification: any) => {
+  // Mutation to mark a single notification as read
+  const markReadMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/notifications/${id}`, {
+        method: "PATCH",
+      });
+      if (!res.ok) throw new Error("Failed to mark notification read");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+    },
+    onError: (error) => {
+      console.error("Error marking notification read:", error);
+    },
+  });
+
+  // Mutation to mark all notifications as read
+  const markAllReadMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/notifications", {
+        method: "POST",
+      });
+      if (!res.ok) throw new Error("Failed to mark all notifications read");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+    },
+    onError: (error) => {
+      console.error("Error marking all notifications read:", error);
+    },
+  });
+
+  const handleNotificationClick = (notification: INotification) => {
     if (!notification.read) {
-      try {
-        await fetch(`/api/notifications/${notification._id}`, {
-          method: "PATCH",
-        });
-        fetchNotifications();
-      } catch (error) {
-        console.error("Error marking notification read:", error);
-      }
+      markReadMutation.mutate(notification._id);
     }
     setShowNotifications(false);
     if (notification.link) {
@@ -73,15 +117,8 @@ export function DashboardHeader({ session, locale, onMenuClick }: HeaderProps) {
     }
   };
 
-  const handleMarkAllRead = async () => {
-    try {
-      await fetch("/api/notifications", {
-        method: "POST",
-      });
-      fetchNotifications();
-    } catch (error) {
-      console.error("Error marking all read:", error);
-    }
+  const handleMarkAllRead = () => {
+    markAllReadMutation.mutate();
   };
 
   return (
@@ -101,9 +138,7 @@ export function DashboardHeader({ session, locale, onMenuClick }: HeaderProps) {
           <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-600 to-pink-600 flex items-center justify-center shrink-0">
             <ShoppingBag className="w-4 h-4 text-white" />
           </div>
-          <span className="font-bold text-base gradient-text whitespace-nowrap">
-            SmartDukaan
-          </span>
+          <span className="font-bold text-base gradient-text whitespace-nowrap">SmartDukaan</span>
         </Link>
       </div>
 
@@ -142,10 +177,7 @@ export function DashboardHeader({ session, locale, onMenuClick }: HeaderProps) {
 
           {showNotifications && (
             <>
-              <div
-                className="fixed inset-0 z-10"
-                onClick={() => setShowNotifications(false)}
-              />
+              <div className="fixed inset-0 z-10" onClick={() => setShowNotifications(false)} />
               <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-card rounded-2xl shadow-2xl border border-border z-20 overflow-hidden flex flex-col max-h-[480px]">
                 <div className="px-4 py-3 border-b border-border flex items-center justify-between bg-gray-50/55 dark:bg-gray-800/35">
                   <div className="flex items-center gap-2">
@@ -191,14 +223,16 @@ export function DashboardHeader({ session, locale, onMenuClick }: HeaderProps) {
                           !n.read && "bg-violet-50/20 dark:bg-violet-950/5"
                         )}
                       >
-                        <div className={cn(
-                          "w-8 h-8 rounded-full flex items-center justify-center shrink-0 border mt-0.5",
-                          n.type === "order"
-                            ? "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 border-emerald-100 dark:border-emerald-900/30"
-                            : n.type === "inventory"
-                            ? "bg-amber-50 dark:bg-amber-950/30 text-amber-600 border-amber-100 dark:border-amber-900/30"
-                            : "bg-blue-50 dark:bg-blue-950/30 text-blue-600 border-blue-100 dark:border-blue-900/30"
-                        )}>
+                        <div
+                          className={cn(
+                            "w-8 h-8 rounded-full flex items-center justify-center shrink-0 border mt-0.5",
+                            n.type === "order"
+                              ? "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 border-emerald-100 dark:border-emerald-900/30"
+                              : n.type === "inventory"
+                                ? "bg-amber-50 dark:bg-amber-950/30 text-amber-600 border-amber-100 dark:border-amber-900/30"
+                                : "bg-blue-50 dark:bg-blue-950/30 text-blue-600 border-blue-100 dark:border-blue-900/30"
+                          )}
+                        >
                           {n.type === "order" ? (
                             <ShoppingBag className="w-4 h-4" />
                           ) : n.type === "inventory" ? (
@@ -209,14 +243,19 @@ export function DashboardHeader({ session, locale, onMenuClick }: HeaderProps) {
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between gap-2">
-                            <p className={cn(
-                              "text-xs font-bold text-gray-900 dark:text-white truncate",
-                              !n.read && "text-violet-600 dark:text-violet-400"
-                            )}>
+                            <p
+                              className={cn(
+                                "text-xs font-bold text-gray-900 dark:text-white truncate",
+                                !n.read && "text-violet-600 dark:text-violet-400"
+                              )}
+                            >
                               {n.title}
                             </p>
                             <span className="text-[10px] text-gray-400 shrink-0">
-                              {new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              {new Date(n.createdAt).toLocaleTimeString([], {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
                             </span>
                           </div>
                           <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 mt-0.5 leading-relaxed">
@@ -243,9 +282,7 @@ export function DashboardHeader({ session, locale, onMenuClick }: HeaderProps) {
           >
             <Avatar className="w-8 h-8">
               <AvatarImage src={user?.image ?? undefined} alt={user?.name ?? ""} />
-              <AvatarFallback className="text-xs">
-                {getInitials(user?.name ?? "U")}
-              </AvatarFallback>
+              <AvatarFallback className="text-xs">{getInitials(user?.name ?? "U")}</AvatarFallback>
             </Avatar>
             <div className="hidden sm:block text-left">
               <p className="text-sm font-medium text-gray-900 dark:text-white leading-none">
@@ -258,10 +295,7 @@ export function DashboardHeader({ session, locale, onMenuClick }: HeaderProps) {
 
           {dropdownOpen && (
             <>
-              <div
-                className="fixed inset-0 z-10"
-                onClick={() => setDropdownOpen(false)}
-              />
+              <div className="fixed inset-0 z-10" onClick={() => setDropdownOpen(false)} />
               <div className="absolute right-0 top-full mt-2 w-56 bg-card rounded-xl shadow-xl border border-border z-20 py-1 overflow-hidden">
                 <div className="px-4 py-3 border-b border-border">
                   <p className="text-sm font-medium text-gray-900 dark:text-white">{user?.name}</p>
@@ -270,7 +304,9 @@ export function DashboardHeader({ session, locale, onMenuClick }: HeaderProps) {
                 <div className="py-1">
                   <Link
                     href={`/${locale}/dashboard/profile`}
-                    className={cn("flex items-center gap-3 px-4 py-2 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors")}
+                    className={cn(
+                      "flex items-center gap-3 px-4 py-2 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                    )}
                     onClick={() => setDropdownOpen(false)}
                   >
                     <User className="w-4 h-4" />

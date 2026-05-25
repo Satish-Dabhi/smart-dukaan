@@ -49,14 +49,14 @@ const UserSchema = new Schema<IUserDoc>(
 
 UserSchema.index({ businessId: 1 });
 // Auth lookups
-UserSchema.index({ email: 1 }); // already unique but explicit for clarity
+// email is already unique and indexed automatically via unique: true in schema definition
+
 // Admin growth aggregations
 UserSchema.index({ createdAt: -1 });
 // OTP expiry — TTL-style cleanup possible, but index helps expiry queries
 UserSchema.index({ verificationOtpExpires: 1 }, { sparse: true });
 UserSchema.index({ resetPasswordOtpExpires: 1 }, { sparse: true });
 
-const User: Model<IUserDoc> =
-  mongoose.models.User || mongoose.model<IUserDoc>("User", UserSchema);
+const User: Model<IUserDoc> = mongoose.models.User || mongoose.model<IUserDoc>("User", UserSchema);
 
 export default User;
