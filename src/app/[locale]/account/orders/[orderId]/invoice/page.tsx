@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { connectDB } from "@/lib/db";
@@ -10,7 +11,15 @@ interface Props {
   params: Promise<{ locale: string; orderId: string }>;
 }
 
-export default async function CustomerOrderInvoicePage({ params }: Props) {
+export default function CustomerOrderInvoicePage({ params }: Props) {
+  return (
+    <Suspense fallback={<InvoiceLoadingSkeleton />}>
+      <CustomerOrderInvoiceContent params={params} />
+    </Suspense>
+  );
+}
+
+async function CustomerOrderInvoiceContent({ params }: { params: Props["params"] }) {
   const { locale, orderId } = await params;
   const session = await auth();
 
@@ -102,4 +111,20 @@ export default async function CustomerOrderInvoicePage({ params }: Props) {
 
   // 7. Redirect to the print-ready invoice viewer page
   redirect(`/${locale}/invoice/${order.businessId}/${invoice._id}`);
+  return null;
+}
+
+function InvoiceLoadingSkeleton() {
+  return (
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-950 animate-pulse">
+      <div className="max-w-2xl mx-auto p-8 space-y-4">
+        <div className="h-8 w-48 bg-gray-200 dark:bg-gray-800 rounded" />
+        <div className="h-4 w-64 bg-gray-200 dark:bg-gray-800 rounded" />
+        <div className="h-px bg-gray-200 dark:bg-gray-800 my-6" />
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="h-6 bg-gray-200 dark:bg-gray-800 rounded w-full" />
+        ))}
+      </div>
+    </div>
+  );
 }
