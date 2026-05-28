@@ -21,6 +21,7 @@ export const ProductSchema = z.object({
   hsnCode: z.string().optional(),
   unit: z.string().optional(),
   tags: z.array(z.string()).optional(),
+  brand: z.string().optional(),
   icon: z.string().optional(),
 });
 
@@ -45,6 +46,7 @@ export const BusinessSchema = z.object({
   whatsappNumber: z.string().min(10, "WhatsApp number must be at least 10 digits"),
   logo: z.string().url().optional().or(z.literal("")),
   banner: z.string().url().optional().or(z.literal("")),
+  googleSiteVerification: z.string().optional(),
 });
 
 // Explicitly allowlist only the fields a business owner may self-update.
@@ -73,6 +75,7 @@ export const BusinessUpdateSchema = z
     favicon: z.string().url().optional().or(z.literal("")),
     primaryColor: z.string().optional(),
     secondaryColor: z.string().optional(),
+    googleSiteVerification: z.string().optional(),
     fontFamily: z.string().optional(),
     socialLinks: z
       .object({
@@ -131,3 +134,16 @@ export const OrderUpdateSchema = z.object({
 });
 
 export type OrderUpdateInput = z.infer<typeof OrderUpdateSchema>;
+
+// ─── Demo Connect ───────────────────────────────────────────────────────────
+
+export const ConnectSchema = z.object({
+  name: z.string().min(2, "Name must be at least 2 characters"),
+  businessName: z.string().min(2, "Business name must be at least 2 characters"),
+  email: z.string().email("Invalid email address"),
+  phone: z.string().min(10, "Phone number must be at least 10 digits"),
+  businessType: z.string().min(1, "Please select your business type"),
+  notes: z.string().max(1000, "Notes cannot exceed 1000 characters").optional(),
+});
+
+export type ConnectInput = z.infer<typeof ConnectSchema>;

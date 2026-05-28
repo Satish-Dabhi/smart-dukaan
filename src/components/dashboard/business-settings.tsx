@@ -28,6 +28,7 @@ const schema = z.object({
   theme: z.string().optional(),
   productView: z.string().optional(),
   primaryColor: z.string().optional(),
+  googleSiteVerification: z.string().optional(),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -82,6 +83,7 @@ export function BusinessSettings() {
           theme: business.theme ?? "minimal",
           productView: business.productView ?? "card",
           primaryColor: business.primaryColor ?? "#7c3aed",
+          googleSiteVerification: business.googleSiteVerification ?? "",
         }
       : undefined,
   });
@@ -367,6 +369,35 @@ export function BusinessSettings() {
                   </div>
                 </button>
               ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* SEO Settings */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Store className="w-4 h-4 text-violet-500" /> {t("seoSettings") ?? "SEO Settings"}
+            </CardTitle>
+            <CardDescription>
+              {t("seoSettingsDesc") ??
+                "Verify ownership of your storefront in search consoles and configure search crawls."}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block">
+                {t("googleSiteVerification") ?? "Google Site Verification Key"}
+              </label>
+              <Input
+                placeholder="google-site-verification=..."
+                {...register("googleSiteVerification")}
+                className={errors.googleSiteVerification ? "border-red-500" : ""}
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                {t("googleSiteVerificationHelp") ??
+                  "Provide the Google Search Console verification meta tag token to authorize index scans."}
+              </p>
             </div>
           </CardContent>
         </Card>

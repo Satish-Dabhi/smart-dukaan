@@ -54,6 +54,7 @@ export interface IBusinessDoc extends Document {
   subscriptionPlan: "trial" | "starter" | "pro" | "enterprise";
   subscriptionExpiresAt?: Date;
   trialStartedAt?: Date;
+  googleSiteVerification?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -127,6 +128,7 @@ const BusinessSchema = new Schema<IBusinessDoc>(
     },
     subscriptionExpiresAt: { type: Date },
     trialStartedAt: { type: Date },
+    googleSiteVerification: { type: String },
   },
   { timestamps: true }
 );

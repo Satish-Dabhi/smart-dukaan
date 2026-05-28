@@ -32,13 +32,19 @@ export default async function proxy(req: NextRequest) {
     return intlMiddleware(req);
   }
 
-  // Protected dashboard routes
+  // Protected dashboard and POS routes - block customers and unauthenticated users
   if (pathname.includes("/dashboard") || pathname.includes("/pos")) {
     const session = await auth();
     if (!session?.user) {
       const loginUrl = new URL("/en/auth/login", req.url);
       loginUrl.searchParams.set("callbackUrl", req.url);
       return NextResponse.redirect(loginUrl);
+    }
+
+    const user = session.user as { role?: string };
+    if (user?.role === "customer") {
+      const locale = pathname.startsWith("/gu") ? "gu" : "en";
+      return NextResponse.redirect(new URL(`/${locale}/account/orders`, req.url));
     }
   }
 

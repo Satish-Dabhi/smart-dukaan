@@ -10,7 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency, debounce } from "@/lib/utils";
-import type { IBusiness, IProduct, ICategory, CartItem, IOrder } from "@/types";
+import type { IBusiness, IProduct, ICategory, CartItem, IOrder, PaginationMeta } from "@/types";
+import Link from "next/link";
 
 // Import Shared Theme Configurations
 import { themeAestheticMap } from "./theme-config";
@@ -77,7 +78,18 @@ interface StorefrontProps {
   products: IProduct[];
   categories: ICategory[];
   locale: string;
-  filters: { category?: string; q?: string; sort?: string };
+  filters: {
+    category?: string;
+    q?: string;
+    sort?: string;
+    page?: string;
+    brand?: string;
+    minPrice?: string;
+    maxPrice?: string;
+  };
+  pagination?: PaginationMeta;
+  brandsList?: string[];
+  maxCatalogPrice?: number;
 }
 
 // Helper to map category names dynamically to stunning retail icons & gradients
@@ -565,6 +577,9 @@ export function StorefrontPage({
   categories,
   locale,
   filters,
+  pagination,
+  brandsList = [],
+  maxCatalogPrice = 1000,
 }: StorefrontProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -578,6 +593,25 @@ export function StorefrontPage({
   const { resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [showAuthDropdown, setShowAuthDropdown] = useState(false);
+
+  // Faceted Search Filters local states
+  const [showFiltersSheet, setShowFiltersSheet] = useState(false);
+  const [tempMinPrice, setTempMinPrice] = useState(filters.minPrice ?? "0");
+  const [tempMaxPrice, setTempMaxPrice] = useState(filters.maxPrice ?? maxCatalogPrice.toString());
+
+  const [prevMinPrice, setPrevMinPrice] = useState(filters.minPrice);
+  if (filters.minPrice !== prevMinPrice) {
+    setPrevMinPrice(filters.minPrice);
+    setTempMinPrice(filters.minPrice ?? "0");
+  }
+
+  const [prevMaxPrice, setPrevMaxPrice] = useState(filters.maxPrice);
+  const [prevMaxCatalogPrice, setPrevMaxCatalogPrice] = useState(maxCatalogPrice);
+  if (filters.maxPrice !== prevMaxPrice || maxCatalogPrice !== prevMaxCatalogPrice) {
+    setPrevMaxPrice(filters.maxPrice);
+    setPrevMaxCatalogPrice(maxCatalogPrice);
+    setTempMaxPrice(filters.maxPrice ?? maxCatalogPrice.toString());
+  }
 
   // Checkout and Order states
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
@@ -752,6 +786,22 @@ export function StorefrontPage({
       if (filters.category) params.set("category", filters.category);
       if (filters.q) params.set("q", filters.q);
       if (filters.sort) params.set("sort", filters.sort);
+      if (filters.page) params.set("page", filters.page);
+      if (filters.brand) params.set("brand", filters.brand);
+      if (filters.minPrice) params.set("minPrice", filters.minPrice);
+      if (filters.maxPrice) params.set("maxPrice", filters.maxPrice);
+
+      // Reset page when category, search, brands or price constraints change
+      if (
+        updates.category !== undefined ||
+        updates.q !== undefined ||
+        updates.brand !== undefined ||
+        updates.minPrice !== undefined ||
+        updates.maxPrice !== undefined
+      ) {
+        params.delete("page");
+      }
+
       Object.entries(updates).forEach(([k, v]) => {
         if (v) params.set(k, v);
         else params.delete(k);
@@ -759,6 +809,21 @@ export function StorefrontPage({
       router.push(`${pathname}?${params.toString()}`);
     },
     [filters, pathname, router]
+  );
+
+  const getPageHref = useCallback(
+    (pageNumber: number) => {
+      const params = new URLSearchParams();
+      if (filters.category) params.set("category", filters.category);
+      if (filters.q) params.set("q", filters.q);
+      if (filters.sort) params.set("sort", filters.sort);
+      if (filters.brand) params.set("brand", filters.brand);
+      if (filters.minPrice) params.set("minPrice", filters.minPrice);
+      if (filters.maxPrice) params.set("maxPrice", filters.maxPrice);
+      params.set("page", pageNumber.toString());
+      return `${pathname}?${params.toString()}`;
+    },
+    [filters, pathname]
   );
 
   const debouncedSearch = useMemo(
@@ -906,7 +971,7 @@ export function StorefrontPage({
       {/* ─── Sticky Search + Filters ─────────────────────────────────────── */}
       <div className="sticky top-0 z-30 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-b border-gray-100 dark:border-gray-800 shadow-sm">
         <div className="max-w-5xl mx-auto px-4 py-3">
-          <div className="flex gap-3">
+          <div className="flex gap-2">
             <div className="flex-1">
               <Input
                 placeholder={t("Search products...", "ઉત્પાદન શોધો...")}
@@ -915,6 +980,31 @@ export function StorefrontPage({
                 startIcon={<Search className="w-4 h-4" />}
               />
             </div>
+
+            {/* SEO-safe Premium Collapsible Filter Toggle Button */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowFiltersSheet(!showFiltersSheet)}
+              className={`h-9 flex items-center gap-1.5 cursor-pointer rounded-lg border shrink-0 ${
+                showFiltersSheet || filters.brand || filters.minPrice || filters.maxPrice
+                  ? "border-violet-500 bg-violet-50 dark:bg-violet-950/20 text-violet-600 dark:text-violet-400"
+                  : "border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-305"
+              }`}
+            >
+              <span>⚙️</span>
+              <span className="hidden sm:inline">{t("Filters", "ફિલ્ટર્સ")}</span>
+              {(filters.brand || filters.minPrice || filters.maxPrice) && (
+                <Badge
+                  variant="secondary"
+                  className="px-1.5 py-0.5 text-[9px] rounded-full bg-violet-600 text-white dark:bg-violet-500"
+                >
+                  {(filters.brand ? filters.brand.split(",").length : 0) +
+                    (filters.minPrice || filters.maxPrice ? 1 : 0)}
+                </Badge>
+              )}
+            </Button>
+
             <select
               className="h-9 px-3 rounded-lg border border-input bg-background text-foreground text-sm cursor-pointer"
               value={filters.sort ?? ""}
@@ -927,6 +1017,156 @@ export function StorefrontPage({
               <option value="popular">{t("Most Popular", "સૌથી લોકપ્રિય")}</option>
             </select>
           </div>
+
+          {/* Collapsible Facet Filters Sheet */}
+          {showFiltersSheet && (
+            <div className="mt-3 p-4 bg-gray-50/70 dark:bg-gray-800/40 border border-gray-150 dark:border-gray-800 rounded-xl space-y-4 animate-fadeIn">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {/* 1. Price Range Filters */}
+                <div className="space-y-2">
+                  <h4 className="text-xs font-black uppercase text-gray-500 tracking-wider">
+                    {t("Price Range", "કિંમત મર્યાદા")}
+                  </h4>
+                  <div className="space-y-4 p-1">
+                    <div className="flex items-center justify-between text-xs font-semibold text-gray-700 dark:text-gray-303">
+                      <span>₹{tempMinPrice}</span>
+                      <span>₹{tempMaxPrice}</span>
+                    </div>
+                    <div className="flex gap-3">
+                      <div className="flex-1 flex flex-col gap-1">
+                        <span className="text-[10px] text-gray-400 font-bold uppercase">
+                          {t("Min Price", "લઘુત્તમ")}
+                        </span>
+                        <input
+                          type="range"
+                          min="0"
+                          max={maxCatalogPrice}
+                          value={tempMinPrice}
+                          onChange={(e) => setTempMinPrice(e.target.value)}
+                          className="w-full h-1.5 bg-gray-200 dark:bg-gray-750 rounded-lg appearance-none cursor-pointer accent-violet-600"
+                        />
+                      </div>
+                      <div className="flex-1 flex flex-col gap-1">
+                        <span className="text-[10px] text-gray-400 font-bold uppercase">
+                          {t("Max Price", "મહત્તમ")}
+                        </span>
+                        <input
+                          type="range"
+                          min="0"
+                          max={maxCatalogPrice}
+                          value={tempMaxPrice}
+                          onChange={(e) => setTempMaxPrice(e.target.value)}
+                          className="w-full h-1.5 bg-gray-200 dark:bg-gray-750 rounded-lg appearance-none cursor-pointer accent-violet-600"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="gradient"
+                        className="flex-1 h-7 text-[10px] font-black"
+                        onClick={() =>
+                          updateFilters({
+                            minPrice: tempMinPrice !== "0" ? tempMinPrice : undefined,
+                            maxPrice:
+                              tempMaxPrice !== maxCatalogPrice.toString()
+                                ? tempMaxPrice
+                                : undefined,
+                          })
+                        }
+                      >
+                        {t("Apply Price", "લાગુ કરો")}
+                      </Button>
+                      {(filters.minPrice || filters.maxPrice) && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-[10px] font-black border-red-200 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20"
+                          onClick={() => {
+                            setTempMinPrice("0");
+                            setTempMaxPrice(maxCatalogPrice.toString());
+                            updateFilters({ minPrice: undefined, maxPrice: undefined });
+                          }}
+                        >
+                          {t("Reset", "રીસેટ")}
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. Brand Facets List */}
+                <div className="space-y-2">
+                  <h4 className="text-xs font-black uppercase text-gray-500 tracking-wider">
+                    {t("Brands", "બ્રાન્ડ્સ")}
+                  </h4>
+                  {brandsList.length === 0 ? (
+                    <p className="text-xs text-muted-foreground pr-2 leading-relaxed">
+                      {t("No specific brands present in catalog", "કેટલોગમાં બ્રાન્ડ ઉપલબ્ધ નથી")}
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="flex flex-wrap gap-2 max-h-24 overflow-y-auto pr-1">
+                        {brandsList.map((brand) => {
+                          const activeBrands = filters.brand ? filters.brand.split(",") : [];
+                          const isChecked = activeBrands.includes(brand);
+                          return (
+                            <button
+                              key={brand}
+                              type="button"
+                              onClick={() => {
+                                let newBrands = [...activeBrands];
+                                if (isChecked) {
+                                  newBrands = newBrands.filter((b) => b !== brand);
+                                } else {
+                                  newBrands.push(brand);
+                                }
+                                updateFilters({
+                                  brand: newBrands.length > 0 ? newBrands.join(",") : undefined,
+                                });
+                              }}
+                              className={`px-2.5 py-1 text-xs font-semibold rounded-lg border transition-all cursor-pointer ${
+                                isChecked
+                                  ? "bg-violet-600 border-violet-600 text-white shadow-sm shadow-violet-200 dark:shadow-none"
+                                  : "bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:border-gray-300"
+                              }`}
+                            >
+                              {brand}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {filters.brand && (
+                        <button
+                          onClick={() => updateFilters({ brand: undefined })}
+                          className="text-[10px] font-bold text-red-500 hover:underline inline-block mt-1 cursor-pointer"
+                        >
+                          {t("Clear brands", "બ્રાન્ડ્સ સાફ કરો")}
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* General Reset Action */}
+              {(filters.brand || filters.minPrice || filters.maxPrice) && (
+                <div className="flex justify-end pt-2 border-t border-dashed border-gray-200 dark:border-gray-800">
+                  <button
+                    onClick={() => {
+                      setTempMinPrice("0");
+                      setTempMaxPrice(maxCatalogPrice.toString());
+                      updateFilters({ brand: undefined, minPrice: undefined, maxPrice: undefined });
+                    }}
+                    className="text-xs font-extrabold text-red-500 hover:text-red-650 flex items-center gap-1 cursor-pointer bg-transparent border-0"
+                  >
+                    <span>🗑️</span>
+                    <span>{t("Reset All Filters", "બધા ફિલ્ટર્સ રીસેટ કરો")}</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Category pills */}
           {categories.length > 0 && (
@@ -1193,6 +1433,63 @@ export function StorefrontPage({
                   categories={categories}
                 />
               ))}
+            </div>
+          )}
+
+          {/* ─── Crawler-friendly Storefront Pagination ─── */}
+          {pagination && pagination.totalPages > 1 && (
+            <div className="flex items-center justify-center gap-1.5 sm:gap-2 mt-10">
+              <Link
+                href={getPageHref(pagination.page - 1)}
+                onClick={(e) => {
+                  if (pagination.page <= 1) e.preventDefault();
+                  else updateFilters({ page: (pagination.page - 1).toString() });
+                }}
+                className={`px-3 py-2 rounded-xl text-xs font-bold transition-all border shrink-0 flex items-center justify-center ${
+                  pagination.hasPrev
+                    ? "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-750"
+                    : "bg-gray-50 dark:bg-gray-900 text-gray-300 dark:text-gray-600 border-gray-100 dark:border-gray-800 cursor-not-allowed"
+                }`}
+              >
+                {t("← Prev", "← પાછળ")}
+              </Link>
+
+              {[...Array(pagination.totalPages)].map((_, idx) => {
+                const pageNum = idx + 1;
+                const isActive = pagination.page === pageNum;
+                return (
+                  <Link
+                    key={pageNum}
+                    href={getPageHref(pageNum)}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      updateFilters({ page: pageNum.toString() });
+                    }}
+                    className={`w-9 h-9 rounded-xl text-xs font-bold flex items-center justify-center border transition-all ${
+                      isActive
+                        ? "bg-violet-600 text-white border-violet-600 shadow-md shadow-violet-200 dark:shadow-violet-900/30"
+                        : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-750"
+                    }`}
+                  >
+                    {pageNum}
+                  </Link>
+                );
+              })}
+
+              <Link
+                href={getPageHref(pagination.page + 1)}
+                onClick={(e) => {
+                  if (pagination.page >= pagination.totalPages) e.preventDefault();
+                  else updateFilters({ page: (pagination.page + 1).toString() });
+                }}
+                className={`px-3 py-2 rounded-xl text-xs font-bold transition-all border shrink-0 flex items-center justify-center ${
+                  pagination.hasNext
+                    ? "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-750"
+                    : "bg-gray-50 dark:bg-gray-900 text-gray-300 dark:text-gray-600 border-gray-100 dark:border-gray-800 cursor-not-allowed"
+                }`}
+              >
+                {t("Next →", "આગળ →")}
+              </Link>
             </div>
           )}
         </section>

@@ -18,7 +18,9 @@ export function CustomerAuthForm() {
   const locale = useLocale();
   const rawCallback = searchParams.get("callbackUrl") ?? "";
   const callbackUrl =
-    rawCallback.startsWith("/") && !rawCallback.startsWith("//") ? rawCallback : "/";
+    rawCallback.startsWith("/") && !rawCallback.startsWith("//")
+      ? rawCallback
+      : `/${locale}/account/orders?role=customer`;
 
   const [tab, setTab] = useState<Tab>("register");
   const [loading, setLoading] = useState(false);

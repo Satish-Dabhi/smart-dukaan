@@ -6,7 +6,7 @@ import { connectDB } from "@/lib/db";
 import User from "@/models/User";
 import bcrypt from "bcryptjs";
 import { authConfig } from "./auth.config";
-import { headers } from "next/headers";
+import { headers, cookies } from "next/headers";
 
 const client = new MongoClient(process.env.MONGODB_URI!);
 
@@ -60,9 +60,22 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         try {
           const reqHeaders = await headers();
           const referer = reqHeaders.get("referer") || "";
-          isCustomerAuth = referer.includes("customer-auth");
+
+          const cookieStore = await cookies();
+          const callbackUrlCookie =
+            cookieStore.get("authjs.callback-url")?.value ||
+            cookieStore.get("next-auth.callback-url")?.value ||
+            cookieStore.get("__Secure-authjs.callback-url")?.value ||
+            cookieStore.get("__Secure-next-auth.callback-url")?.value ||
+            "";
+
+          isCustomerAuth =
+            referer.includes("customer-auth") ||
+            referer.includes("role=customer") ||
+            callbackUrlCookie.includes("customer-auth") ||
+            callbackUrlCookie.includes("role=customer");
         } catch (e) {
-          console.error("[AUTH] Failed to read referer header in next/headers", e);
+          console.error("[AUTH] Failed to read headers/cookies in next/headers", e);
         }
 
         const existingUser = await User.findOne({ email: token.email });

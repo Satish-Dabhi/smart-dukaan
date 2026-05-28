@@ -22,6 +22,7 @@ export interface IProductDoc extends Document {
   unit?: string;
   weight?: number;
   tags?: string[];
+  brand?: string;
   icon?: string;
   totalSold: number;
   createdAt: Date;
@@ -55,6 +56,7 @@ const ProductSchema = new Schema<IProductDoc>(
     unit: { type: String, default: "pcs" },
     weight: { type: Number },
     tags: [{ type: String }],
+    brand: { type: String, trim: true },
     icon: { type: String },
     totalSold: { type: Number, default: 0 },
   },
@@ -64,6 +66,7 @@ const ProductSchema = new Schema<IProductDoc>(
 ProductSchema.index({ businessId: 1, status: 1 });
 ProductSchema.index({ businessId: 1, categoryId: 1 });
 ProductSchema.index({ businessId: 1, isFeatured: 1 });
+ProductSchema.index({ businessId: 1, brand: 1 });
 ProductSchema.index({ name: "text", description: "text", tags: "text" });
 
 const Product: Model<IProductDoc> =

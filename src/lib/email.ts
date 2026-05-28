@@ -427,7 +427,11 @@ export async function sendTrialExpiringEmail(
     </p>
   `);
 
-  return sendMail(email, `⏳ Your SmartDukaan trial ends in ${daysLeft} day${daysLeft === 1 ? "" : "s"} — ${businessName}`, html);
+  return sendMail(
+    email,
+    `⏳ Your SmartDukaan trial ends in ${daysLeft} day${daysLeft === 1 ? "" : "s"} — ${businessName}`,
+    html
+  );
 }
 
 // ─── Trial Expired ─────────────────────────────────────────────────────────────
@@ -517,12 +521,16 @@ export async function sendOrderDeliveredEmail(
       </div>
     </div>
 
-    ${invoiceUrl ? `
+    ${
+      invoiceUrl
+        ? `
     <div style="text-align:center;margin:24px 0;">
       <a href="${invoiceUrl}" style="display:inline-block;padding:11px 24px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;font-weight:700;text-decoration:none;border-radius:10px;font-size:13px;">
         View &amp; Download Invoice
       </a>
-    </div>` : ""}
+    </div>`
+        : ""
+    }
 
     <p style="color:#6b7280;font-size:13px;text-align:center;line-height:1.6;margin-top:8px;">
       Thank you for shopping with us. We look forward to serving you again!
@@ -530,4 +538,118 @@ export async function sendOrderDeliveredEmail(
   `);
 
   return sendMail(email, `Your order ${orderNumber} has been delivered!`, html);
+}
+
+// ─── Demo Connect Requests ──────────────────────────────────────────────────
+
+export async function sendDemoRequestEmail(details: {
+  name: string;
+  businessName: string;
+  email: string;
+  phone: string;
+  businessType: string;
+  notes?: string;
+}): Promise<MailResult> {
+  const adminEmail = process.env.SMTP_USER || "admin@smartdukaan.com";
+  const safeName = escapeHtml(details.name);
+  const safeBusinessName = escapeHtml(details.businessName);
+  const safeEmail = escapeHtml(details.email);
+  const safePhone = escapeHtml(details.phone);
+  const safeBusinessType = escapeHtml(details.businessType);
+  const safeNotes = details.notes ? escapeHtml(details.notes) : "None";
+
+  console.log(`[EMAIL] Sending demo request notification to ${adminEmail}`);
+
+  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+    console.warn("==========================================================");
+    console.warn(`[SMTP NOT CONFIGURED] Demo Request from ${safeName} (${safeBusinessName})`);
+    console.warn("==========================================================");
+    return { success: true, mocked: true };
+  }
+
+  const html = baseLayout(`
+    <div style="background:linear-gradient(135deg,#7c3aed10,#db277710);border-radius:12px;padding:18px 20px;margin-bottom:24px;text-align:center;">
+      <p style="margin:0 0 4px;color:#7c3aed;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1px;">New Demo Request</p>
+      <h2 style="margin:0;color:#1f2937;font-size:22px;font-weight:900;">${safeBusinessName}</h2>
+    </div>
+
+    <h3 style="color:#1f2937;font-size:16px;font-weight:700;margin-bottom:12px;">Lead Details:</h3>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:20px;border:1px solid #f3f4f6;border-radius:10px;overflow:hidden;font-size:14px;color:#374151;">
+      <tbody>
+        <tr>
+          <td style="padding:10px 12px;border-bottom:1px solid #f3f4f6;font-weight:600;background:#f9fafb;width:35%;">Contact Name</td>
+          <td style="padding:10px 12px;border-bottom:1px solid #f3f4f6;">${safeName}</td>
+        </tr>
+        <tr>
+          <td style="padding:10px 12px;border-bottom:1px solid #f3f4f6;font-weight:600;background:#f9fafb;">Business Name</td>
+          <td style="padding:10px 12px;border-bottom:1px solid #f3f4f6;">${safeBusinessName}</td>
+        </tr>
+        <tr>
+          <td style="padding:10px 12px;border-bottom:1px solid #f3f4f6;font-weight:600;background:#f9fafb;">Email Address</td>
+          <td style="padding:10px 12px;border-bottom:1px solid #f3f4f6;"><a href="mailto:${safeEmail}">${safeEmail}</a></td>
+        </tr>
+        <tr>
+          <td style="padding:10px 12px;border-bottom:1px solid #f3f4f6;font-weight:600;background:#f9fafb;">Phone Number</td>
+          <td style="padding:10px 12px;border-bottom:1px solid #f3f4f6;"><a href="tel:${safePhone}">${safePhone}</a></td>
+        </tr>
+        <tr>
+          <td style="padding:10px 12px;border-bottom:1px solid #f3f4f6;font-weight:600;background:#f9fafb;">Business Type</td>
+          <td style="padding:10px 12px;border-bottom:1px solid #f3f4f6;">${safeBusinessType}</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div style="background:#fefce8;border:1px solid #fde68a;border-radius:8px;padding:12px 14px;margin-bottom:20px;">
+      <p style="margin:0 0 2px;color:#92400e;font-size:10px;font-weight:700;text-transform:uppercase;">Message / Store Requirements</p>
+      <p style="margin:0;color:#78350f;font-size:13px;white-space:pre-wrap;">${safeNotes}</p>
+    </div>
+  `);
+
+  return sendMail(adminEmail, `🆕 Demo Request: ${safeBusinessName} (${safeName})`, html);
+}
+
+export async function sendDemoRequestConfirmationEmail(
+  email: string,
+  name: string,
+  businessName: string
+): Promise<MailResult> {
+  console.log(`[EMAIL] Sending demo request confirmation to ${email}`);
+
+  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+    console.warn(`[SMTP NOT CONFIGURED] Demo request confirmation for ${email}`);
+    return { success: true, mocked: true };
+  }
+
+  const safeName = escapeHtml(name);
+  const safeBusinessName = escapeHtml(businessName);
+
+  const html = baseLayout(`
+    <h3 style="color:#1f2937;font-size:18px;font-weight:700;margin-bottom:8px;">Thank You for Reaching Out, ${safeName}!</h3>
+    <p style="color:#4b5563;font-size:14px;line-height:1.7;margin-bottom:20px;">
+      We have successfully received your request for a live demo of <strong>SmartDukaan</strong> for your business, <strong>${safeBusinessName}</strong>. 
+    </p>
+    <p style="color:#4b5563;font-size:14px;line-height:1.7;margin-bottom:20px;">
+      Our team is currently preparing a personalized demo space that perfectly aligns with your store's requirements. One of our retail success executives will get in touch with you at the earliest to schedule a quick call and walk you through all our powerful features, including:
+    </p>
+
+    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:16px;margin-bottom:24px;">
+      <ul style="margin:0;padding-left:20px;color:#334155;font-size:13px;line-height:1.8;">
+        <li><strong>Custom Dynamic Storefront</strong> with WhatsApp ordering & self-checkout</li>
+        <li><strong>Cloud-Based POS Billing System</strong> for walk-in transactions</li>
+        <li><strong>Real-time Inventory & Low-Stock Alerts</strong></li>
+        <li><strong>Automated GST Invoicing & Digital Receipts</strong></li>
+        <li><strong>Visual Analytics Dashboard</strong> to track sales, peak hours & top products</li>
+      </ul>
+    </div>
+
+    <p style="color:#4b5563;font-size:14px;line-height:1.7;margin-bottom:24px;">
+      In the meantime, feel free to check out our product overview or explore creating a free account to test things out at your own pace!
+    </p>
+
+    <div style="text-align:center;margin:28px 0 20px;">
+      <a href="${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}" style="display:inline-block;padding:12px 28px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;font-weight:700;text-decoration:none;border-radius:10px;font-size:14px;box-shadow:0 4px 6px rgba(124,58,237,0.2);">Explore SmartDukaan</a>
+    </div>
+  `);
+
+  return sendMail(email, "We've Received Your Demo Request — SmartDukaan", html);
 }

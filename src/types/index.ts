@@ -61,6 +61,7 @@ export interface IBusiness {
   primaryColor?: string;
   secondaryColor?: string;
   fontFamily?: string;
+  googleSiteVerification?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -110,6 +111,7 @@ export interface IProduct {
   unit?: string;
   weight?: number;
   tags?: string[];
+  brand?: string;
   icon?: string;
   createdAt: string;
   updatedAt: string;
@@ -309,6 +311,7 @@ export interface SearchFilters {
   category?: string;
   minPrice?: number;
   maxPrice?: number;
+  brand?: string;
   status?: string;
   startDate?: string;
   endDate?: string;

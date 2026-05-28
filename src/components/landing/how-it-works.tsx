@@ -35,15 +35,31 @@ const steps = [
 ];
 
 const colorClasses: Record<string, { bg: string; text: string; border: string }> = {
-  violet: { bg: "bg-violet-100 dark:bg-violet-900/30", text: "text-violet-600 dark:text-violet-400", border: "border-violet-200 dark:border-violet-800" },
-  blue: { bg: "bg-blue-100 dark:bg-blue-900/30", text: "text-blue-600 dark:text-blue-400", border: "border-blue-200 dark:border-blue-800" },
-  emerald: { bg: "bg-emerald-100 dark:bg-emerald-900/30", text: "text-emerald-600 dark:text-emerald-400", border: "border-emerald-200 dark:border-emerald-800" },
-  pink: { bg: "bg-pink-100 dark:bg-pink-900/30", text: "text-pink-600 dark:text-pink-400", border: "border-pink-200 dark:border-pink-800" },
+  violet: {
+    bg: "bg-violet-100 dark:bg-violet-900/30",
+    text: "text-violet-600 dark:text-violet-400",
+    border: "border-violet-200 dark:border-violet-800",
+  },
+  blue: {
+    bg: "bg-blue-100 dark:bg-blue-900/30",
+    text: "text-blue-600 dark:text-blue-400",
+    border: "border-blue-200 dark:border-blue-800",
+  },
+  emerald: {
+    bg: "bg-emerald-100 dark:bg-emerald-900/30",
+    text: "text-emerald-600 dark:text-emerald-400",
+    border: "border-emerald-200 dark:border-emerald-800",
+  },
+  pink: {
+    bg: "bg-pink-100 dark:bg-pink-900/30",
+    text: "text-pink-600 dark:text-pink-400",
+    border: "border-pink-200 dark:border-pink-800",
+  },
 };
 
 export function HowItWorks() {
   return (
-    <section className="py-24 bg-white dark:bg-gray-950">
+    <section id="how-it-works" className="py-24 bg-white dark:bg-gray-950">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -52,11 +68,11 @@ export function HowItWorks() {
           className="text-center mb-16"
         >
           <h2 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
-            Up and running in{" "}
-            <span className="gradient-text">5 minutes</span>
+            Up and running in <span className="gradient-text">5 minutes</span>
           </h2>
           <p className="text-gray-500 dark:text-gray-400 text-lg max-w-xl mx-auto">
-            No technical knowledge required. SmartDukaan is designed for non-technical business owners.
+            No technical knowledge required. SmartDukaan is designed for non-technical business
+            owners.
           </p>
         </motion.div>
 

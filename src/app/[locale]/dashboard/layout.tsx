@@ -2,6 +2,14 @@ import { getCachedSession } from "@/lib/auth-cache";
 import { redirect } from "next/navigation";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 import type { Session } from "next-auth";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 import { SuspendedView } from "@/components/dashboard/suspended-view";
 import { getSubscriptionInfo } from "@/lib/subscription";
 import { getBusinessForDashboard } from "@/lib/get-business-for-dashboard";
