@@ -6,7 +6,7 @@ import { DashboardHeader } from "./header";
 import { SubscriptionBanner } from "./subscription-banner";
 import type { Session } from "next-auth";
 import { usePathname, useRouter } from "next/navigation";
-import { Sparkles, Building2, Package, Store, ArrowRight } from "lucide-react";
+import { Sparkles, Building2, Package, Store, ArrowRight, Tag } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { getSubscriptionInfo } from "@/lib/subscription";
 
@@ -17,7 +17,12 @@ interface DashboardShellProps {
   subscriptionInfo?: ReturnType<typeof getSubscriptionInfo> | null;
 }
 
-export function DashboardShell({ children, locale, session, subscriptionInfo }: DashboardShellProps) {
+export function DashboardShell({
+  children,
+  locale,
+  session,
+  subscriptionInfo,
+}: DashboardShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
@@ -68,16 +73,25 @@ export function DashboardShell({ children, locale, session, subscriptionInfo }: 
     if (role === "super_admin" || onboardingStep === "completed") return;
 
     const isSettingsPage = pathname.endsWith("/settings");
+    const isCategoriesPage = pathname.endsWith("/categories");
     const isProductsPage = pathname.endsWith("/products");
     const isStorefrontPage = pathname.endsWith("/storefront");
 
     if (onboardingStep === "create_business" && !isSettingsPage) {
       router.replace(`/${locale}/dashboard/settings`);
-    } else if (onboardingStep === "add_product" && !isSettingsPage && !isProductsPage) {
+    } else if (onboardingStep === "add_category" && !isSettingsPage && !isCategoriesPage) {
+      router.replace(`/${locale}/dashboard/categories`);
+    } else if (
+      onboardingStep === "add_product" &&
+      !isSettingsPage &&
+      !isCategoriesPage &&
+      !isProductsPage
+    ) {
       router.replace(`/${locale}/dashboard/products`);
     } else if (
       onboardingStep === "visit_storefront" &&
       !isSettingsPage &&
+      !isCategoriesPage &&
       !isProductsPage &&
       !isStorefrontPage
     ) {
@@ -95,20 +109,26 @@ export function DashboardShell({ children, locale, session, subscriptionInfo }: 
     let targetLink = `/${locale}/dashboard/settings`;
 
     if (onboardingStep === "create_business") {
-      progressWidth = "w-1/3";
+      progressWidth = "w-1/4";
       stepTitle = "Step 1: Create your Business profile";
       stepDescription = "To unlock the system, you must first register your business credentials.";
       stepIcon = <Building2 className="w-5 h-5 text-indigo-200" />;
       targetLink = `/${locale}/dashboard/settings`;
+    } else if (onboardingStep === "add_category") {
+      progressWidth = "w-2/4";
+      stepTitle = "Step 2: Add your first Category";
+      stepDescription = "Organize your store by adding a product category.";
+      stepIcon = <Tag className="w-5 h-5 text-indigo-200" />;
+      targetLink = `/${locale}/dashboard/categories`;
     } else if (onboardingStep === "add_product") {
-      progressWidth = "w-2/3";
-      stepTitle = "Step 2: Add your first Product";
+      progressWidth = "w-3/4";
+      stepTitle = "Step 3: Add your first Product";
       stepDescription = "Great job! Now let's register a product to show on your website.";
       stepIcon = <Package className="w-5 h-5 text-indigo-200" />;
       targetLink = `/${locale}/dashboard/products`;
     } else if (onboardingStep === "visit_storefront") {
       progressWidth = "w-full";
-      stepTitle = "Step 3: Preview/Copy your storefront URL";
+      stepTitle = "Step 4: Preview/Copy your storefront URL";
       stepDescription =
         "Almost there! Visit or copy your storefront link to launch and complete onboarding.";
       stepIcon = <Store className="w-5 h-5 text-indigo-200" />;

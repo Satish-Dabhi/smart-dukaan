@@ -120,11 +120,11 @@ export function BusinessSettings() {
       setIsCreating(false);
 
       if (!business) {
-        // Milestone step progression: Move to adding product
-        localStorage.setItem("smartdukaan_onboarding_step", "add_product");
+        // Milestone step progression: Move to adding category
+        localStorage.setItem("smartdukaan_onboarding_step", "add_category");
         window.dispatchEvent(new Event("onboarding_step_change"));
         // Force router navigation or hard refresh to ensure layout and API reload business info
-        window.location.href = `/${locale}/dashboard/products`;
+        window.location.href = `/${locale}/dashboard/categories`;
       }
     },
     onError: (error: Error) => toast.error(error.message),

@@ -27,7 +27,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 
 interface Category {
   _id: string;
@@ -60,6 +60,7 @@ export function CategoriesManager({ businessId }: Props) {
 
   const t = useTranslations("categories");
   const tCommon = useTranslations("common");
+  const locale = useLocale();
 
   const { data, isLoading } = useQuery({
     queryKey: ["categories", businessId],
@@ -114,6 +115,15 @@ export function CategoriesManager({ businessId }: Props) {
       queryClient.invalidateQueries({ queryKey: ["categories"] });
       toast.success(editingCategory ? t("categoryUpdatedToast") : t("categoryCreatedToast"));
       setDialogOpen(false);
+
+      if (!editingCategory) {
+        const step = localStorage.getItem("smartdukaan_onboarding_step");
+        if (step === "add_category") {
+          localStorage.setItem("smartdukaan_onboarding_step", "add_product");
+          window.dispatchEvent(new Event("onboarding_step_change"));
+          window.location.href = `/${locale}/dashboard/products`;
+        }
+      }
     },
     onError: (err: Error) => toast.error(err.message),
   });

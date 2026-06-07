@@ -82,9 +82,7 @@ const getBusinessNavItems = (locale: string, t: (key: string) => string) => [
 const getAdminNavItems = (locale: string) => [
   {
     group: "Platform",
-    items: [
-      { icon: LayoutDashboard, label: "Dashboard", href: `/${locale}/dashboard` },
-    ],
+    items: [{ icon: LayoutDashboard, label: "Dashboard", href: `/${locale}/dashboard` }],
   },
   {
     group: "Management",
@@ -142,12 +140,15 @@ export function DashboardSidebar({ locale, isOpen, setIsOpen, role, businessId }
     if (isSuperAdmin || onboardingStep === "completed") return false;
 
     const isSettings = href.endsWith("/settings");
+    const isCategories = href.endsWith("/categories");
     const isProducts = href.endsWith("/products");
     const isStorefront = href.endsWith("/storefront");
 
     if (onboardingStep === "create_business") return !isSettings;
-    if (onboardingStep === "add_product") return !isSettings && !isProducts;
-    if (onboardingStep === "visit_storefront") return !isSettings && !isProducts && !isStorefront;
+    if (onboardingStep === "add_category") return !isSettings && !isCategories;
+    if (onboardingStep === "add_product") return !isSettings && !isCategories && !isProducts;
+    if (onboardingStep === "visit_storefront")
+      return !isSettings && !isCategories && !isProducts && !isStorefront;
     return false;
   };
 
@@ -156,10 +157,12 @@ export function DashboardSidebar({ locale, isOpen, setIsOpen, role, businessId }
     let instruction = "";
     if (onboardingStep === "create_business") {
       instruction = "Step 1: Setup your Business under settings first!";
+    } else if (onboardingStep === "add_category") {
+      instruction = "Step 2: Add your first Category to organize your catalog!";
     } else if (onboardingStep === "add_product") {
-      instruction = "Step 2: Add your first Product to unlock catalog & sales!";
+      instruction = "Step 3: Add your first Product to unlock catalog & sales!";
     } else if (onboardingStep === "visit_storefront") {
-      instruction = "Step 3: Preview/Copy your storefront URL to fully unlock!";
+      instruction = "Step 4: Preview/Copy your storefront URL to fully unlock!";
     }
 
     toast.error(`Feature Locked`, {
@@ -169,6 +172,8 @@ export function DashboardSidebar({ locale, isOpen, setIsOpen, role, businessId }
         onClick: () => {
           if (onboardingStep === "create_business") {
             window.location.href = `/${locale}/dashboard/settings`;
+          } else if (onboardingStep === "add_category") {
+            window.location.href = `/${locale}/dashboard/categories`;
           } else if (onboardingStep === "add_product") {
             window.location.href = `/${locale}/dashboard/products`;
           } else if (onboardingStep === "visit_storefront") {
@@ -179,9 +184,7 @@ export function DashboardSidebar({ locale, isOpen, setIsOpen, role, businessId }
     });
   };
 
-  const navItems = isSuperAdmin
-    ? getAdminNavItems(locale)
-    : getBusinessNavItems(locale, t);
+  const navItems = isSuperAdmin ? getAdminNavItems(locale) : getBusinessNavItems(locale, t);
 
   const renderNavItems = (items: ReturnType<typeof getAdminNavItems>, closeMobile?: () => void) => (
     <>
@@ -241,9 +244,7 @@ export function DashboardSidebar({ locale, isOpen, setIsOpen, role, businessId }
                           className="whitespace-nowrap flex items-center justify-between w-full"
                         >
                           <span>{item.label}</span>
-                          {locked && (
-                            <Lock className="w-3.5 h-3.5 ml-2 text-gray-400 shrink-0" />
-                          )}
+                          {locked && <Lock className="w-3.5 h-3.5 ml-2 text-gray-400 shrink-0" />}
                         </motion.span>
                       )}
                     </AnimatePresence>
@@ -296,9 +297,7 @@ export function DashboardSidebar({ locale, isOpen, setIsOpen, role, businessId }
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-6">
-          {renderNavItems(navItems)}
-        </nav>
+        <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-6">{renderNavItems(navItems)}</nav>
 
         {/* Collapse toggle */}
         <div className="p-2 border-t border-border">
@@ -364,8 +363,7 @@ export function DashboardSidebar({ locale, isOpen, setIsOpen, role, businessId }
                       {group.items.map((item) => {
                         const isActive =
                           pathname === item.href ||
-                          (item.href !== `/${locale}/dashboard` &&
-                            pathname.startsWith(item.href));
+                          (item.href !== `/${locale}/dashboard` && pathname.startsWith(item.href));
                         const locked = isLocked(item.href);
 
                         return (
@@ -396,9 +394,7 @@ export function DashboardSidebar({ locale, isOpen, setIsOpen, role, businessId }
                                 />
                                 <span>{item.label}</span>
                               </div>
-                              {locked && (
-                                <Lock className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                              )}
+                              {locked && <Lock className="w-3.5 h-3.5 text-gray-400 shrink-0" />}
                             </Link>
                           </li>
                         );
