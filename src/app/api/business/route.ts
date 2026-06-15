@@ -6,7 +6,7 @@ import User from "@/models/User";
 import { slugify } from "@/lib/utils";
 import { z } from "zod";
 import { BusinessSchema, BusinessUpdateSchema } from "@/lib/schemas";
-import { sendBusinessCreatedEmail } from "@/lib/email";
+import { sendOnboardingEmail } from "@/lib/email";
 import { trialExpiresAt } from "@/lib/subscription";
 
 export async function GET() {
@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
         const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
         const storeUrl = `${appUrl}/en/business/${business.slug}`;
 
-        await sendBusinessCreatedEmail(email, ownerName, business.name, storeUrl);
+        await sendOnboardingEmail(email, ownerName, business.name, storeUrl);
       }
     } catch (emailErr) {
       console.error("[BUSINESS_POST] Failed to send business created email:", emailErr);

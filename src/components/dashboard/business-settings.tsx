@@ -195,13 +195,24 @@ export function BusinessSettings() {
                 placeholder: "hello@freshmart.com",
                 type: "email",
               },
-              { name: "phone" as const, label: t("phoneRequired"), placeholder: "+91 9876543210" },
+              {
+                name: "phone" as const,
+                label: t("phoneRequired"),
+                placeholder: "+91 9876543210",
+                inputMode: "numeric" as const,
+              },
               {
                 name: "whatsappNumber" as const,
                 label: t("whatsappNumber") + " *",
                 placeholder: "+91 9876543210",
+                inputMode: "numeric" as const,
               },
-              { name: "gstNumber" as const, label: t("gstNumber"), placeholder: "22AAAAA0000A1Z5" },
+              {
+                name: "gstNumber" as const,
+                label: t("gstNumber"),
+                placeholder: "e.g. 24AABCU9603R1ZM",
+                inputMode: "text" as const,
+              },
               {
                 name: "tagline" as const,
                 label: t("tagline"),
@@ -215,6 +226,7 @@ export function BusinessSettings() {
                 <Input
                   type={field.type ?? "text"}
                   placeholder={field.placeholder}
+                  inputMode={field.inputMode}
                   {...register(field.name)}
                   className={errors[field.name] ? "border-red-500" : ""}
                 />
@@ -225,6 +237,22 @@ export function BusinessSettings() {
                 )}
               </div>
             ))}
+
+            {/* FSSAI License Number */}
+            <div>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block">
+                {t("fssaiNumber") ?? "FSSAI License Number"}
+              </label>
+              <Input
+                type="text"
+                inputMode="text"
+                placeholder="e.g. 10020042000015"
+                {...register("fssaiNumber" as never)}
+                className={
+                  (errors as Record<string, unknown>)["fssaiNumber"] ? "border-red-500" : ""
+                }
+              />
+            </div>
 
             <div className="sm:col-span-2">
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block">
@@ -257,7 +285,12 @@ export function BusinessSettings() {
               },
               { name: "city" as const, label: t("cityRequired"), placeholder: "Ahmedabad" },
               { name: "state" as const, label: t("stateRequired"), placeholder: "Gujarat" },
-              { name: "pincode" as const, label: t("pincodeRequired"), placeholder: "380001" },
+              {
+                name: "pincode" as const,
+                label: t("pincodeRequired"),
+                placeholder: "380001",
+                inputMode: "numeric" as const,
+              },
             ].map((field) => (
               <div key={field.name} className={field.span ? "sm:col-span-2" : ""}>
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block">
@@ -265,6 +298,7 @@ export function BusinessSettings() {
                 </label>
                 <Input
                   placeholder={field.placeholder}
+                  inputMode={field.inputMode}
                   {...register(field.name)}
                   className={errors[field.name] ? "border-red-500" : ""}
                 />

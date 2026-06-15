@@ -3,7 +3,7 @@ import Image from "next/image";
 import { Plus, EyeOff } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import type { IProduct, ICategory } from "@/types";
-import { themeAestheticMap } from "./theme-config";
+import { themeAestheticMap, getProductTagBadges } from "./theme-config";
 
 interface ProductRowProps {
   product: IProduct;
@@ -33,6 +33,7 @@ export function ProductRow({
   const aesthetic = themeAestheticMap[themeName ?? ""] ?? themeAestheticMap.minimal;
   const category = categories?.find((c) => c._id === product.categoryId);
   const { icon: CategoryIcon, gradient } = getCategoryIcon(category?.name ?? "");
+  const { isVeg, isNonVeg, isSpicy, isFresh, isRx } = getProductTagBadges(product.tags);
 
   return (
     <motion.div
@@ -92,7 +93,7 @@ export function ProductRow({
         )}
 
         {/* Details & Badges Row */}
-        <div className="flex items-center gap-2 mt-2 flex-wrap text-[10px]">
+        <div className="flex items-center gap-1.5 mt-2 flex-wrap text-[10px]">
           {product.unit && (
             <span className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 font-medium">
               {product.unit}
@@ -101,6 +102,34 @@ export function ProductRow({
           {hasDiscount && (
             <span className="px-1.5 py-0.5 rounded bg-red-50 dark:bg-red-950/20 text-red-650 dark:text-red-400 font-bold border border-red-100/30 dark:border-red-900/30">
               {product.discount}% OFF
+            </span>
+          )}
+          {/* Veg / Non-veg indicator */}
+          {isVeg && (
+            <span className="inline-flex items-center gap-0.5 font-black px-1.5 py-0.5 rounded border border-emerald-500 text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30">
+              <span className="w-2 h-2 rounded-sm bg-emerald-500 shrink-0" />
+              {t("Veg", "વેજ")}
+            </span>
+          )}
+          {isNonVeg && (
+            <span className="inline-flex items-center gap-0.5 font-black px-1.5 py-0.5 rounded border border-red-500 text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-950/30">
+              <span className="w-2 h-2 rounded-sm bg-red-500 shrink-0" />
+              {t("Non-Veg", "નૉન-વેજ")}
+            </span>
+          )}
+          {isSpicy && (
+            <span title="Spicy" className="leading-none text-[11px]">
+              🌶️
+            </span>
+          )}
+          {isFresh && (
+            <span className="inline-flex items-center gap-0.5 font-bold px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400">
+              🌿 {t("Fresh", "તાજું")}
+            </span>
+          )}
+          {isRx && (
+            <span className="inline-flex items-center gap-0.5 font-black px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 border border-blue-300 dark:border-blue-800">
+              {t("Rx", "Rx")}
             </span>
           )}
           {!product.inStock && (

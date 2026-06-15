@@ -25,8 +25,13 @@ const NotificationSchema = new Schema<INotificationDoc>(
 
 NotificationSchema.index({ businessId: 1, read: 1 });
 NotificationSchema.index({ businessId: 1, createdAt: -1 });
+NotificationSchema.index(
+  { createdAt: 1 },
+  { expireAfterSeconds: 30 * 24 * 3600, partialFilterExpression: { read: true } }
+);
 
 const Notification: Model<INotificationDoc> =
-  mongoose.models.Notification || mongoose.model<INotificationDoc>("Notification", NotificationSchema);
+  mongoose.models.Notification ||
+  mongoose.model<INotificationDoc>("Notification", NotificationSchema);
 
 export default Notification;

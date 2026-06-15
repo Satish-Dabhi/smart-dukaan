@@ -26,6 +26,12 @@ export interface IInvoiceDoc extends Document {
   cgst: number;
   sgst: number;
   igst: number;
+  roundOff: number;
+  businessName: string;
+  businessAddress?: string;
+  businessGstin?: string;
+  businessPhone?: string;
+  businessFssai?: string;
   total: number;
   status: "draft" | "paid" | "unpaid" | "cancelled" | "refunded";
   paymentMethod: string;
@@ -67,6 +73,12 @@ const InvoiceSchema = new Schema<IInvoiceDoc>(
     cgst: { type: Number, default: 0 },
     sgst: { type: Number, default: 0 },
     igst: { type: Number, default: 0 },
+    roundOff: { type: Number, default: 0 },
+    businessName: { type: String, required: true },
+    businessAddress: { type: String },
+    businessGstin: { type: String },
+    businessPhone: { type: String },
+    businessFssai: { type: String },
     total: { type: Number, required: true, min: 0 },
     status: {
       type: String,

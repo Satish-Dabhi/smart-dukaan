@@ -6,7 +6,6 @@ import Product from "@/models/Product";
 import Business from "@/models/Business";
 import Customer from "@/models/Customer";
 import InventoryLog from "@/models/InventoryLog";
-import { sendOrderConfirmationEmail } from "@/lib/email";
 import mongoose from "mongoose";
 import { z } from "zod";
 
@@ -55,7 +54,7 @@ export async function POST(req: NextRequest) {
     await connectDB();
 
     const business = await Business.findById(businessId)
-      .select("name address phone gstNumber settings status")
+      .select("name address phone gstNumber fssaiNumber settings status")
       .lean();
     if (!business || business.status !== "active") {
       return NextResponse.json({ success: false, error: "Business not found" }, { status: 404 });
@@ -126,10 +125,10 @@ export async function POST(req: NextRequest) {
     }
 
     const discountAmount = Math.max(0, discount ?? 0);
-    const computedTotal = Math.max(
-      0,
-      computedSubtotal - discountAmount + computedCgst + computedSgst
-    );
+    const rawTotal = computedSubtotal - discountAmount + computedCgst + computedSgst;
+    const roundedTotal = Math.round(rawTotal);
+    const roundOff = parseFloat((roundedTotal - rawTotal).toFixed(2));
+    const computedTotal = Math.max(0, roundedTotal);
 
     // Upsert customer
     let customerId: string | undefined;
@@ -169,6 +168,12 @@ export async function POST(req: NextRequest) {
       cgst: computedCgst,
       sgst: computedSgst,
       igst: 0,
+      roundOff,
+      businessName: business.name,
+      businessAddress: business.address,
+      businessGstin: business.gstNumber,
+      businessPhone: business.phone,
+      businessFssai: (business as Record<string, unknown>).fssaiNumber as string | undefined,
       total: computedTotal,
       status: "paid",
       paymentMethod,
@@ -230,27 +235,6 @@ export async function POST(req: NextRequest) {
       })
     );
 
-    if (customerEmail) {
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "";
-      const invoiceUrl = appUrl ? `${appUrl}/en/invoice/${businessId}/${invoice._id}` : undefined;
-      sendOrderConfirmationEmail(customerEmail, {
-        orderNumber: invoiceNumber,
-        customerName: customerName || "Valued Customer",
-        items: invoiceItems.map((i) => ({
-          name: i.name,
-          quantity: i.quantity,
-          price: i.price,
-          total: i.total,
-        })),
-        subtotal: computedSubtotal,
-        discount: discountAmount,
-        taxAmount: computedCgst + computedSgst,
-        total: computedTotal,
-        paymentMethod,
-        notes: invoiceUrl ? `View your invoice: ${invoiceUrl}` : undefined,
-      }).catch((err) => console.error("[EMAIL] POS invoice email failed:", err));
-    }
-
     return NextResponse.json({
       success: true,
       data: {
@@ -259,6 +243,7 @@ export async function POST(req: NextRequest) {
         businessAddress: business.address,
         businessPhone: business.phone,
         gstNumber: business.gstNumber,
+        roundOff,
       },
     });
   } catch (error) {

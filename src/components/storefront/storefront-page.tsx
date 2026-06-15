@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect, useMemo } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useTheme } from "next-themes";
-import { Search, Star, Shield, Truck, MessageCircle } from "lucide-react";
+import { Search, Star } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,7 @@ import type { IBusiness, IProduct, ICategory, CartItem, IOrder, PaginationMeta }
 import Link from "next/link";
 
 // Import Shared Theme Configurations
-import { themeAestheticMap } from "./theme-config";
+import { themeAestheticMap, getProductTagBadges } from "./theme-config";
 
 // Import Subcomponents
 import { ProductCard } from "./product-card";
@@ -944,26 +944,16 @@ export function StorefrontPage({
         formatCurrency={formatCurrency}
       />
 
-      {/* ─── Trust Bar ───────────────────────────────────────────────────── */}
+      {/* ─── Trust Bar (theme-aware) ─────────────────────────────────────── */}
       <div className="bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800">
         <div className="max-w-5xl mx-auto px-4 py-3">
           <div className="flex items-center justify-center gap-6 sm:gap-10 text-xs text-gray-500 dark:text-gray-400 flex-wrap">
-            <div className="flex items-center gap-1.5">
-              <Shield className="w-3.5 h-3.5 text-emerald-500" />
-              {t("Secure Ordering", "સુરક્ષિત ઓર્ડર")}
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Truck className="w-3.5 h-3.5 text-blue-500" />
-              {t("Fast Delivery", "ઝડપી ડિલિવરી")}
-            </div>
-            <div className="flex items-center gap-1.5">
-              <MessageCircle className="w-3.5 h-3.5 text-emerald-500" />
-              {t("WhatsApp Orders", "WhatsApp ઓર્ડર")}
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Star className="w-3.5 h-3.5 text-amber-500" />
-              {t("Quality Products", "ગુણવત્તા ઉત્પાદનો")}
-            </div>
+            {aesthetic.trustItems.map((item) => (
+              <div key={item.en} className="flex items-center gap-1.5">
+                <span className="text-base leading-none">{item.emoji}</span>
+                {locale === "gu" ? item.gu : item.en}
+              </div>
+            ))}
           </div>
         </div>
       </div>

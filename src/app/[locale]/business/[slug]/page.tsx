@@ -6,6 +6,8 @@ import Category from "@/models/Category";
 import { StorefrontPage } from "@/components/storefront/storefront-page";
 import type { Metadata } from "next";
 
+export const revalidate = 60;
+
 interface Props {
   params: Promise<{ slug: string; locale: string }>;
   searchParams: Promise<{

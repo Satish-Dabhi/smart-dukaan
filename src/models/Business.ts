@@ -11,6 +11,8 @@ export interface IBusinessDoc extends Document {
   state: string;
   pincode: string;
   gstNumber?: string;
+  fssaiNumber?: string;
+  invoiceType?: "tax_invoice" | "bill_of_supply";
   logo?: string;
   favicon?: string;
   banner?: string;
@@ -47,6 +49,7 @@ export interface IBusinessDoc extends Document {
     onlineOrderEnabled: boolean;
     whatsappOrderEnabled: boolean;
     language: string;
+    dailySummaryEnabled?: boolean;
   };
   primaryColor?: string;
   secondaryColor?: string;
@@ -71,6 +74,12 @@ const BusinessSchema = new Schema<IBusinessDoc>(
     state: { type: String, required: true },
     pincode: { type: String, required: true },
     gstNumber: { type: String },
+    fssaiNumber: { type: String, trim: true },
+    invoiceType: {
+      type: String,
+      enum: ["tax_invoice", "bill_of_supply"],
+      default: "tax_invoice",
+    },
     logo: { type: String },
     favicon: { type: String },
     banner: { type: String },
@@ -117,6 +126,7 @@ const BusinessSchema = new Schema<IBusinessDoc>(
       onlineOrderEnabled: { type: Boolean, default: true },
       whatsappOrderEnabled: { type: Boolean, default: true },
       language: { type: String, default: "en" },
+      dailySummaryEnabled: { type: Boolean, default: false },
     },
     primaryColor: { type: String, default: "#7c3aed" },
     secondaryColor: { type: String, default: "#db2777" },

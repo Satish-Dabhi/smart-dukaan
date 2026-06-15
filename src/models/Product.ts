@@ -25,6 +25,8 @@ export interface IProductDoc extends Document {
   brand?: string;
   icon?: string;
   totalSold: number;
+  isDeleted: boolean;
+  deletedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -59,6 +61,8 @@ const ProductSchema = new Schema<IProductDoc>(
     brand: { type: String, trim: true },
     icon: { type: String },
     totalSold: { type: Number, default: 0 },
+    isDeleted: { type: Boolean, default: false, index: true },
+    deletedAt: { type: Date, sparse: true },
   },
   { timestamps: true }
 );
@@ -68,6 +72,9 @@ ProductSchema.index({ businessId: 1, categoryId: 1 });
 ProductSchema.index({ businessId: 1, isFeatured: 1 });
 ProductSchema.index({ businessId: 1, brand: 1 });
 ProductSchema.index({ name: "text", description: "text", tags: "text" });
+ProductSchema.index({ businessId: 1, status: 1, categoryId: 1 });
+ProductSchema.index({ businessId: 1, stock: 1, minStock: 1 });
+ProductSchema.index({ businessId: 1, isDeleted: 1, status: 1 });
 
 const Product: Model<IProductDoc> =
   mongoose.models.Product || mongoose.model<IProductDoc>("Product", ProductSchema);

@@ -15,6 +15,8 @@ export interface ICustomerDoc extends Document {
   lastOrderAt?: Date;
   notes?: string;
   tags?: string[];
+  isDeleted: boolean;
+  deletedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -35,6 +37,8 @@ const CustomerSchema = new Schema<ICustomerDoc>(
     lastOrderAt: { type: Date },
     notes: { type: String },
     tags: [{ type: String }],
+    isDeleted: { type: Boolean, default: false, index: true },
+    deletedAt: { type: Date, sparse: true },
   },
   { timestamps: true }
 );
@@ -42,6 +46,7 @@ const CustomerSchema = new Schema<ICustomerDoc>(
 CustomerSchema.index({ businessId: 1, phone: 1 }, { unique: true });
 CustomerSchema.index({ businessId: 1, email: 1 });
 CustomerSchema.index({ name: "text", email: "text", phone: "text" });
+CustomerSchema.index({ businessId: 1, isDeleted: 1 });
 
 const Customer: Model<ICustomerDoc> =
   mongoose.models.Customer || mongoose.model<ICustomerDoc>("Customer", CustomerSchema);

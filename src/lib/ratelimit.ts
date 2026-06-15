@@ -6,6 +6,11 @@ import { Redis } from "@upstash/redis";
 
 function createLimiter(maxRequests: number, window: string) {
   if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) {
+    if (process.env.NODE_ENV === "production") {
+      console.error(
+        "[FATAL] Rate limiting is disabled in production — set UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN"
+      );
+    }
     return null;
   }
   const redis = new Redis({
@@ -14,7 +19,10 @@ function createLimiter(maxRequests: number, window: string) {
   });
   return new Ratelimit({
     redis,
-    limiter: Ratelimit.slidingWindow(maxRequests, window as `${number} ${"ms" | "s" | "m" | "h" | "d"}`),
+    limiter: Ratelimit.slidingWindow(
+      maxRequests,
+      window as `${number} ${"ms" | "s" | "m" | "h" | "d"}`
+    ),
     analytics: false,
   });
 }

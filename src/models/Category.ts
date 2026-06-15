@@ -10,6 +10,8 @@ export interface ICategoryDoc extends Document {
   parentId?: mongoose.Types.ObjectId;
   sortOrder: number;
   isActive: boolean;
+  isDeleted: boolean;
+  deletedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -25,12 +27,15 @@ const CategorySchema = new Schema<ICategoryDoc>(
     parentId: { type: Schema.Types.ObjectId, ref: "Category" },
     sortOrder: { type: Number, default: 0 },
     isActive: { type: Boolean, default: true },
+    isDeleted: { type: Boolean, default: false, index: true },
+    deletedAt: { type: Date, sparse: true },
   },
   { timestamps: true }
 );
 
 CategorySchema.index({ businessId: 1, slug: 1 }, { unique: true });
 CategorySchema.index({ businessId: 1, isActive: 1 });
+CategorySchema.index({ businessId: 1, isDeleted: 1, isActive: 1 });
 
 const Category: Model<ICategoryDoc> =
   mongoose.models.Category || mongoose.model<ICategoryDoc>("Category", CategorySchema);

@@ -1,487 +1,248 @@
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
 import { escapeHtml } from "@/lib/utils";
+
+const resend = new Resend(process.env.RESEND_API_KEY);
+
+const FROM = "SmartDukaan <noreply@smartdukaan.com>";
+const REPLY_TO = "support@smartdukaan.com";
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://smartdukaan.com";
 
 type MailResult =
   | { success: true; messageId: string }
   | { success: true; mocked: true; otp?: string }
   | { success: false; error: string; otp?: string };
 
-function createTransporter() {
-  const host = process.env.SMTP_HOST;
-  const port = process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT) : 587;
-  const user = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASS;
-  if (!user || !pass) return null;
-  return nodemailer.createTransport({
-    host,
-    port,
-    secure: port === 465,
-    auth: { user, pass },
-  });
+async function sendMail(
+  to: string,
+  subject: string,
+  html: string,
+  text?: string
+): Promise<MailResult> {
+  if (!process.env.RESEND_API_KEY) {
+    console.warn(`[EMAIL DEV] Would send "${subject}" to ${to}`);
+    return { success: true, mocked: true };
+  }
+  try {
+    const { data, error } = await resend.emails.send({
+      from: FROM,
+      to,
+      replyTo: REPLY_TO,
+      subject,
+      html,
+      text: text ?? subject,
+    });
+    if (error) return { success: false, error: error.message };
+    return { success: true, messageId: data!.id };
+  } catch (err) {
+    console.error(`[EMAIL] Failed to send "${subject}" to ${to}:`, err);
+    return { success: false, error: err instanceof Error ? err.message : "Send failed" };
+  }
 }
 
-const FROM = process.env.SMTP_FROM || `"SmartDukaan" <noreply@smartdukaan.com>`;
+// ─── Shared Layout ─────────────────────────────────────────────────────────────
 
 function baseLayout(content: string) {
-  return `
-<div style="font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;max-width:560px;margin:0 auto;padding:30px;border:1px solid #f0f0f0;border-radius:16px;background:#fff;box-shadow:0 4px 12px rgba(0,0,0,0.04);">
-  <div style="text-align:center;margin-bottom:28px;">
-    <div style="display:inline-block;width:48px;height:48px;border-radius:12px;background:linear-gradient(135deg,#7c3aed,#db2777);line-height:48px;color:#fff;font-weight:900;font-size:22px;text-align:center;">S</div>
-    <h2 style="margin:10px 0 0;color:#1f2937;font-size:20px;font-weight:800;">SmartDukaan</h2>
-  </div>
-  ${content}
-  <div style="border-top:1px solid #f3f4f6;padding-top:18px;margin-top:24px;text-align:center;color:#9ca3af;font-size:11px;">
-    &copy; ${new Date().getFullYear()} SmartDukaan. All rights reserved.<br/>
-    <span style="font-size:10px;">If you didn't request this email, you can safely ignore it.</span>
-  </div>
-</div>`;
+  return `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SmartDukaan</title></head>
+<body style="margin:0;padding:0;background:#f3f4f6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:32px 16px;">
+    <tr><td align="center">
+      <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.06);">
+        <!-- Header -->
+        <tr>
+          <td style="background:linear-gradient(135deg,#7c3aed 0%,#db2777 100%);padding:28px 32px;text-align:center;">
+            <div style="display:inline-flex;align-items:center;gap:12px;">
+              <div style="width:44px;height:44px;border-radius:10px;background:rgba(255,255,255,0.2);display:inline-flex;align-items:center;justify-content:center;font-weight:900;font-size:22px;color:#fff;line-height:44px;text-align:center;">S</div>
+              <span style="color:#fff;font-size:22px;font-weight:800;letter-spacing:-0.5px;">SmartDukaan</span>
+            </div>
+          </td>
+        </tr>
+        <!-- Body -->
+        <tr>
+          <td style="padding:36px 36px 28px;">
+            ${content}
+          </td>
+        </tr>
+        <!-- Footer -->
+        <tr>
+          <td style="background:#f9fafb;border-top:1px solid #e5e7eb;padding:24px 36px;text-align:center;">
+            <p style="margin:0 0 8px;font-size:13px;font-weight:700;color:#374151;">SmartDukaan</p>
+            <p style="margin:0 0 12px;font-size:12px;color:#6b7280;">Restaurant &amp; Business Management Platform</p>
+            <p style="margin:0 0 12px;">
+              <a href="${APP_URL}" style="color:#7c3aed;font-size:12px;text-decoration:none;margin:0 8px;">smartdukaan.com</a>
+              <span style="color:#d1d5db;">·</span>
+              <a href="mailto:support@smartdukaan.com" style="color:#7c3aed;font-size:12px;text-decoration:none;margin:0 8px;">support@smartdukaan.com</a>
+            </p>
+            <p style="margin:0;font-size:11px;color:#9ca3af;line-height:1.6;">
+              This email was sent automatically by SmartDukaan.<br/>
+              You received this because you have an account with us.
+            </p>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
 }
 
 function otpBox(otp: string) {
-  return `<div style="text-align:center;margin:28px 0;padding:18px;background:#f5f3ff;border:1px dashed #c084fc;border-radius:12px;">
-    <span style="font-size:34px;font-weight:900;letter-spacing:8px;color:#7c3aed;font-family:monospace;">${otp}</span>
+  return `<div style="text-align:center;margin:28px 0;">
+    <div style="display:inline-block;padding:20px 32px;background:#f5f3ff;border:2px dashed #7c3aed;border-radius:14px;">
+      <span style="font-size:40px;font-weight:900;letter-spacing:10px;color:#7c3aed;font-family:'Courier New',Courier,monospace;">${otp}</span>
+    </div>
   </div>`;
 }
 
-async function sendMail(to: string, subject: string, html: string): Promise<MailResult> {
-  const transporter = createTransporter();
-
-  if (!transporter) {
-    console.warn("==========================================================");
-    console.warn(`[SMTP NOT CONFIGURED] Would have sent "${subject}" to ${to}`);
-    console.warn("==========================================================");
-    return { success: true, mocked: true };
-  }
-
-  try {
-    const info = await transporter.sendMail({ from: FROM, to, subject, html });
-    return { success: true, messageId: info.messageId };
-  } catch (error) {
-    console.error(`[EMAIL] Failed to send "${subject}" to ${to}:`, error);
-    return { success: false, error: error instanceof Error ? error.message : "SMTP send failed" };
-  }
+function ctaButton(text: string, url: string, color = "linear-gradient(135deg,#7c3aed,#db2777)") {
+  return `<div style="text-align:center;margin:28px 0;">
+    <a href="${url}" style="display:inline-block;padding:14px 32px;background:${color};color:#fff;font-weight:700;font-size:15px;text-decoration:none;border-radius:10px;box-shadow:0 4px 12px rgba(124,58,237,0.25);">${text}</a>
+  </div>`;
 }
 
-// ─── Email Verification OTP ────────────────────────────────────────────────
+function infoCard(items: Array<{ label: string; value: string }>) {
+  const rows = items
+    .map(
+      (i) => `
+    <tr>
+      <td style="padding:10px 16px;font-size:13px;color:#6b7280;font-weight:600;background:#f9fafb;width:40%;border-bottom:1px solid #f3f4f6;">${escapeHtml(i.label)}</td>
+      <td style="padding:10px 16px;font-size:13px;color:#374151;border-bottom:1px solid #f3f4f6;">${escapeHtml(i.value)}</td>
+    </tr>`
+    )
+    .join("");
+  return `<table width="100%" style="border-collapse:collapse;border-radius:10px;overflow:hidden;border:1px solid #f3f4f6;margin:20px 0;">${rows}</table>`;
+}
+
+// ─── Email Verification OTP ─────────────────────────────────────────────────
 
 export async function sendOtpEmail(email: string, name: string, otp: string): Promise<MailResult> {
   console.log(`[EMAIL] Sending verification OTP to ${email}`);
-
-  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-    console.warn("==========================================================");
-    console.warn(`[SMTP NOT CONFIGURED] Verification OTP for ${email}: ${otp}`);
-    console.warn("==========================================================");
-    return { success: true, mocked: true, otp };
-  }
-
   const safeName = escapeHtml(name);
   const html = baseLayout(`
-    <h3 style="color:#1f2937;font-size:18px;font-weight:700;margin-bottom:8px;">Hello ${safeName},</h3>
-    <p style="color:#4b5563;font-size:14px;line-height:1.7;margin-bottom:20px;">
-      Thank you for signing up for <strong>SmartDukaan</strong>! To complete your registration and activate your store dashboard, please verify your email address using the code below:
+    <h2 style="margin:0 0 8px;font-size:22px;font-weight:800;color:#1f2937;">Verify your email</h2>
+    <p style="margin:0 0 20px;font-size:15px;color:#4b5563;line-height:1.7;">
+      Hi <strong>${safeName}</strong>, use the code below to verify your SmartDukaan account.
     </p>
     ${otpBox(otp)}
-    <p style="color:#6b7280;font-size:12px;text-align:center;line-height:1.6;">
-      This code is valid for <strong>10 minutes</strong>. Do not share it with anyone.
+    <p style="margin:0;font-size:13px;color:#6b7280;text-align:center;line-height:1.6;">
+      Valid for <strong>10 minutes</strong>. Do not share this code with anyone.
     </p>
+    <div style="background:#fef3c7;border:1px solid #fde68a;border-radius:10px;padding:14px 16px;margin-top:20px;">
+      <p style="margin:0;font-size:12px;color:#92400e;">
+        <strong>Security:</strong> SmartDukaan will never ask for this code via phone, chat, or email.
+      </p>
+    </div>
   `);
-
-  return sendMail(email, "Verify Your Email — SmartDukaan", html);
+  return sendMail(email, `${otp} — Verify your SmartDukaan account`, html);
 }
 
-// ─── Forgot Password OTP ───────────────────────────────────────────────────
+// ─── Forgot Password OTP ────────────────────────────────────────────────────
 
 export async function sendForgotPasswordEmail(
   email: string,
   name: string,
   otp: string
 ): Promise<MailResult> {
-  console.log(`[EMAIL] Sending forgot-password OTP to ${email}`);
-
-  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-    console.warn("==========================================================");
-    console.warn(`[SMTP NOT CONFIGURED] Password-reset OTP for ${email}: ${otp}`);
-    console.warn("==========================================================");
-    return { success: true, mocked: true, otp };
-  }
-
+  console.log(`[EMAIL] Sending password reset OTP to ${email}`);
   const safeName = escapeHtml(name);
-  const safeEmail = escapeHtml(email);
   const html = baseLayout(`
-    <h3 style="color:#1f2937;font-size:18px;font-weight:700;margin-bottom:8px;">Hello ${safeName},</h3>
-    <p style="color:#4b5563;font-size:14px;line-height:1.7;margin-bottom:20px;">
-      We received a request to reset the password for your SmartDukaan account linked to <strong>${safeEmail}</strong>. Use the code below to reset it:
+    <h2 style="margin:0 0 8px;font-size:22px;font-weight:800;color:#1f2937;">Reset your password</h2>
+    <p style="margin:0 0 20px;font-size:15px;color:#4b5563;line-height:1.7;">
+      Hi <strong>${safeName}</strong>, here is your password reset code:
     </p>
     ${otpBox(otp)}
-    <p style="color:#6b7280;font-size:12px;text-align:center;line-height:1.6;">
-      This code expires in <strong>10 minutes</strong>. If you did not request a password reset, please ignore this email — your password will remain unchanged.
+    <p style="margin:0;font-size:13px;color:#6b7280;text-align:center;line-height:1.6;">
+      Valid for <strong>10 minutes</strong>. If you did not request this, ignore this email.
     </p>
-    <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:14px;margin-top:20px;">
-      <p style="margin:0;color:#9a3412;font-size:12px;line-height:1.6;">
-        <strong>Security tip:</strong> SmartDukaan will never ask for your password via email, phone, or chat.
+    <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:14px 16px;margin-top:20px;">
+      <p style="margin:0;font-size:12px;color:#991b1b;">
+        <strong>Security tip:</strong> SmartDukaan will never ask for your password via email or phone.
       </p>
     </div>
   `);
-
-  return sendMail(email, "Reset Your Password — SmartDukaan", html);
+  return sendMail(email, `${otp} — SmartDukaan password reset code`, html);
 }
 
-// ─── Order Confirmation ────────────────────────────────────────────────────
+// ─── Onboarding Email (merged Welcome + Business Created) ────────────────────
 
-export interface OrderEmailItem {
-  name: string;
-  quantity: number;
-  price: number;
-  discount?: number;
-  total: number;
-}
-
-export interface OrderEmailData {
-  orderNumber: string;
-  customerName: string;
-  items: OrderEmailItem[];
-  subtotal: number;
-  discount: number;
-  taxAmount: number;
-  total: number;
-  paymentMethod: string;
-  notes?: string;
-}
-
-export async function sendOrderConfirmationEmail(
-  email: string,
-  data: OrderEmailData
-): Promise<MailResult> {
-  console.log(`[EMAIL] Sending order confirmation for ${data.orderNumber} to ${email}`);
-
-  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-    console.warn("==========================================================");
-    console.warn(`[SMTP NOT CONFIGURED] Order confirmation for ${data.orderNumber} → ${email}`);
-    console.warn("==========================================================");
-    return { success: true, mocked: true };
-  }
-
-  const itemRows = data.items
-    .map(
-      (item) => `
-      <tr>
-        <td style="padding:10px 12px;border-bottom:1px solid #f3f4f6;color:#374151;font-size:13px;">${escapeHtml(item.name)}</td>
-        <td style="padding:10px 12px;border-bottom:1px solid #f3f4f6;color:#374151;font-size:13px;text-align:center;">${item.quantity}</td>
-        <td style="padding:10px 12px;border-bottom:1px solid #f3f4f6;color:#374151;font-size:13px;text-align:right;">₹${item.price.toLocaleString("en-IN")}</td>
-        <td style="padding:10px 12px;border-bottom:1px solid #f3f4f6;color:#374151;font-size:13px;text-align:right;font-weight:600;">₹${item.total.toLocaleString("en-IN")}</td>
-      </tr>`
-    )
-    .join("");
-
-  const paymentLabel: Record<string, string> = {
-    cod: "Cash on Delivery",
-    upi: "UPI",
-    card: "Card",
-    online: "Online",
-  };
-
-  const html = baseLayout(`
-    <div style="background:linear-gradient(135deg,#7c3aed10,#db277710);border-radius:12px;padding:18px 20px;margin-bottom:24px;text-align:center;">
-      <p style="margin:0 0 4px;color:#7c3aed;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1px;">Order Confirmed</p>
-      <h2 style="margin:0;color:#1f2937;font-size:22px;font-weight:900;">${data.orderNumber}</h2>
-    </div>
-
-    <h3 style="color:#1f2937;font-size:16px;font-weight:700;margin-bottom:6px;">Hello ${escapeHtml(data.customerName)},</h3>
-    <p style="color:#4b5563;font-size:14px;line-height:1.7;margin-bottom:22px;">
-      Your order has been placed successfully! Here's a summary of what you ordered:
-    </p>
-
-    <table style="width:100%;border-collapse:collapse;margin-bottom:20px;border:1px solid #f3f4f6;border-radius:10px;overflow:hidden;">
-      <thead>
-        <tr style="background:#f9fafb;">
-          <th style="padding:10px 12px;text-align:left;color:#6b7280;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;">Item</th>
-          <th style="padding:10px 12px;text-align:center;color:#6b7280;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;">Qty</th>
-          <th style="padding:10px 12px;text-align:right;color:#6b7280;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;">Price</th>
-          <th style="padding:10px 12px;text-align:right;color:#6b7280;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;">Total</th>
-        </tr>
-      </thead>
-      <tbody>${itemRows}</tbody>
-    </table>
-
-    <div style="background:#f9fafb;border-radius:10px;padding:16px 18px;margin-bottom:20px;">
-      ${data.discount > 0 ? `<div style="display:flex;justify-content:space-between;margin-bottom:8px;"><span style="color:#6b7280;font-size:13px;">Subtotal</span><span style="color:#374151;font-size:13px;">₹${data.subtotal.toLocaleString("en-IN")}</span></div><div style="display:flex;justify-content:space-between;margin-bottom:8px;"><span style="color:#16a34a;font-size:13px;">Discount</span><span style="color:#16a34a;font-size:13px;">- ₹${data.discount.toLocaleString("en-IN")}</span></div>` : ""}
-      ${data.taxAmount > 0 ? `<div style="display:flex;justify-content:space-between;margin-bottom:8px;"><span style="color:#6b7280;font-size:13px;">GST / Tax</span><span style="color:#374151;font-size:13px;">₹${data.taxAmount.toLocaleString("en-IN")}</span></div>` : ""}
-      <div style="display:flex;justify-content:space-between;padding-top:10px;border-top:1px solid #e5e7eb;margin-top:4px;">
-        <span style="color:#1f2937;font-size:15px;font-weight:700;">Total</span>
-        <span style="color:#7c3aed;font-size:18px;font-weight:900;">₹${data.total.toLocaleString("en-IN")}</span>
-      </div>
-    </div>
-
-    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:${data.notes ? "16px" : "0"};">
-      <div style="flex:1;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:12px 14px;">
-        <p style="margin:0 0 2px;color:#15803d;font-size:10px;font-weight:700;text-transform:uppercase;">Payment</p>
-        <p style="margin:0;color:#166534;font-size:13px;font-weight:600;">${paymentLabel[data.paymentMethod] ?? data.paymentMethod}</p>
-      </div>
-    </div>
-
-    ${data.notes ? `<div style="background:#fefce8;border:1px solid #fde68a;border-radius:8px;padding:12px 14px;"><p style="margin:0 0 2px;color:#92400e;font-size:10px;font-weight:700;text-transform:uppercase;">Note</p><p style="margin:0;color:#78350f;font-size:13px;">${escapeHtml(data.notes)}</p></div>` : ""}
-  `);
-
-  return sendMail(email, `Order Confirmed: ${data.orderNumber} — SmartDukaan`, html);
-}
-
-// ─── Welcome Email ──────────────────────────────────────────────────────────
-
-export async function sendWelcomeEmail(email: string, name: string): Promise<MailResult> {
-  console.log(`[EMAIL] Sending welcome email to ${email}`);
-
-  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-    console.warn("==========================================================");
-    console.warn(`[SMTP NOT CONFIGURED] Welcome Email for ${email}`);
-    console.warn("==========================================================");
-    return { success: true, mocked: true };
-  }
-
-  const safeName = escapeHtml(name);
-  const html = baseLayout(`
-    <h3 style="color:#1f2937;font-size:18px;font-weight:700;margin-bottom:8px;">Welcome to SmartDukaan, ${safeName}!</h3>
-    <p style="color:#4b5563;font-size:14px;line-height:1.7;margin-bottom:20px;">
-      We're absolutely thrilled to have you on board! SmartDukaan is designed to help you create a stunning, fully-functional online storefront and manage your products and orders with ultimate ease.
-    </p>
-    
-    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:20px;margin-bottom:24px;">
-      <h4 style="margin:0 0 12px;color:#0f172a;font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Your Onboarding Checklist</h4>
-      <table style="width:100%;border-collapse:collapse;font-size:13px;color:#334155;">
-        <tr>
-          <td style="padding:6px 0;width:24px;vertical-align:top;font-weight:bold;color:#7c3aed;">1.</td>
-          <td style="padding:6px 0;"><strong>Setup Your Business Profile</strong><br/><span style="color:#64748b;font-size:12px;">Fill in your business name, description, and contact info to create your store.</span></td>
-        </tr>
-        <tr>
-          <td style="padding:6px 0;width:24px;vertical-align:top;font-weight:bold;color:#7c3aed;">2.</td>
-          <td style="padding:6px 0;"><strong>Add Your First Product</strong><br/><span style="color:#64748b;font-size:12px;">Upload product details, pricing, and stock status in the dashboard.</span></td>
-        </tr>
-        <tr>
-          <td style="padding:6px 0;width:24px;vertical-align:top;font-weight:bold;color:#7c3aed;">3.</td>
-          <td style="padding:6px 0;"><strong>Preview & Launch Your Storefront</strong><br/><span style="color:#64748b;font-size:12px;">Visit your dynamic store link, copy it, and share it with your customers!</span></td>
-        </tr>
-      </table>
-    </div>
-
-    <p style="color:#4b5563;font-size:14px;line-height:1.7;margin-bottom:24px;">
-      Our guided step-by-step assistant will walk you through these actions the moment you log in, unlocking your dashboard menus as you complete each task.
-    </p>
-
-    <div style="text-align:center;margin:28px 0 20px;">
-      <a href="${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}" style="display:inline-block;padding:12px 28px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;font-weight:700;text-decoration:none;border-radius:10px;font-size:14px;box-shadow:0 4px 6px rgba(124,58,237,0.2);">Go to Dashboard</a>
-    </div>
-  `);
-
-  return sendMail(email, "Welcome to SmartDukaan — Let's build your store!", html);
-}
-
-// ─── Business Created Congratulations Email ───────────────────────────────────
-
-export async function sendBusinessCreatedEmail(
+export async function sendOnboardingEmail(
   email: string,
   ownerName: string,
   businessName: string,
   storeUrl: string
 ): Promise<MailResult> {
-  console.log(`[EMAIL] Sending business created email to ${email}`);
-
-  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-    console.warn("==========================================================");
-    console.warn(`[SMTP NOT CONFIGURED] Business Created Email for ${email}`);
-    console.warn("==========================================================");
-    return { success: true, mocked: true };
-  }
-
-  const safeOwnerName = escapeHtml(ownerName);
-  const safeBusinessName = escapeHtml(businessName);
+  console.log(`[EMAIL] Sending onboarding email to ${email}`);
+  const safeOwner = escapeHtml(ownerName);
+  const safeBiz = escapeHtml(businessName);
   const html = baseLayout(`
-    <h3 style="color:#1f2937;font-size:18px;font-weight:700;margin-bottom:8px;">Congratulations, ${safeOwnerName}!</h3>
-    <p style="color:#4b5563;font-size:14px;line-height:1.7;margin-bottom:20px;">
-      Your business <strong>${safeBusinessName}</strong> has been successfully created and your custom storefront is now active! 🚀
-    </p>
-    
-    <div style="background:#f5f3ff;border:1px dashed #7c3aed;border-radius:12px;padding:20px;text-align:center;margin-bottom:24px;">
-      <p style="margin:0 0 8px;color:#4b5563;font-size:13px;font-weight:600;">Your Live Storefront URL:</p>
-      <a href="${storeUrl}" style="font-size:16px;font-weight:700;color:#7c3aed;word-break:break-all;text-decoration:underline;">${storeUrl}</a>
+    <div style="background:linear-gradient(135deg,#f5f3ff,#fdf2f8);border-radius:12px;padding:20px;text-align:center;margin-bottom:28px;">
+      <p style="margin:0 0 6px;font-size:12px;font-weight:700;color:#7c3aed;text-transform:uppercase;letter-spacing:1px;">Store is Live!</p>
+      <h2 style="margin:0;font-size:26px;font-weight:900;color:#1f2937;">${safeBiz}</h2>
     </div>
 
-    <p style="color:#4b5563;font-size:14px;line-height:1.7;margin-bottom:20px;">
-      <strong>What's next?</strong>
-      <ul style="color:#4b5563;font-size:13px;line-height:1.7;padding-left:20px;margin-top:8px;">
-        <li>Add products to display them on your dynamic storefront.</li>
-        <li>Share your storefront link with your customer base on WhatsApp, social media, or flyers.</li>
-        <li>Receive order alerts directly, and manage full order statuses seamlessly right from your dashboard!</li>
-      </ul>
+    <p style="margin:0 0 20px;font-size:15px;color:#374151;line-height:1.7;">
+      Welcome aboard, <strong>${safeOwner}</strong>! Your SmartDukaan store is now active and ready to receive orders.
     </p>
 
-    <div style="text-align:center;margin:28px 0 20px;">
-      <a href="${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/dashboard" style="display:inline-block;padding:12px 28px;background:#7c3aed;color:#fff;font-weight:700;text-decoration:none;border-radius:10px;font-size:14px;">Go to Dashboard</a>
+    <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:20px;margin-bottom:24px;">
+      <p style="margin:0 0 6px;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;">Your Store URL</p>
+      <a href="${storeUrl}" style="font-size:15px;font-weight:700;color:#7c3aed;word-break:break-all;">${escapeHtml(storeUrl)}</a>
     </div>
+
+    <p style="margin:0 0 16px;font-size:14px;font-weight:700;color:#1f2937;">Get started in 3 steps:</p>
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+      ${[
+        ["1", "Add your products", "Upload photos, prices, and stock to your catalog"],
+        [
+          "2",
+          "Share your store",
+          "Send your store URL to customers on WhatsApp &amp; social media",
+        ],
+        ["3", "Manage from dashboard", "Track orders, invoices, and analytics in real-time"],
+      ]
+        .map(
+          ([num, title, desc]) => `
+      <tr>
+        <td style="width:36px;padding:8px 12px 8px 0;vertical-align:top;">
+          <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;font-weight:800;font-size:14px;text-align:center;line-height:28px;">${num}</div>
+        </td>
+        <td style="padding:8px 0;border-bottom:1px solid #f3f4f6;vertical-align:top;">
+          <p style="margin:0 0 2px;font-size:14px;font-weight:700;color:#1f2937;">${title}</p>
+          <p style="margin:0;font-size:12px;color:#6b7280;">${desc}</p>
+        </td>
+      </tr>`
+        )
+        .join("")}
+    </table>
+
+    ${ctaButton("Go to Dashboard &rarr;", `${APP_URL}/dashboard`)}
+
+    <p style="margin:0;font-size:12px;color:#9ca3af;text-align:center;">
+      Your 30-day free trial has started. No credit card required.
+    </p>
   `);
-
-  return sendMail(email, `Your store is live: ${businessName} — SmartDukaan`, html);
+  return sendMail(email, `Your SmartDukaan store "${businessName}" is live!`, html);
 }
 
-// ─── Business Suspended Email ───────────────────────────────────────────────
-
-export async function sendBusinessSuspendedEmail(
-  email: string,
-  ownerName: string,
-  businessName: string
-): Promise<MailResult> {
-  console.log(`[EMAIL] Sending business suspended email to ${email}`);
-
-  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-    console.warn("==========================================================");
-    console.warn(`[SMTP NOT CONFIGURED] Business Suspended Email for ${email}`);
-    console.warn("==========================================================");
-    return { success: true, mocked: true };
-  }
-
-  const adminEmail = process.env.SMTP_USER || "admin@smartdukaan.com";
-
-  const html = baseLayout(`
-    <div style="background:#fee2e2;border:1px solid #fca5a5;border-radius:12px;padding:16px;text-align:center;margin-bottom:24px;">
-      <h3 style="margin:0;color:#b91c1c;font-size:18px;font-weight:800;">⚠️ Shop Suspended</h3>
-    </div>
-    
-    <h3 style="color:#1f2937;font-size:16px;font-weight:700;margin-bottom:8px;">Hello ${escapeHtml(ownerName)},</h3>
-    <p style="color:#4b5563;font-size:14px;line-height:1.7;margin-bottom:20px;">
-      This email is to notify you that your SmartDukaan store <strong>${escapeHtml(businessName)}</strong> has been suspended by the administration.
-    </p>
-    
-    <p style="color:#4b5563;font-size:14px;line-height:1.7;margin-bottom:20px;">
-      During the suspension period, your storefront will not be accessible to customers, and your shop dashboard is locked.
-    </p>
-
-    <div style="background:#f8fafc;border-left:4px solid #94a3b8;padding:14px;margin-bottom:24px;border-radius:0 8px 8px 0;">
-      <p style="margin:0;color:#475569;font-size:13px;line-height:1.6;">
-        <strong>How to resolve this:</strong><br/>
-        Please get in touch with our system administrator immediately to discuss the reasons for suspension and steps to reinstate your account.
-      </p>
-    </div>
-
-    <div style="text-align:center;margin:28px 0 20px;">
-      <a href="mailto:${adminEmail}?subject=Suspension Appeal — ${encodeURIComponent(businessName)}" style="display:inline-block;padding:12px 28px;background:#ef4444;color:#fff;font-weight:700;text-decoration:none;border-radius:10px;font-size:14px;">Contact Support</a>
-    </div>
-  `);
-
-  return sendMail(email, `Urgent: Your SmartDukaan store has been suspended`, html);
-}
-
-// ─── Trial Expiring Warning ─────────────────────────────────────────────────
-
-export async function sendTrialExpiringEmail(
+// Keep old names as aliases for backward compatibility
+export const sendWelcomeEmail = (email: string, name: string) =>
+  sendOnboardingEmail(email, name, "", APP_URL + "/dashboard");
+export const sendBusinessCreatedEmail = (
   email: string,
   ownerName: string,
   businessName: string,
-  daysLeft: number,
-  upgradeUrl: string
-): Promise<MailResult> {
-  console.log(`[EMAIL] Sending trial expiring (${daysLeft}d) to ${email}`);
+  storeUrl: string
+) => sendOnboardingEmail(email, ownerName, businessName, storeUrl);
 
-  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-    console.warn(`[SMTP NOT CONFIGURED] Trial expiring (${daysLeft}d) for ${email}`);
-    return { success: true, mocked: true };
-  }
+// ─── Order Confirmation — REMOVED (customers see success on screen) ──────────
 
-  const urgencyColor = daysLeft <= 1 ? "#dc2626" : daysLeft <= 3 ? "#d97706" : "#7c3aed";
-  const html = baseLayout(`
-    <div style="background:#fef3c7;border:1px solid #fde68a;border-radius:12px;padding:16px;text-align:center;margin-bottom:24px;">
-      <p style="margin:0;color:#92400e;font-size:13px;font-weight:700;">
-        ⏳ Your free trial ends in <span style="color:${urgencyColor};font-size:18px;font-weight:900;">${daysLeft} day${daysLeft === 1 ? "" : "s"}</span>
-      </p>
-    </div>
-
-    <h3 style="color:#1f2937;font-size:16px;font-weight:700;margin-bottom:8px;">Hi ${escapeHtml(ownerName)},</h3>
-    <p style="color:#4b5563;font-size:14px;line-height:1.7;margin-bottom:20px;">
-      Your free trial for <strong>${escapeHtml(businessName)}</strong> on SmartDukaan is ending soon.
-      To keep your store running without interruption, please choose a plan before your trial expires.
-    </p>
-
-    <div style="background:#f5f3ff;border:1px solid #ddd6fe;border-radius:12px;padding:18px;margin-bottom:24px;">
-      <p style="margin:0 0 10px;color:#4b5563;font-size:13px;font-weight:600;">Available Plans:</p>
-      <table style="width:100%;border-collapse:collapse;font-size:13px;">
-        <tr>
-          <td style="padding:8px 0;color:#374151;font-weight:700;">Starter</td>
-          <td style="padding:8px 0;color:#7c3aed;font-weight:700;text-align:right;">₹499 / month</td>
-        </tr>
-        <tr style="border-top:1px solid #ede9fe;">
-          <td style="padding:8px 0;color:#374151;font-weight:700;">Pro</td>
-          <td style="padding:8px 0;color:#7c3aed;font-weight:700;text-align:right;">₹999 / month</td>
-        </tr>
-        <tr style="border-top:1px solid #ede9fe;">
-          <td style="padding:8px 0;color:#374151;font-weight:700;">Enterprise</td>
-          <td style="padding:8px 0;color:#7c3aed;font-weight:700;text-align:right;">₹2,499 / month</td>
-        </tr>
-      </table>
-    </div>
-
-    <div style="text-align:center;margin:28px 0 20px;">
-      <a href="${upgradeUrl}" style="display:inline-block;padding:13px 32px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;font-weight:700;text-decoration:none;border-radius:10px;font-size:14px;box-shadow:0 4px 6px rgba(124,58,237,0.25);">
-        Choose a Plan Now
-      </a>
-    </div>
-
-    <p style="color:#9ca3af;font-size:12px;text-align:center;">
-      If you have questions, reply to this email and we'll help you pick the right plan.
-    </p>
-  `);
-
-  return sendMail(
-    email,
-    `⏳ Your SmartDukaan trial ends in ${daysLeft} day${daysLeft === 1 ? "" : "s"} — ${businessName}`,
-    html
-  );
+export async function sendOrderConfirmationEmail(): Promise<MailResult> {
+  // Intentionally removed — customers see confirmation on screen after checkout
+  return { success: true, mocked: true };
 }
 
-// ─── Trial Expired ─────────────────────────────────────────────────────────────
-
-export async function sendTrialExpiredEmail(
-  email: string,
-  ownerName: string,
-  businessName: string,
-  upgradeUrl: string
-): Promise<MailResult> {
-  console.log(`[EMAIL] Sending trial expired to ${email}`);
-
-  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-    console.warn(`[SMTP NOT CONFIGURED] Trial expired for ${email}`);
-    return { success: true, mocked: true };
-  }
-
-  const html = baseLayout(`
-    <div style="background:#fee2e2;border:1px solid #fca5a5;border-radius:12px;padding:16px;text-align:center;margin-bottom:24px;">
-      <h3 style="margin:0;color:#b91c1c;font-size:17px;font-weight:800;">🔒 Your free trial has ended</h3>
-    </div>
-
-    <h3 style="color:#1f2937;font-size:16px;font-weight:700;margin-bottom:8px;">Hi ${escapeHtml(ownerName)},</h3>
-    <p style="color:#4b5563;font-size:14px;line-height:1.7;margin-bottom:20px;">
-      Your 30-day free trial for <strong>${escapeHtml(businessName)}</strong> has expired.
-      Your store dashboard is currently restricted. Upgrade to a paid plan to restore full access immediately.
-    </p>
-
-    <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:12px;padding:16px;margin-bottom:24px;">
-      <p style="margin:0;color:#7f1d1d;font-size:13px;line-height:1.6;">
-        <strong>What's restricted:</strong> Adding products, creating invoices, viewing analytics,
-        and accepting online orders are paused until you upgrade.
-      </p>
-    </div>
-
-    <div style="text-align:center;margin:28px 0 20px;">
-      <a href="${upgradeUrl}" style="display:inline-block;padding:13px 32px;background:linear-gradient(135deg,#dc2626,#b91c1c);color:#fff;font-weight:700;text-decoration:none;border-radius:10px;font-size:14px;box-shadow:0 4px 6px rgba(220,38,38,0.25);">
-        Upgrade Now — From ₹499/mo
-      </a>
-    </div>
-
-    <p style="color:#9ca3af;font-size:12px;text-align:center;">
-      Your data is safe and will be fully restored the moment you upgrade.
-    </p>
-  `);
-
-  return sendMail(email, `🔒 Your SmartDukaan trial has ended — ${businessName}`, html);
-}
-
-// ─── Order Delivered ───────────────────────────────────────────────────────────
+// ─── Order Delivered ────────────────────────────────────────────────────────
 
 export async function sendOrderDeliveredEmail(
   email: string,
@@ -491,56 +252,247 @@ export async function sendOrderDeliveredEmail(
   invoiceUrl?: string
 ): Promise<MailResult> {
   console.log(`[EMAIL] Sending delivery confirmation for ${orderNumber} to ${email}`);
-
-  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-    console.warn("==========================================================");
-    console.warn(`[SMTP NOT CONFIGURED] Delivery confirmation for ${orderNumber} → ${email}`);
-    console.warn("==========================================================");
-    return { success: true, mocked: true };
-  }
-
+  const safeName = escapeHtml(customerName);
   const html = baseLayout(`
-    <div style="background:linear-gradient(135deg,#10b98110,#059f6110);border-radius:12px;padding:18px 20px;margin-bottom:24px;text-align:center;">
-      <p style="margin:0 0 4px;color:#059669;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1px;">Order Delivered</p>
-      <h2 style="margin:0;color:#1f2937;font-size:22px;font-weight:900;">${orderNumber}</h2>
+    <div style="background:linear-gradient(135deg,#ecfdf5,#f0fdf4);border-radius:12px;padding:20px;text-align:center;margin-bottom:28px;">
+      <p style="margin:0 0 4px;font-size:12px;font-weight:700;color:#059669;text-transform:uppercase;letter-spacing:1px;">Order Delivered</p>
+      <h2 style="margin:0;font-size:26px;font-weight:900;color:#1f2937;">${escapeHtml(orderNumber)}</h2>
     </div>
 
-    <h3 style="color:#1f2937;font-size:16px;font-weight:700;margin-bottom:6px;">Hello ${escapeHtml(customerName)},</h3>
-    <p style="color:#4b5563;font-size:14px;line-height:1.7;margin-bottom:22px;">
-      Great news! Your order has been successfully delivered. We hope you enjoy your purchase!
+    <p style="margin:0 0 20px;font-size:15px;color:#374151;line-height:1.7;">
+      Hi <strong>${safeName}</strong>, your order has been delivered. Thank you for shopping with us!
     </p>
 
-    <div style="background:#f9fafb;border-radius:10px;padding:16px 18px;margin-bottom:20px;">
-      <div style="display:flex;justify-content:space-between;padding-bottom:10px;">
-        <span style="color:#6b7280;font-size:13px;">Order</span>
-        <span style="color:#1f2937;font-size:13px;font-weight:600;">${orderNumber}</span>
+    <div style="background:#f9fafb;border-radius:10px;padding:18px;margin-bottom:20px;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:12px;">
+        <span style="font-size:13px;color:#6b7280;">Order</span>
+        <span style="font-size:13px;font-weight:600;color:#374151;">${escapeHtml(orderNumber)}</span>
       </div>
-      <div style="display:flex;justify-content:space-between;border-top:1px solid #e5e7eb;padding-top:10px;">
-        <span style="color:#1f2937;font-size:15px;font-weight:700;">Total Paid</span>
-        <span style="color:#7c3aed;font-size:18px;font-weight:900;">₹${total.toLocaleString("en-IN")}</span>
+      <div style="border-top:1px solid #e5e7eb;padding-top:12px;display:flex;justify-content:space-between;">
+        <span style="font-size:15px;font-weight:700;color:#1f2937;">Total Paid</span>
+        <span style="font-size:20px;font-weight:900;color:#7c3aed;">&#8377;${total.toLocaleString("en-IN")}</span>
       </div>
     </div>
 
-    ${
-      invoiceUrl
-        ? `
-    <div style="text-align:center;margin:24px 0;">
-      <a href="${invoiceUrl}" style="display:inline-block;padding:11px 24px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;font-weight:700;text-decoration:none;border-radius:10px;font-size:13px;">
-        View &amp; Download Invoice
-      </a>
-    </div>`
-        : ""
-    }
+    ${invoiceUrl ? ctaButton("View &amp; Download Invoice", invoiceUrl, "#7c3aed") : ""}
 
-    <p style="color:#6b7280;font-size:13px;text-align:center;line-height:1.6;margin-top:8px;">
-      Thank you for shopping with us. We look forward to serving you again!
+    <p style="margin:0;font-size:13px;color:#6b7280;text-align:center;">
+      We look forward to serving you again!
     </p>
   `);
-
-  return sendMail(email, `Your order ${orderNumber} has been delivered!`, html);
+  return sendMail(email, `Order ${orderNumber} delivered — SmartDukaan`, html);
 }
 
-// ─── Demo Connect Requests ──────────────────────────────────────────────────
+// ─── Business Suspended ────────────────────────────────────────────────────
+
+export async function sendBusinessSuspendedEmail(
+  email: string,
+  ownerName: string,
+  businessName: string
+): Promise<MailResult> {
+  console.log(`[EMAIL] Sending suspension notice to ${email}`);
+  const html = baseLayout(`
+    <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:12px;padding:20px;text-align:center;margin-bottom:28px;">
+      <h2 style="margin:0;font-size:20px;font-weight:800;color:#b91c1c;">Store Suspended</h2>
+    </div>
+    <p style="margin:0 0 16px;font-size:15px;color:#374151;line-height:1.7;">
+      Hi <strong>${escapeHtml(ownerName)}</strong>, your store <strong>${escapeHtml(businessName)}</strong> has been suspended by administration.
+    </p>
+    <p style="margin:0 0 20px;font-size:14px;color:#4b5563;line-height:1.7;">
+      During suspension, your storefront is offline and dashboard access is restricted.
+    </p>
+    ${ctaButton("Contact Support", "mailto:support@smartdukaan.com?subject=Suspension Appeal", "#ef4444")}
+  `);
+  return sendMail(email, `Important: Your SmartDukaan store has been suspended`, html);
+}
+
+// ─── Trial Expiring ────────────────────────────────────────────────────────
+
+export async function sendTrialExpiringEmail(
+  email: string,
+  ownerName: string,
+  businessName: string,
+  daysLeft: number,
+  upgradeUrl: string
+): Promise<MailResult> {
+  console.log(`[EMAIL] Sending trial expiring (${daysLeft}d) to ${email}`);
+  const urgency = daysLeft <= 1 ? "#dc2626" : daysLeft <= 3 ? "#d97706" : "#7c3aed";
+  const html = baseLayout(`
+    <div style="background:#fef3c7;border:1px solid #fde68a;border-radius:12px;padding:20px;text-align:center;margin-bottom:28px;">
+      <p style="margin:0;font-size:14px;font-weight:700;color:#92400e;">
+        Trial ends in <span style="color:${urgency};font-size:26px;font-weight:900;">${daysLeft}</span> day${daysLeft === 1 ? "" : "s"}
+      </p>
+    </div>
+
+    <p style="margin:0 0 20px;font-size:15px;color:#374151;line-height:1.7;">
+      Hi <strong>${escapeHtml(ownerName)}</strong>, your free trial for <strong>${escapeHtml(businessName)}</strong> is ending soon.
+      Upgrade now to keep your store running without interruption.
+    </p>
+
+    <div style="background:#f5f3ff;border:1px solid #ddd6fe;border-radius:12px;padding:20px;margin-bottom:24px;">
+      <p style="margin:0 0 14px;font-size:13px;font-weight:700;color:#374151;">Available Plans</p>
+      ${[
+        ["Starter", "&#8377;499/mo"],
+        ["Pro", "&#8377;999/mo"],
+        ["Enterprise", "&#8377;2,499/mo"],
+      ]
+        .map(
+          ([plan, price]) =>
+            `<div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #ede9fe;">
+          <span style="font-size:14px;font-weight:600;color:#374151;">${plan}</span>
+          <span style="font-size:14px;font-weight:700;color:#7c3aed;">${price}</span>
+        </div>`
+        )
+        .join("")}
+    </div>
+
+    ${ctaButton("Choose a Plan &rarr;", upgradeUrl)}
+
+    <p style="margin:0;font-size:12px;color:#9ca3af;text-align:center;">
+      Reply to this email if you have questions about plans.
+    </p>
+  `);
+  return sendMail(
+    email,
+    `${daysLeft} day${daysLeft === 1 ? "" : "s"} left on your SmartDukaan trial — ${businessName}`,
+    html
+  );
+}
+
+// ─── Trial Expired ─────────────────────────────────────────────────────────
+
+export async function sendTrialExpiredEmail(
+  email: string,
+  ownerName: string,
+  businessName: string,
+  upgradeUrl: string
+): Promise<MailResult> {
+  console.log(`[EMAIL] Sending trial expired notice to ${email}`);
+  const html = baseLayout(`
+    <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:12px;padding:20px;text-align:center;margin-bottom:28px;">
+      <h2 style="margin:0;font-size:20px;font-weight:800;color:#b91c1c;">Free Trial Ended</h2>
+    </div>
+    <p style="margin:0 0 16px;font-size:15px;color:#374151;line-height:1.7;">
+      Hi <strong>${escapeHtml(ownerName)}</strong>, your 30-day trial for <strong>${escapeHtml(businessName)}</strong> has expired.
+      Your store dashboard is now restricted.
+    </p>
+    <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:16px;margin-bottom:24px;">
+      <p style="margin:0;font-size:13px;color:#7f1d1d;">
+        <strong>Restricted features:</strong> Adding products, creating invoices, analytics, and online orders are paused.
+        Your data is safe and will be fully restored when you upgrade.
+      </p>
+    </div>
+    ${ctaButton("Upgrade Now &mdash; from &#8377;499/mo", upgradeUrl, "#dc2626")}
+  `);
+  return sendMail(email, `Your SmartDukaan trial has ended — ${businessName}`, html);
+}
+
+// ─── Subscription Activated ─────────────────────────────────────────────────
+
+export async function sendSubscriptionActivatedEmail(
+  email: string,
+  ownerName: string,
+  businessName: string,
+  planName: string,
+  expiresAt: Date
+): Promise<MailResult> {
+  console.log(`[EMAIL] Sending subscription activated to ${email}`);
+  const html = baseLayout(`
+    <div style="background:linear-gradient(135deg,#ecfdf5,#f0fdf4);border-radius:12px;padding:20px;text-align:center;margin-bottom:28px;">
+      <p style="margin:0 0 4px;font-size:12px;font-weight:700;color:#059669;text-transform:uppercase;letter-spacing:1px;">Subscription Active</p>
+      <h2 style="margin:0;font-size:26px;font-weight:900;color:#1f2937;">${escapeHtml(planName)} Plan</h2>
+    </div>
+    <p style="margin:0 0 20px;font-size:15px;color:#374151;line-height:1.7;">
+      Hi <strong>${escapeHtml(ownerName)}</strong>! Your <strong>${escapeHtml(businessName)}</strong> is now on the <strong>${escapeHtml(planName)}</strong> plan.
+      Your store is fully powered up.
+    </p>
+    ${infoCard([
+      { label: "Plan", value: planName },
+      { label: "Business", value: businessName },
+      {
+        label: "Valid Until",
+        value: expiresAt.toLocaleDateString("en-IN", {
+          day: "2-digit",
+          month: "long",
+          year: "numeric",
+        }),
+      },
+    ])}
+    ${ctaButton("Go to Dashboard", `${APP_URL}/dashboard`)}
+  `);
+  return sendMail(email, `You're on the ${planName} plan — SmartDukaan`, html);
+}
+
+// ─── Payment Success ────────────────────────────────────────────────────────
+
+export async function sendPaymentSuccessEmail(
+  email: string,
+  ownerName: string,
+  businessName: string,
+  amount: number,
+  planName: string,
+  transactionId: string
+): Promise<MailResult> {
+  console.log(`[EMAIL] Sending payment success to ${email}`);
+  const html = baseLayout(`
+    <div style="background:linear-gradient(135deg,#ecfdf5,#f0fdf4);border-radius:12px;padding:20px;text-align:center;margin-bottom:28px;">
+      <p style="margin:0 0 4px;font-size:12px;font-weight:700;color:#059669;text-transform:uppercase;letter-spacing:1px;">Payment Received</p>
+      <h2 style="margin:0;font-size:32px;font-weight:900;color:#1f2937;">&#8377;${amount.toLocaleString("en-IN")}</h2>
+    </div>
+    <p style="margin:0 0 20px;font-size:15px;color:#374151;line-height:1.7;">
+      Hi <strong>${escapeHtml(ownerName)}</strong>, we've received your payment for <strong>${escapeHtml(businessName)}</strong>.
+    </p>
+    ${infoCard([
+      { label: "Amount", value: `₹${amount.toLocaleString("en-IN")}` },
+      { label: "Plan", value: planName },
+      { label: "Transaction ID", value: transactionId },
+      { label: "Business", value: businessName },
+    ])}
+    ${ctaButton("Go to Dashboard", `${APP_URL}/dashboard`)}
+    <p style="margin:0;font-size:12px;color:#9ca3af;text-align:center;">Save this email as your payment confirmation.</p>
+  `);
+  return sendMail(
+    email,
+    `Payment of ₹${amount.toLocaleString("en-IN")} received — SmartDukaan`,
+    html
+  );
+}
+
+// ─── Employee Invitation ────────────────────────────────────────────────────
+
+export async function sendEmployeeInvitationEmail(
+  email: string,
+  employeeName: string,
+  ownerName: string,
+  businessName: string,
+  tempPassword: string,
+  loginUrl: string
+): Promise<MailResult> {
+  console.log(`[EMAIL] Sending employee invitation to ${email}`);
+  const html = baseLayout(`
+    <div style="background:linear-gradient(135deg,#f5f3ff,#fdf2f8);border-radius:12px;padding:20px;text-align:center;margin-bottom:28px;">
+      <p style="margin:0 0 4px;font-size:12px;font-weight:700;color:#7c3aed;text-transform:uppercase;letter-spacing:1px;">You're Invited!</p>
+      <h2 style="margin:0;font-size:22px;font-weight:900;color:#1f2937;">${escapeHtml(businessName)}</h2>
+    </div>
+    <p style="margin:0 0 20px;font-size:15px;color:#374151;line-height:1.7;">
+      Hi <strong>${escapeHtml(employeeName)}</strong>, <strong>${escapeHtml(ownerName)}</strong> has invited you to manage
+      <strong>${escapeHtml(businessName)}</strong> on SmartDukaan.
+    </p>
+    ${infoCard([
+      { label: "Email", value: email },
+      { label: "Temporary Password", value: tempPassword },
+    ])}
+    <div style="background:#fef3c7;border:1px solid #fde68a;border-radius:10px;padding:14px 16px;margin-bottom:24px;">
+      <p style="margin:0;font-size:13px;color:#92400e;">
+        <strong>Important:</strong> Change your password immediately after your first login.
+      </p>
+    </div>
+    ${ctaButton("Accept Invitation &amp; Login", loginUrl)}
+  `);
+  return sendMail(email, `${ownerName} invited you to join ${businessName} on SmartDukaan`, html);
+}
+
+// ─── Demo Request (admin notification) ─────────────────────────────────────
 
 export async function sendDemoRequestEmail(details: {
   name: string;
@@ -550,62 +502,22 @@ export async function sendDemoRequestEmail(details: {
   businessType: string;
   notes?: string;
 }): Promise<MailResult> {
-  const adminEmail = process.env.SMTP_USER || "admin@smartdukaan.com";
-  const safeName = escapeHtml(details.name);
-  const safeBusinessName = escapeHtml(details.businessName);
-  const safeEmail = escapeHtml(details.email);
-  const safePhone = escapeHtml(details.phone);
-  const safeBusinessType = escapeHtml(details.businessType);
-  const safeNotes = details.notes ? escapeHtml(details.notes) : "None";
-
-  console.log(`[EMAIL] Sending demo request notification to ${adminEmail}`);
-
-  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-    console.warn("==========================================================");
-    console.warn(`[SMTP NOT CONFIGURED] Demo Request from ${safeName} (${safeBusinessName})`);
-    console.warn("==========================================================");
-    return { success: true, mocked: true };
-  }
-
+  const adminEmail = process.env.SMTP_USER || process.env.ADMIN_EMAIL || "admin@smartdukaan.com";
   const html = baseLayout(`
-    <div style="background:linear-gradient(135deg,#7c3aed10,#db277710);border-radius:12px;padding:18px 20px;margin-bottom:24px;text-align:center;">
-      <p style="margin:0 0 4px;color:#7c3aed;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1px;">New Demo Request</p>
-      <h2 style="margin:0;color:#1f2937;font-size:22px;font-weight:900;">${safeBusinessName}</h2>
+    <div style="background:linear-gradient(135deg,#f5f3ff,#fdf2f8);border-radius:12px;padding:20px;text-align:center;margin-bottom:28px;">
+      <p style="margin:0 0 4px;font-size:12px;font-weight:700;color:#7c3aed;text-transform:uppercase;letter-spacing:1px;">New Demo Request</p>
+      <h2 style="margin:0;font-size:22px;font-weight:900;color:#1f2937;">${escapeHtml(details.businessName)}</h2>
     </div>
-
-    <h3 style="color:#1f2937;font-size:16px;font-weight:700;margin-bottom:12px;">Lead Details:</h3>
-    <table style="width:100%;border-collapse:collapse;margin-bottom:20px;border:1px solid #f3f4f6;border-radius:10px;overflow:hidden;font-size:14px;color:#374151;">
-      <tbody>
-        <tr>
-          <td style="padding:10px 12px;border-bottom:1px solid #f3f4f6;font-weight:600;background:#f9fafb;width:35%;">Contact Name</td>
-          <td style="padding:10px 12px;border-bottom:1px solid #f3f4f6;">${safeName}</td>
-        </tr>
-        <tr>
-          <td style="padding:10px 12px;border-bottom:1px solid #f3f4f6;font-weight:600;background:#f9fafb;">Business Name</td>
-          <td style="padding:10px 12px;border-bottom:1px solid #f3f4f6;">${safeBusinessName}</td>
-        </tr>
-        <tr>
-          <td style="padding:10px 12px;border-bottom:1px solid #f3f4f6;font-weight:600;background:#f9fafb;">Email Address</td>
-          <td style="padding:10px 12px;border-bottom:1px solid #f3f4f6;"><a href="mailto:${safeEmail}">${safeEmail}</a></td>
-        </tr>
-        <tr>
-          <td style="padding:10px 12px;border-bottom:1px solid #f3f4f6;font-weight:600;background:#f9fafb;">Phone Number</td>
-          <td style="padding:10px 12px;border-bottom:1px solid #f3f4f6;"><a href="tel:${safePhone}">${safePhone}</a></td>
-        </tr>
-        <tr>
-          <td style="padding:10px 12px;border-bottom:1px solid #f3f4f6;font-weight:600;background:#f9fafb;">Business Type</td>
-          <td style="padding:10px 12px;border-bottom:1px solid #f3f4f6;">${safeBusinessType}</td>
-        </tr>
-      </tbody>
-    </table>
-
-    <div style="background:#fefce8;border:1px solid #fde68a;border-radius:8px;padding:12px 14px;margin-bottom:20px;">
-      <p style="margin:0 0 2px;color:#92400e;font-size:10px;font-weight:700;text-transform:uppercase;">Message / Store Requirements</p>
-      <p style="margin:0;color:#78350f;font-size:13px;white-space:pre-wrap;">${safeNotes}</p>
-    </div>
+    ${infoCard([
+      { label: "Name", value: details.name },
+      { label: "Business", value: details.businessName },
+      { label: "Email", value: details.email },
+      { label: "Phone", value: details.phone },
+      { label: "Business Type", value: details.businessType },
+    ])}
+    ${details.notes ? `<div style="background:#fefce8;border:1px solid #fde68a;border-radius:8px;padding:14px;"><p style="margin:0 0 4px;font-size:11px;font-weight:700;color:#92400e;text-transform:uppercase;">Message</p><p style="margin:0;font-size:13px;color:#78350f;">${escapeHtml(details.notes)}</p></div>` : ""}
   `);
-
-  return sendMail(adminEmail, `🆕 Demo Request: ${safeBusinessName} (${safeName})`, html);
+  return sendMail(adminEmail, `New Demo Request: ${details.businessName} (${details.name})`, html);
 }
 
 export async function sendDemoRequestConfirmationEmail(
@@ -613,43 +525,84 @@ export async function sendDemoRequestConfirmationEmail(
   name: string,
   businessName: string
 ): Promise<MailResult> {
-  console.log(`[EMAIL] Sending demo request confirmation to ${email}`);
-
-  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-    console.warn(`[SMTP NOT CONFIGURED] Demo request confirmation for ${email}`);
-    return { success: true, mocked: true };
-  }
-
-  const safeName = escapeHtml(name);
-  const safeBusinessName = escapeHtml(businessName);
-
+  console.log(`[EMAIL] Sending demo confirmation to ${email}`);
   const html = baseLayout(`
-    <h3 style="color:#1f2937;font-size:18px;font-weight:700;margin-bottom:8px;">Thank You for Reaching Out, ${safeName}!</h3>
-    <p style="color:#4b5563;font-size:14px;line-height:1.7;margin-bottom:20px;">
-      We have successfully received your request for a live demo of <strong>SmartDukaan</strong> for your business, <strong>${safeBusinessName}</strong>. 
+    <h2 style="margin:0 0 8px;font-size:22px;font-weight:800;color:#1f2937;">We got your request!</h2>
+    <p style="margin:0 0 20px;font-size:15px;color:#374151;line-height:1.7;">
+      Hi <strong>${escapeHtml(name)}</strong>, thank you for requesting a demo for <strong>${escapeHtml(businessName)}</strong>.
+      Our team will reach out within 24 hours to schedule a personalized walkthrough.
     </p>
-    <p style="color:#4b5563;font-size:14px;line-height:1.7;margin-bottom:20px;">
-      Our team is currently preparing a personalized demo space that perfectly aligns with your store's requirements. One of our retail success executives will get in touch with you at the earliest to schedule a quick call and walk you through all our powerful features, including:
-    </p>
-
-    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:16px;margin-bottom:24px;">
-      <ul style="margin:0;padding-left:20px;color:#334155;font-size:13px;line-height:1.8;">
-        <li><strong>Custom Dynamic Storefront</strong> with WhatsApp ordering & self-checkout</li>
-        <li><strong>Cloud-Based POS Billing System</strong> for walk-in transactions</li>
-        <li><strong>Real-time Inventory & Low-Stock Alerts</strong></li>
-        <li><strong>Automated GST Invoicing & Digital Receipts</strong></li>
-        <li><strong>Visual Analytics Dashboard</strong> to track sales, peak hours & top products</li>
-      </ul>
+    <div style="background:#f5f3ff;border:1px solid #ddd6fe;border-radius:12px;padding:20px;margin-bottom:24px;">
+      <p style="margin:0 0 12px;font-size:13px;font-weight:700;color:#374151;">What you'll see in the demo:</p>
+      ${[
+        "Custom storefront with QR ordering",
+        "Cloud POS billing system",
+        "GST-compliant invoicing",
+        "Analytics dashboard",
+        "Multi-staff management",
+      ]
+        .map(
+          (f) =>
+            `<p style="margin:0 0 8px;font-size:13px;color:#4b5563;padding-left:16px;">&#10003; ${f}</p>`
+        )
+        .join("")}
     </div>
-
-    <p style="color:#4b5563;font-size:14px;line-height:1.7;margin-bottom:24px;">
-      In the meantime, feel free to check out our product overview or explore creating a free account to test things out at your own pace!
-    </p>
-
-    <div style="text-align:center;margin:28px 0 20px;">
-      <a href="${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}" style="display:inline-block;padding:12px 28px;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;font-weight:700;text-decoration:none;border-radius:10px;font-size:14px;box-shadow:0 4px 6px rgba(124,58,237,0.2);">Explore SmartDukaan</a>
-    </div>
+    ${ctaButton("Explore SmartDukaan", APP_URL)}
   `);
+  return sendMail(email, `We received your SmartDukaan demo request — ${businessName}`, html);
+}
 
-  return sendMail(email, "We've Received Your Demo Request — SmartDukaan", html);
+// ─── Daily Sales Summary (optional, business-enabled) ──────────────────────
+
+export async function sendDailySummaryEmail(
+  email: string,
+  ownerName: string,
+  businessName: string,
+  summary: {
+    date: string;
+    totalOrders: number;
+    totalRevenue: number;
+    topProduct?: string;
+    newCustomers: number;
+  }
+): Promise<MailResult> {
+  console.log(`[EMAIL] Sending daily summary to ${email}`);
+  const html = baseLayout(`
+    <div style="background:linear-gradient(135deg,#f5f3ff,#fdf2f8);border-radius:12px;padding:20px;text-align:center;margin-bottom:28px;">
+      <p style="margin:0 0 4px;font-size:12px;font-weight:700;color:#7c3aed;text-transform:uppercase;letter-spacing:1px;">Daily Sales Report</p>
+      <h2 style="margin:0;font-size:22px;font-weight:900;color:#1f2937;">${escapeHtml(summary.date)}</h2>
+    </div>
+    <p style="margin:0 0 20px;font-size:15px;color:#374151;">
+      Hi <strong>${escapeHtml(ownerName)}</strong>, here is yesterday's summary for <strong>${escapeHtml(businessName)}</strong>:
+    </p>
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+      <tr>
+        ${[
+          { label: "Orders", value: String(summary.totalOrders), color: "#7c3aed" },
+          {
+            label: "Revenue",
+            value: `&#8377;${summary.totalRevenue.toLocaleString("en-IN")}`,
+            color: "#059669",
+          },
+          { label: "New Customers", value: String(summary.newCustomers), color: "#d97706" },
+        ]
+          .map(
+            (s) => `<td style="text-align:center;padding:0 8px;">
+          <div style="background:#f9fafb;border-radius:10px;padding:16px 12px;">
+            <p style="margin:0 0 4px;font-size:24px;font-weight:900;color:${s.color};">${s.value}</p>
+            <p style="margin:0;font-size:12px;color:#6b7280;">${s.label}</p>
+          </div>
+        </td>`
+          )
+          .join("")}
+      </tr>
+    </table>
+    ${summary.topProduct ? `<p style="margin:0 0 20px;font-size:13px;color:#4b5563;text-align:center;">Top product: <strong>${escapeHtml(summary.topProduct)}</strong></p>` : ""}
+    ${ctaButton("View Full Analytics", `${APP_URL}/dashboard/analytics`)}
+  `);
+  return sendMail(
+    email,
+    `Daily Report: ${summary.totalOrders} orders, ₹${summary.totalRevenue.toLocaleString("en-IN")} revenue — ${businessName}`,
+    html
+  );
 }

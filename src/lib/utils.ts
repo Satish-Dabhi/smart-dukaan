@@ -125,3 +125,67 @@ export function escapeHtml(str: string): string {
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#x27;");
 }
+
+/**
+ * Converts a number to Indian English words (for GST invoices).
+ * e.g., 1234.50 → "One Thousand Two Hundred Thirty-Four Rupees and Fifty Paise Only"
+ */
+export function amountInWords(amount: number): string {
+  const ones = [
+    "",
+    "One",
+    "Two",
+    "Three",
+    "Four",
+    "Five",
+    "Six",
+    "Seven",
+    "Eight",
+    "Nine",
+    "Ten",
+    "Eleven",
+    "Twelve",
+    "Thirteen",
+    "Fourteen",
+    "Fifteen",
+    "Sixteen",
+    "Seventeen",
+    "Eighteen",
+    "Nineteen",
+  ];
+  const tens = [
+    "",
+    "",
+    "Twenty",
+    "Thirty",
+    "Forty",
+    "Fifty",
+    "Sixty",
+    "Seventy",
+    "Eighty",
+    "Ninety",
+  ];
+
+  function numToWords(n: number): string {
+    if (n === 0) return "";
+    if (n < 20) return ones[n] + " ";
+    if (n < 100) return tens[Math.floor(n / 10)] + (n % 10 ? " " + ones[n % 10] : "") + " ";
+    if (n < 1000) return ones[Math.floor(n / 100)] + " Hundred " + numToWords(n % 100);
+    if (n < 100000) return numToWords(Math.floor(n / 1000)) + "Thousand " + numToWords(n % 1000);
+    if (n < 10000000) return numToWords(Math.floor(n / 100000)) + "Lakh " + numToWords(n % 100000);
+    return numToWords(Math.floor(n / 10000000)) + "Crore " + numToWords(n % 10000000);
+  }
+
+  const rupees = Math.floor(amount);
+  const paise = Math.round((amount - rupees) * 100);
+  let result = numToWords(rupees).trim() + " Rupee" + (rupees !== 1 ? "s" : "");
+  if (paise > 0) result += " and " + numToWords(paise).trim() + " Paise";
+  return result + " Only";
+}
+
+/** Rounds a number to the nearest integer and returns the round-off difference. */
+export function calcRoundOff(raw: number): { rounded: number; roundOff: number } {
+  const rounded = Math.round(raw);
+  const roundOff = parseFloat((rounded - raw).toFixed(2));
+  return { rounded, roundOff };
+}

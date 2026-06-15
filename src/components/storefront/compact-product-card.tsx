@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { Plus } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import type { IProduct, ICategory } from "@/types";
-import { themeAestheticMap } from "./theme-config";
+import { themeAestheticMap, getProductTagBadges } from "./theme-config";
 
 interface CompactProductCardProps {
   product: IProduct;
@@ -30,6 +30,7 @@ export function CompactProductCard({
   const aesthetic = themeAestheticMap[themeName ?? ""] ?? themeAestheticMap.minimal;
   const category = categories?.find((c) => c._id === product.categoryId);
   const { icon: CategoryIcon, gradient } = getCategoryIcon(category?.name ?? "");
+  const { isVeg, isNonVeg, isSpicy } = getProductTagBadges(product.tags);
 
   return (
     <motion.div
@@ -47,9 +48,20 @@ export function CompactProductCard({
 
       {/* Product Information */}
       <div className="flex-1 min-w-0">
-        <h4 className="font-bold text-gray-900 dark:text-white text-xs sm:text-sm truncate">
-          {locale === "gu" ? (product.nameGu ?? product.name) : product.name}
-        </h4>
+        <div className="flex items-center gap-1">
+          <h4 className="font-bold text-gray-900 dark:text-white text-xs sm:text-sm truncate">
+            {locale === "gu" ? (product.nameGu ?? product.name) : product.name}
+          </h4>
+          {isVeg && <span className="w-2.5 h-2.5 rounded-sm bg-emerald-500 shrink-0" title="Veg" />}
+          {isNonVeg && (
+            <span className="w-2.5 h-2.5 rounded-sm bg-red-500 shrink-0" title="Non-Veg" />
+          )}
+          {isSpicy && (
+            <span className="text-[10px] leading-none" title="Spicy">
+              🌶️
+            </span>
+          )}
+        </div>
         <div className="flex items-center gap-1.5 mt-0.5 text-[10px] text-gray-500">
           {product.unit && <span>{product.unit}</span>}
           {product.unit && product.discount && <span>•</span>}

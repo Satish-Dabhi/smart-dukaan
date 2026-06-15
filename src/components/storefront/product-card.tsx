@@ -4,7 +4,7 @@ import { Star } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import type { IProduct, ICategory } from "@/types";
 import { ProductImageFallback } from "@/components/ui/product-image-fallback";
-import { themeAestheticMap } from "./theme-config";
+import { themeAestheticMap, getProductTagBadges } from "./theme-config";
 
 interface ProductCardProps {
   product: IProduct;
@@ -30,6 +30,7 @@ export function ProductCard({
   const hasDiscount = (product.discount ?? 0) > 0;
   const aesthetic = themeAestheticMap[themeName ?? ""] ?? themeAestheticMap.minimal;
   const category = categories?.find((c) => c._id === product.categoryId);
+  const { isVeg, isNonVeg, isSpicy, isFresh, isRx } = getProductTagBadges(product.tags);
 
   return (
     <motion.div
@@ -86,11 +87,45 @@ export function ProductCard({
               {locale === "gu" ? (category.nameGu ?? category.name) : category.name}
             </span>
           )}
-          <h3
-            className={`font-semibold text-foreground leading-tight truncate ${compact ? "text-xs" : "text-sm"}`}
-          >
-            {locale === "gu" ? (product.nameGu ?? product.name) : product.name}
-          </h3>
+          <div className="flex items-center gap-1 flex-wrap mb-1">
+            <h3
+              className={`font-semibold text-foreground leading-tight truncate ${compact ? "text-xs" : "text-sm"}`}
+            >
+              {locale === "gu" ? (product.nameGu ?? product.name) : product.name}
+            </h3>
+            {isSpicy && (
+              <span title="Spicy" className="text-[11px] leading-none">
+                🌶️
+              </span>
+            )}
+          </div>
+          {/* Tag badges */}
+          {(isVeg || isNonVeg || isFresh || isRx) && (
+            <div className="flex items-center gap-1 flex-wrap mb-1">
+              {isVeg && (
+                <span className="inline-flex items-center gap-0.5 text-[9px] font-black px-1.5 py-0.5 rounded border border-emerald-500 text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30">
+                  <span className="w-2 h-2 rounded-sm bg-emerald-500 shrink-0" />
+                  {t("Veg", "વેજ")}
+                </span>
+              )}
+              {isNonVeg && (
+                <span className="inline-flex items-center gap-0.5 text-[9px] font-black px-1.5 py-0.5 rounded border border-red-500 text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-950/30">
+                  <span className="w-2 h-2 rounded-sm bg-red-500 shrink-0" />
+                  {t("Non-Veg", "નૉન-વેજ")}
+                </span>
+              )}
+              {isFresh && (
+                <span className="inline-flex items-center gap-0.5 text-[9px] font-black px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400">
+                  🌿 {t("Fresh", "તાજું")}
+                </span>
+              )}
+              {isRx && (
+                <span className="inline-flex items-center gap-0.5 text-[9px] font-black px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 border border-blue-300 dark:border-blue-800">
+                  {t("Rx", "Rx")}
+                </span>
+              )}
+            </div>
+          )}
 
           {!compact && product.description && (
             <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
