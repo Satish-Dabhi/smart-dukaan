@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -18,7 +19,6 @@ import {
   QrCode,
   ChevronLeft,
   ChevronRight,
-  ShoppingBag,
   Store,
   X,
   Lock,
@@ -274,13 +274,19 @@ export function DashboardSidebar({ locale, isOpen, setIsOpen, role, businessId }
         {/* Logo */}
         <div className="h-16 flex items-center px-4 border-b border-border">
           <Link href={`/${locale}/dashboard`} className="flex items-center gap-2 overflow-hidden">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-600 to-pink-600 flex items-center justify-center shrink-0">
-              {isSuperAdmin ? (
+            {isSuperAdmin ? (
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-600 to-pink-600 flex items-center justify-center shrink-0">
                 <ShieldCheck className="w-5 h-5 text-white" />
-              ) : (
-                <ShoppingBag className="w-5 h-5 text-white" />
-              )}
-            </div>
+              </div>
+            ) : (
+              <Image
+                src="/icons/favicon-96x96.png"
+                width={32}
+                height={32}
+                alt="SmartDukaan"
+                className="rounded-lg shrink-0"
+              />
+            )}
             <AnimatePresence>
               {!collapsed && (
                 <motion.span
@@ -334,13 +340,19 @@ export function DashboardSidebar({ locale, isOpen, setIsOpen, role, businessId }
                   onClick={() => setIsOpen?.(false)}
                   className="flex items-center gap-2 overflow-hidden"
                 >
-                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-600 to-pink-600 flex items-center justify-center shrink-0">
-                    {isSuperAdmin ? (
+                  {isSuperAdmin ? (
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-600 to-pink-600 flex items-center justify-center shrink-0">
                       <ShieldCheck className="w-5 h-5 text-white" />
-                    ) : (
-                      <ShoppingBag className="w-5 h-5 text-white" />
-                    )}
-                  </div>
+                    </div>
+                  ) : (
+                    <Image
+                      src="/icons/favicon-96x96.png"
+                      width={32}
+                      height={32}
+                      alt="SmartDukaan"
+                      className="rounded-lg shrink-0"
+                    />
+                  )}
                   <span className="font-bold text-base gradient-text whitespace-nowrap">
                     {isSuperAdmin ? "Admin Panel" : "SmartDukaan"}
                   </span>

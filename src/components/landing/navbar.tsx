@@ -4,8 +4,9 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { motion, AnimatePresence } from "framer-motion";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { Menu, X, ShoppingBag, Globe, Sun, Moon, ExternalLink } from "lucide-react";
+import { Menu, X, Globe, Sun, Moon, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "next-themes";
 
@@ -53,9 +54,13 @@ export function Navbar() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link href={`/${locale}`} className="flex items-center gap-2.5 group">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-600 to-pink-600 flex items-center justify-center shadow-md group-hover:shadow-violet-500/30 transition-shadow">
-              <ShoppingBag className="w-4.5 h-4.5 text-white" />
-            </div>
+            <Image
+              src="/icons/favicon-96x96.png"
+              width={32}
+              height={32}
+              alt="SmartDukaan"
+              className="rounded-lg shadow-md group-hover:shadow-violet-500/30 transition-shadow"
+            />
             <span className="font-bold text-lg bg-gradient-to-r from-violet-600 to-pink-600 bg-clip-text text-transparent">
               SmartDukaan
             </span>

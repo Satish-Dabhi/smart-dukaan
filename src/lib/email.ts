@@ -1,11 +1,21 @@
-import { Resend } from "resend";
+import nodemailer from "nodemailer";
 import { escapeHtml } from "@/lib/utils";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
-const FROM = "SmartDukaan <noreply@smartdukaan.com>";
-const REPLY_TO = "support@smartdukaan.com";
+const FROM = `SmartDukaan <${process.env.SMTP_USER}>`;
+const REPLY_TO = process.env.SMTP_USER ?? "support@smartdukaan.com";
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://smartdukaan.com";
+
+function createTransport() {
+  return nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: Number(process.env.SMTP_PORT ?? 587),
+    secure: Number(process.env.SMTP_PORT) === 465,
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
+    },
+  });
+}
 
 type MailResult =
   | { success: true; messageId: string }
@@ -18,12 +28,13 @@ async function sendMail(
   html: string,
   text?: string
 ): Promise<MailResult> {
-  if (!process.env.RESEND_API_KEY) {
+  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
     console.warn(`[EMAIL DEV] Would send "${subject}" to ${to}`);
     return { success: true, mocked: true };
   }
   try {
-    const { data, error } = await resend.emails.send({
+    const transporter = createTransport();
+    const info = await transporter.sendMail({
       from: FROM,
       to,
       replyTo: REPLY_TO,
@@ -31,8 +42,7 @@ async function sendMail(
       html,
       text: text ?? subject,
     });
-    if (error) return { success: false, error: error.message };
-    return { success: true, messageId: data!.id };
+    return { success: true, messageId: info.messageId };
   } catch (err) {
     console.error(`[EMAIL] Failed to send "${subject}" to ${to}:`, err);
     return { success: false, error: err instanceof Error ? err.message : "Send failed" };
@@ -238,7 +248,6 @@ export const sendBusinessCreatedEmail = (
 // ─── Order Confirmation — REMOVED (customers see success on screen) ──────────
 
 export async function sendOrderConfirmationEmail(): Promise<MailResult> {
-  // Intentionally removed — customers see confirmation on screen after checkout
   return { success: true, mocked: true };
 }
 
@@ -552,7 +561,7 @@ export async function sendDemoRequestConfirmationEmail(
   return sendMail(email, `We received your SmartDukaan demo request — ${businessName}`, html);
 }
 
-// ─── Daily Sales Summary (optional, business-enabled) ──────────────────────
+// ─── Daily Sales Summary ────────────────────────────────────────────────────
 
 export async function sendDailySummaryEmail(
   email: string,

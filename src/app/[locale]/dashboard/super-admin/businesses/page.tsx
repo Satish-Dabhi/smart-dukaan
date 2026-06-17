@@ -2,8 +2,6 @@ import { getCachedSession } from "@/lib/auth-cache";
 import { redirect } from "next/navigation";
 import { SuperAdminManager } from "@/components/dashboard/super-admin-manager";
 
-export const unstable_instant = false;
-
 export default async function AdminBusinessesPage({
   params,
 }: {

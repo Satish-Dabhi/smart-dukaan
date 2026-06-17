@@ -147,7 +147,7 @@ export const InvoicePrint = React.forwardRef<HTMLDivElement, InvoicePrintProps>(
             <span>Date:</span>
             <span>{formatDateTime(invoice.createdAt as string)}</span>
           </div>
-          {invoice.customerName && (
+          {!!invoice.customerName && (
             <div
               style={{
                 display: "flex",
@@ -160,7 +160,7 @@ export const InvoicePrint = React.forwardRef<HTMLDivElement, InvoicePrintProps>(
               <span>{invoice.customerName as string}</span>
             </div>
           )}
-          {invoice.customerPhone && (
+          {!!invoice.customerPhone && (
             <div
               style={{
                 display: "flex",

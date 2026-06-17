@@ -287,23 +287,9 @@ export async function POST(req: NextRequest) {
     }
 
     if (customerEmail) {
-      sendOrderConfirmationEmail(customerEmail, {
-        orderNumber,
-        customerName: customerName || "Valued Customer",
-        items: orderItems.map((i) => ({
-          name: i.name,
-          quantity: i.quantity,
-          price: i.price,
-          discount: i.discount,
-          total: i.total,
-        })),
-        subtotal: computedSubtotal,
-        discount: 0,
-        taxAmount: computedTaxAmount,
-        total: computedTotal,
-        paymentMethod,
-        notes,
-      }).catch((err) => console.error("[EMAIL] Order confirmation failed:", err));
+      sendOrderConfirmationEmail().catch((err) =>
+        console.error("[EMAIL] Order confirmation failed:", err)
+      );
     }
 
     return NextResponse.json({ success: true, data: order });

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { Session } from "next-auth";
 import { signOut } from "next-auth/react";
 import { useTheme } from "next-themes";
@@ -27,6 +28,7 @@ import { cn } from "@/lib/utils";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { PWAInstallButton } from "@/components/pwa/pwa-install-button";
 
 interface INotification {
   _id: string;
@@ -135,9 +137,13 @@ export function DashboardHeader({ session, locale, onMenuClick }: HeaderProps) {
         </Button>
         {/* Mobile logo */}
         <Link href={`/${locale}/dashboard`} className="flex items-center gap-2 md:hidden">
-          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-600 to-pink-600 flex items-center justify-center shrink-0">
-            <ShoppingBag className="w-4 h-4 text-white" />
-          </div>
+          <Image
+            src="/icons/favicon-96x96.png"
+            width={28}
+            height={28}
+            alt="SmartDukaan"
+            className="rounded-lg shrink-0"
+          />
           <span className="font-bold text-base gradient-text whitespace-nowrap">SmartDukaan</span>
         </Link>
       </div>
@@ -160,6 +166,9 @@ export function DashboardHeader({ session, locale, onMenuClick }: HeaderProps) {
         >
           {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
         </Button>
+
+        {/* PWA install button — visible when app is installable */}
+        <PWAInstallButton />
 
         {/* Notifications Popover */}
         <div className="relative">

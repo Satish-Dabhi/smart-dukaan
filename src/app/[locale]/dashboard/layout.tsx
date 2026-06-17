@@ -14,8 +14,6 @@ import { SuspendedView } from "@/components/dashboard/suspended-view";
 import { getSubscriptionInfo } from "@/lib/subscription";
 import { getBusinessForDashboard } from "@/lib/get-business-for-dashboard";
 
-export const unstable_instant = false;
-
 export default async function DashboardLayout({
   children,
   params,

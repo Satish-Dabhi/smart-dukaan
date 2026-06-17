@@ -1,4 +1,4 @@
-import { ShoppingBag } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
 
@@ -28,9 +28,13 @@ export default async function AuthLayout({
         {/* Logo */}
         <div className="text-center mb-8">
           <Link href={`/${locale}`} className="inline-flex items-center gap-2">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 to-pink-600 flex items-center justify-center shadow-lg">
-              <ShoppingBag className="w-6 h-6 text-white" />
-            </div>
+            <Image
+              src="/icons/apple-touch-icon.png"
+              width={40}
+              height={40}
+              alt="SmartDukaan"
+              className="rounded-xl shadow-lg"
+            />
             <span className="font-black text-2xl bg-gradient-to-r from-violet-600 to-pink-600 bg-clip-text text-transparent">
               SmartDukaan
             </span>

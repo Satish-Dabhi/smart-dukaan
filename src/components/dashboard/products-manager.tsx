@@ -119,27 +119,28 @@ export function ProductsManager({ businessId }: Props) {
         Category: p.categoryId?.name ?? "",
       }));
 
-      const XLSX = await import("xlsx");
-      const worksheet = XLSX.utils.json_to_sheet(rows);
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Products");
+      const ExcelJS = await import("exceljs");
+      const workbook = new ExcelJS.Workbook();
+      const sheet = workbook.addWorksheet("Products");
 
-      // Set column widths for readability
-      const maxLens = rows.reduce(
-        (acc: Record<string, number>, row: Record<string, string | number>) => {
-          Object.keys(row).forEach((key) => {
-            const val = String(row[key]);
-            acc[key] = Math.max(acc[key] || 10, val.length);
-          });
-          return acc;
-        },
-        {} as Record<string, number>
-      );
-      worksheet["!cols"] = Object.keys(maxLens).map((key) => ({
-        wch: Math.min(30, maxLens[key] + 2),
+      const headers = Object.keys(rows[0] ?? {});
+      sheet.columns = headers.map((key) => ({
+        header: key,
+        key,
+        width: Math.min(30, Math.max(10, key.length + 2)),
       }));
+      rows.forEach((row: Record<string, string | number>) => sheet.addRow(row));
 
-      XLSX.writeFile(workbook, `Products-${Date.now()}.xlsx`);
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Products-${Date.now()}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
       toast.success("Products exported successfully!", { id: toastId });
     } catch (error) {
       console.error("Export failed:", error);
@@ -162,16 +163,26 @@ export function ProductsManager({ businessId }: Props) {
 
     const toastId = toast.loading("Reading Excel file...");
     try {
-      const XLSX = await import("xlsx");
-      const reader = new FileReader();
+      const ExcelJS = await import("exceljs");
+      const workbook = new ExcelJS.Workbook();
+      await workbook.xlsx.load(await file.arrayBuffer());
+      const worksheet = workbook.worksheets[0];
 
-      reader.onload = async (evt) => {
+      const parseAndImport = async () => {
         try {
-          const bstr = evt.target?.result;
-          const workbook = XLSX.read(bstr, { type: "binary" });
-          const sheetName = workbook.SheetNames[0];
-          const worksheet = workbook.Sheets[sheetName];
-          const rawData = XLSX.utils.sheet_to_json(worksheet);
+          const headers: string[] = [];
+          worksheet.getRow(1).eachCell((cell) => headers.push(String(cell.value ?? "")));
+
+          const rawData: Record<string, unknown>[] = [];
+          worksheet.eachRow((row, rowNumber) => {
+            if (rowNumber === 1) return;
+            const obj: Record<string, unknown> = {};
+            row.eachCell((cell, colNumber) => {
+              const key = headers[colNumber - 1];
+              if (key) obj[key] = cell.value;
+            });
+            if (Object.keys(obj).length > 0) rawData.push(obj);
+          });
 
           if (rawData.length === 0) {
             toast.error("Excel sheet is empty", { id: toastId });
@@ -213,7 +224,7 @@ export function ProductsManager({ businessId }: Props) {
         }
       };
 
-      reader.readAsBinaryString(file);
+      await parseAndImport();
     } catch (err) {
       console.error("Import failed:", err);
       toast.error("Failed to read file", { id: toastId });

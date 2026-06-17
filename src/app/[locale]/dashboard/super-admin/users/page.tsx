@@ -2,13 +2,7 @@ import { getCachedSession } from "@/lib/auth-cache";
 import { redirect } from "next/navigation";
 import { SuperAdminManager } from "@/components/dashboard/super-admin-manager";
 
-export const unstable_instant = false;
-
-export default async function AdminUsersPage({
-  params,
-}: {
-  params: Promise<{ locale: string }>;
-}) {
+export default async function AdminUsersPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   const session = await getCachedSession();
 

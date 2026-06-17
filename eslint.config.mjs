@@ -13,6 +13,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Generated service worker bundles — not authored source
+    "public/sw.js",
+    "public/swe-worker-*.js",
   ]),
   eslintConfigPrettier,
 ]);

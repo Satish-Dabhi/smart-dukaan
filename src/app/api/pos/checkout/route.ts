@@ -173,7 +173,7 @@ export async function POST(req: NextRequest) {
       businessAddress: business.address,
       businessGstin: business.gstNumber,
       businessPhone: business.phone,
-      businessFssai: (business as Record<string, unknown>).fssaiNumber as string | undefined,
+      businessFssai: business.fssaiNumber,
       total: computedTotal,
       status: "paid",
       paymentMethod,
