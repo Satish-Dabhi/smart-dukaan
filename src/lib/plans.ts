@@ -1,36 +1,36 @@
-export type PlanId = "trial" | "starter" | "pro" | "enterprise";
+import type { IPlanFeatures } from "@/models/Plan";
 
-export interface PlanFeatures {
-  products: number;       // max products (-1 = unlimited)
-  staff: number;          // max staff accounts (-1 = unlimited)
-  customers: number;      // max customers tracked (-1 = unlimited)
-  invoicesPerMonth: number; // -1 = unlimited
-  analyticsHistory: number; // days of analytics history
-  onlineStorefront: boolean;
-  whatsappOrders: boolean;
-  customDomain: boolean;
-  prioritySupport: boolean;
-  apiAccess: boolean;
-}
+export type PlanId = string;
+
+export type PlanFeatures = IPlanFeatures;
 
 export interface Plan {
-  id: PlanId;
+  id: string;
+  slug: string;
   name: string;
-  priceMonthly: number;   // INR per month (0 = trial)
-  priceYearly: number;    // INR per year (0 = trial)
-  durationDays: number | null; // null = no expiry
-  features: PlanFeatures;
+  priceMonthly: number;
+  priceYearly: number;
+  durationDays: number | null;
   description: string;
+  isTrial: boolean;
+  isActive: boolean;
+  sortOrder: number;
+  features: PlanFeatures;
 }
 
-export const PLANS: Record<PlanId, Plan> = {
-  trial: {
-    id: "trial",
+// Default plan definitions — used to seed the DB on first run.
+// The DB is the source of truth; these are only the initial values.
+export const DEFAULT_PLANS: Omit<Plan, "id">[] = [
+  {
+    slug: "trial",
     name: "Free Trial",
     priceMonthly: 0,
     priceYearly: 0,
     durationDays: 30,
     description: "Full access for 30 days — no credit card required",
+    isTrial: true,
+    isActive: true,
+    sortOrder: 0,
     features: {
       products: 50,
       staff: 2,
@@ -44,13 +44,16 @@ export const PLANS: Record<PlanId, Plan> = {
       apiAccess: false,
     },
   },
-  starter: {
-    id: "starter",
+  {
+    slug: "starter",
     name: "Starter",
     priceMonthly: 499,
     priceYearly: 4999,
     durationDays: null,
     description: "Perfect for small shops getting started",
+    isTrial: false,
+    isActive: true,
+    sortOrder: 1,
     features: {
       products: 200,
       staff: 3,
@@ -64,13 +67,16 @@ export const PLANS: Record<PlanId, Plan> = {
       apiAccess: false,
     },
   },
-  pro: {
-    id: "pro",
+  {
+    slug: "pro",
     name: "Pro",
     priceMonthly: 999,
     priceYearly: 9999,
     durationDays: null,
     description: "For growing businesses that need more power",
+    isTrial: false,
+    isActive: true,
+    sortOrder: 2,
     features: {
       products: 2000,
       staff: 10,
@@ -84,13 +90,16 @@ export const PLANS: Record<PlanId, Plan> = {
       apiAccess: false,
     },
   },
-  enterprise: {
-    id: "enterprise",
+  {
+    slug: "enterprise",
     name: "Enterprise",
     priceMonthly: 2499,
     priceYearly: 24999,
     durationDays: null,
     description: "Unlimited everything with dedicated support",
+    isTrial: false,
+    isActive: true,
+    sortOrder: 3,
     features: {
       products: -1,
       staff: -1,
@@ -104,8 +113,12 @@ export const PLANS: Record<PlanId, Plan> = {
       apiAccess: true,
     },
   },
-};
+];
 
-export function getPlan(id: PlanId): Plan {
-  return PLANS[id];
+export function formatLimit(value: number): string {
+  return value === -1 ? "Unlimited" : String(value);
+}
+
+export function formatAnalytics(days: number): string {
+  return days === -1 ? "All time" : `${days} days`;
 }

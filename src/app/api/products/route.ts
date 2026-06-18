@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { connectDB } from "@/lib/db";
 import { ProductSchema } from "@/lib/schemas";
+import { checkProductLimit } from "@/lib/plan-enforcement";
 import "@/models/Category";
 import Product from "@/models/Product";
 import { NextRequest, NextResponse } from "next/server";
@@ -112,6 +113,20 @@ export async function POST(req: NextRequest) {
     const validated = ProductSchema.parse(body);
 
     await connectDB();
+
+    const limitCheck = await checkProductLimit(businessId);
+    if (!limitCheck.allowed) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Product limit reached. Your plan allows ${limitCheck.limit} products (current: ${limitCheck.current}). Upgrade your plan to add more.`,
+          limitReached: true,
+          limit: limitCheck.limit,
+          current: limitCheck.current,
+        },
+        { status: 403 }
+      );
+    }
 
     const product = await Product.create({ ...validated, businessId });
 

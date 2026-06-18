@@ -13,6 +13,7 @@ export const metadata: Metadata = {
 import { SuspendedView } from "@/components/dashboard/suspended-view";
 import { getSubscriptionInfo } from "@/lib/subscription";
 import { getBusinessForDashboard } from "@/lib/get-business-for-dashboard";
+import { getPlanBySlug, ensurePlansSeeded } from "@/lib/seed-plans";
 
 export default async function DashboardLayout({
   children,
@@ -46,7 +47,13 @@ export default async function DashboardLayout({
         isSuspended = true;
         businessName = business.name;
       } else {
-        subscriptionInfo = getSubscriptionInfo(business);
+        await ensurePlansSeeded();
+        const dbPlan = await getPlanBySlug(business.subscriptionPlan ?? "trial");
+        subscriptionInfo = getSubscriptionInfo(
+          business,
+          dbPlan?.features ?? undefined,
+          dbPlan?.name ?? undefined
+        );
       }
     }
   }

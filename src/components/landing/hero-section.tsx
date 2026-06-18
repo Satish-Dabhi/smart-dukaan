@@ -1,13 +1,13 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { useRef } from "react";
+import { motion, useScroll, useTransform, useSpring } from "framer-motion";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import {
   ArrowRight,
   Play,
-  Star,
   TrendingUp,
   ShoppingCart,
   Zap,
@@ -26,18 +26,34 @@ import {
   Globe,
   IndianRupee,
   ChevronDown,
+  Smartphone,
+  ShieldCheck,
 } from "lucide-react";
 
-const fadeUp = {
-  hidden: { opacity: 0, y: 30 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" as const } },
+import type { Variants, Transition } from "framer-motion";
+
+/* ─── Animation variants ───────────────────────────────────────── */
+const cubicEase = [0.22, 1, 0.36, 1] as [number, number, number, number];
+
+const fadeUp: Variants = {
+  hidden: { opacity: 0, y: 32 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.65, ease: cubicEase } },
 };
 
-const stagger = {
+const stagger: Variants = {
   hidden: {},
   visible: { transition: { staggerChildren: 0.1 } },
 };
 
+const floatTransition: Transition = { duration: 4, repeat: Infinity, ease: "easeInOut" };
+const floatTransitionDelayed: Transition = {
+  duration: 4,
+  delay: 2,
+  repeat: Infinity,
+  ease: "easeInOut",
+};
+
+/* ─── Mock data ─────────────────────────────────────────────────── */
 const sidebarSections = [
   {
     label: "MAIN",
@@ -75,7 +91,7 @@ const statCards = [
   {
     label: "Total Revenue",
     value: "₹1.2L",
-    sub: "₹1.2L this month",
+    sub: "This month",
     change: "+18%",
     iconBg: "bg-violet-600",
     Icon: IndianRupee,
@@ -83,7 +99,7 @@ const statCards = [
   {
     label: "Total Orders",
     value: "348",
-    sub: "348 this month",
+    sub: "This month",
     change: "+12%",
     iconBg: "bg-blue-500",
     Icon: ShoppingCart,
@@ -91,26 +107,24 @@ const statCards = [
   {
     label: "Total Products",
     value: "124",
-    sub: "Active products",
+    sub: "Active",
     change: null,
     iconBg: "bg-emerald-500",
     Icon: Package,
   },
   {
-    label: "Total Customers",
+    label: "Customers",
     value: "89",
-    sub: "Total customers",
+    sub: "Total",
     change: null,
     iconBg: "bg-pink-500",
     Icon: Users,
   },
 ];
 
-// Revenue trend line path (normalized 0-100 for viewBox)
 const revenueLine =
   "M0,78 L7,72 L14,68 L21,74 L28,58 L35,52 L42,60 L49,44 L56,50 L63,36 L70,42 L77,30 L84,38 L91,24 L100,18";
 
-// Pie chart segments (conic-gradient simulated as SVG)
 const pieSegments = [
   { color: "#ec4899", pct: 30, start: 0 },
   { color: "#8b5cf6", pct: 25, start: 108 },
@@ -132,19 +146,55 @@ function pieArc(startDeg: number, pct: number) {
   return `M50,50 L${start.x},${start.y} A38,38 0 ${large} 1 ${end.x},${end.y} Z`;
 }
 
+/* ─── Trust badges ───────────────────────────────────────────────── */
+const trustBadges = [
+  {
+    icon: Zap,
+    label: "GST-compliant from day one",
+    bg: "bg-violet-100 dark:bg-violet-900/30",
+    color: "text-violet-600 dark:text-violet-400",
+  },
+  {
+    icon: Smartphone,
+    label: "Works offline, syncs automatically",
+    bg: "bg-blue-100 dark:bg-blue-900/30",
+    color: "text-blue-600 dark:text-blue-400",
+  },
+  {
+    icon: ShieldCheck,
+    label: "Free to start — no credit card",
+    bg: "bg-emerald-100 dark:bg-emerald-900/30",
+    color: "text-emerald-600 dark:text-emerald-400",
+  },
+];
+
+/* ─── Component ──────────────────────────────────────────────────── */
 export function HeroSection() {
   const t = useTranslations("landing");
   const locale = useLocale();
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start start", "end start"],
+  });
+  const rawY = useTransform(scrollYProgress, [0, 1], [0, 60]);
+  const rawScale = useTransform(scrollYProgress, [0, 1], [1, 0.97]);
+  const parallaxY = useSpring(rawY, { stiffness: 80, damping: 20 });
+  const parallaxScale = useSpring(rawScale, { stiffness: 80, damping: 20 });
 
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-16">
+    <section
+      ref={containerRef}
+      className="relative min-h-screen flex items-center justify-center overflow-hidden pt-16"
+    >
       {/* Background gradient */}
       <div className="absolute inset-0 bg-gradient-to-br from-violet-50 via-white to-pink-50 dark:from-gray-950 dark:via-gray-900 dark:to-violet-950" />
 
-      {/* Animated gradient orbs */}
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-violet-400/20 rounded-full blur-3xl animate-pulse" />
-      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-pink-400/20 rounded-full blur-3xl animate-pulse delay-1000" />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-blue-400/10 rounded-full blur-3xl" />
+      {/* Animated gradient orbs — pure CSS for zero-JS perf */}
+      <div className="absolute top-1/4 left-1/6 w-[500px] h-[500px] bg-violet-400/15 rounded-full blur-3xl animate-orb pointer-events-none" />
+      <div className="absolute bottom-1/4 right-1/6 w-[500px] h-[500px] bg-pink-400/15 rounded-full blur-3xl animate-orb-reverse pointer-events-none" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72 bg-blue-400/10 rounded-full blur-3xl pointer-events-none" />
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
         <motion.div variants={stagger} initial="hidden" animate="visible" className="text-center">
@@ -156,16 +206,23 @@ export function HeroSection() {
             </div>
           </motion.div>
 
-          {/* Headline */}
+          {/* Headline — word-by-word reveal */}
           <motion.h1
             variants={fadeUp}
             className="text-5xl sm:text-6xl lg:text-7xl font-black text-gray-900 dark:text-white mb-6 leading-tight"
           >
             Run Your Business{" "}
-            <span className="relative">
+            <span className="relative inline-block">
               <span className="gradient-text">Smarter</span>
-              <svg className="absolute -bottom-2 left-0 w-full" viewBox="0 0 300 12" fill="none">
-                <path
+              <motion.svg
+                className="absolute -bottom-2 left-0 w-full"
+                viewBox="0 0 300 12"
+                fill="none"
+                initial={{ pathLength: 0, opacity: 0 }}
+                animate={{ pathLength: 1, opacity: 1 }}
+                transition={{ duration: 1, delay: 0.8, ease: "easeOut" }}
+              >
+                <motion.path
                   d="M1 9C70.3333 3.66667 143 1 215 1C244.333 1 273 3.66667 299 9"
                   stroke="url(#grad)"
                   strokeWidth="3"
@@ -177,7 +234,7 @@ export function HeroSection() {
                     <stop offset="100%" stopColor="#db2777" />
                   </linearGradient>
                 </defs>
-              </svg>
+              </motion.svg>
             </span>
           </motion.h1>
 
@@ -200,54 +257,45 @@ export function HeroSection() {
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Button>
             </Link>
-            <Link href={`/${locale}/demo`}>
+            <a href="#features">
               <Button variant="outline" size="xl" className="group gap-3 border-gray-300">
                 <div className="w-8 h-8 bg-violet-100 rounded-full flex items-center justify-center group-hover:bg-violet-200 transition-colors">
                   <Play className="w-3 h-3 text-violet-600 ml-0.5" />
                 </div>
-                {t("watchDemo")}
+                See features
               </Button>
-            </Link>
+            </a>
           </motion.div>
 
-          {/* Social proof */}
+          {/* Trust badges */}
           <motion.div
             variants={fadeUp}
-            className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-8 text-sm text-gray-500"
+            className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-10 text-sm"
           >
-            <div className="flex items-center gap-2">
-              <div className="flex -space-x-2">
-                {["🛒", "☕", "🍕", "💊", "✂️"].map((emoji, i) => (
-                  <div
-                    key={i}
-                    className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-400 to-pink-400 border-2 border-white flex items-center justify-center text-xs"
-                  >
-                    {emoji}
-                  </div>
-                ))}
-              </div>
-              <span className="font-medium text-gray-700 dark:text-gray-300">
-                10,000+ businesses
-              </span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              {[...Array(5)].map((_, i) => (
-                <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />
-              ))}
-              <span className="font-medium text-gray-700 dark:text-gray-300">4.9/5 rating</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <TrendingUp className="w-4 h-4 text-emerald-500" />
-              <span className="font-medium text-gray-700 dark:text-gray-300">₹50Cr+ processed</span>
-            </div>
+            {trustBadges.map((badge) => (
+              <motion.div
+                key={badge.label}
+                className="flex items-center gap-2.5"
+                whileHover={{ scale: 1.05 }}
+                transition={{ type: "spring", stiffness: 400 }}
+              >
+                <div
+                  className={`w-9 h-9 rounded-xl ${badge.bg} flex items-center justify-center shrink-0`}
+                >
+                  <badge.icon className={`w-4 h-4 ${badge.color}`} />
+                </div>
+                <span className="font-medium text-gray-700 dark:text-gray-300">{badge.label}</span>
+              </motion.div>
+            ))}
           </motion.div>
         </motion.div>
 
-        {/* Dashboard Preview */}
+        {/* Dashboard Preview with parallax */}
         <motion.div
-          initial={{ opacity: 0, y: 60, scale: 0.95 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.8, delay: 0.3 }}
+          style={{ y: parallaxY, scale: parallaxScale }}
+          initial={{ opacity: 0, y: 60 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.9, delay: 0.35, ease: [0.22, 1, 0.36, 1] }}
           className="mt-20 relative"
         >
           <div className="relative mx-auto max-w-5xl">
@@ -255,7 +303,11 @@ export function HeroSection() {
             <div className="absolute -inset-4 bg-gradient-to-r from-violet-600/20 to-pink-600/20 blur-2xl rounded-3xl" />
 
             {/* Mock dashboard */}
-            <div className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
+            <motion.div
+              whileHover={{ y: -4 }}
+              transition={{ type: "spring", stiffness: 200, damping: 20 }}
+              className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden"
+            >
               {/* Browser chrome */}
               <div className="bg-gray-100 dark:bg-gray-800 px-4 py-2.5 flex items-center gap-2 border-b border-gray-200 dark:border-gray-700">
                 <div className="flex gap-1.5">
@@ -280,7 +332,7 @@ export function HeroSection() {
                 </div>
                 <div className="flex items-center gap-3">
                   <button className="flex items-center gap-1 text-xs text-gray-500 border border-gray-200 dark:border-gray-700 rounded px-1.5 py-0.5">
-                    <Globe className="w-3 h-3" /> GU
+                    <Globe className="w-3 h-3" /> EN
                   </button>
                   <Moon className="w-3.5 h-3.5 text-gray-400" />
                   <div className="relative">
@@ -289,14 +341,11 @@ export function HeroSection() {
                   </div>
                   <div className="flex items-center gap-1.5">
                     <div className="w-6 h-6 rounded-full bg-gradient-to-br from-pink-500 to-violet-500 flex items-center justify-center text-white text-xs font-bold">
-                      PS
+                      S
                     </div>
                     <div className="hidden sm:block">
                       <div className="text-xs font-semibold text-gray-700 dark:text-gray-200 leading-none">
-                        Priya Sharma
-                      </div>
-                      <div className="text-xs text-gray-400 leading-none mt-0.5">
-                        cafe@smartdukaan.com
+                        Store Owner
                       </div>
                     </div>
                     <ChevronDown className="w-3 h-3 text-gray-400" />
@@ -330,24 +379,18 @@ export function HeroSection() {
                       ))}
                     </div>
                   ))}
-                  {/* Store section */}
-                  <div className="mt-auto px-3 pb-2">
-                    <div className="px-0 py-1 text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">
-                      STORE
-                    </div>
-                    <div className="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center text-white text-sm font-bold mx-auto">
-                      N
-                    </div>
-                  </div>
                 </div>
 
                 {/* Main content */}
                 <div className="flex-1 p-4 space-y-3 overflow-hidden bg-gray-50 dark:bg-gray-950">
                   {/* Stat cards */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                    {statCards.map((card) => (
-                      <div
+                    {statCards.map((card, i) => (
+                      <motion.div
                         key={card.label}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.5 + i * 0.07 }}
                         className="bg-white dark:bg-gray-900 rounded-xl p-3 border border-gray-100 dark:border-gray-800 shadow-sm"
                       >
                         <div className="flex items-start justify-between mb-2">
@@ -370,7 +413,7 @@ export function HeroSection() {
                           {card.label}
                         </div>
                         <div className="text-[9px] text-gray-400">{card.sub}</div>
-                      </div>
+                      </motion.div>
                     ))}
                   </div>
 
@@ -379,18 +422,15 @@ export function HeroSection() {
                     className="grid grid-cols-1 sm:grid-cols-3 gap-2.5"
                     style={{ height: "200px" }}
                   >
-                    {/* Revenue Trend - line chart */}
+                    {/* Revenue Trend */}
                     <div className="sm:col-span-2 bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-3 flex flex-col">
                       <div>
                         <div className="text-xs font-semibold text-gray-800 dark:text-gray-200">
                           Revenue Trend
                         </div>
-                        <div className="text-[10px] text-violet-600">
-                          Daily revenue for this month
-                        </div>
+                        <div className="text-[10px] text-violet-600">Daily revenue this month</div>
                       </div>
                       <div className="flex-1 mt-2 relative">
-                        {/* Y-axis labels */}
                         <div className="absolute left-0 top-0 bottom-0 flex flex-col justify-between text-[8px] text-gray-400 pr-1">
                           <span>₹1k</span>
                           <span>₹750</span>
@@ -404,7 +444,6 @@ export function HeroSection() {
                             preserveAspectRatio="none"
                             className="w-full h-full"
                           >
-                            {/* Grid lines */}
                             {[25, 50, 75].map((y) => (
                               <line
                                 key={y}
@@ -416,22 +455,22 @@ export function HeroSection() {
                                 strokeWidth="0.5"
                               />
                             ))}
-                            {/* Area fill */}
                             <path
                               d={`${revenueLine} L100,100 L0,100 Z`}
                               fill="url(#areaGrad)"
                               opacity="0.2"
                             />
-                            {/* Line */}
-                            <path
+                            <motion.path
                               d={revenueLine}
                               fill="none"
                               stroke="#7c3aed"
                               strokeWidth="2"
                               strokeLinecap="round"
                               strokeLinejoin="round"
+                              initial={{ pathLength: 0 }}
+                              animate={{ pathLength: 1 }}
+                              transition={{ duration: 1.5, delay: 0.8, ease: "easeOut" }}
                             />
-                            {/* Active dot */}
                             <circle
                               cx="63"
                               cy="36"
@@ -451,25 +490,27 @@ export function HeroSection() {
                       </div>
                     </div>
 
-                    {/* Top Products Share - pie chart */}
+                    {/* Pie chart */}
                     <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-3 flex flex-col hidden sm:flex">
                       <div>
                         <div className="text-xs font-semibold text-gray-800 dark:text-gray-200">
-                          Top Products Share
+                          Top Products
                         </div>
-                        <div className="text-[10px] text-gray-400">
-                          Revenue share of top products
-                        </div>
+                        <div className="text-[10px] text-gray-400">Revenue share</div>
                       </div>
                       <div className="flex-1 flex items-center justify-center">
                         <svg viewBox="0 0 100 100" className="w-28 h-28">
-                          {pieSegments.map((seg) => (
-                            <path
+                          {pieSegments.map((seg, i) => (
+                            <motion.path
                               key={seg.color}
                               d={pieArc(seg.start, seg.pct)}
                               fill={seg.color}
                               stroke="white"
                               strokeWidth="1.5"
+                              initial={{ scale: 0, opacity: 0 }}
+                              animate={{ scale: 1, opacity: 1 }}
+                              transition={{ delay: 0.6 + i * 0.1, type: "spring", stiffness: 300 }}
+                              style={{ transformOrigin: "50px 50px" }}
                             />
                           ))}
                         </svg>
@@ -478,13 +519,13 @@ export function HeroSection() {
                   </div>
                 </div>
               </div>
-            </div>
+            </motion.div>
           </div>
 
-          {/* Floating cards */}
+          {/* Floating badges */}
           <motion.div
-            animate={{ y: [0, -8, 0] }}
-            transition={{ duration: 3, repeat: Infinity }}
+            animate={{ y: [0, -10, 0] }}
+            transition={floatTransition}
             className="absolute -left-4 sm:-left-8 top-1/3 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 p-3 hidden sm:flex items-center gap-3"
           >
             <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
@@ -497,8 +538,8 @@ export function HeroSection() {
           </motion.div>
 
           <motion.div
-            animate={{ y: [0, -8, 0] }}
-            transition={{ duration: 3, delay: 1.5, repeat: Infinity }}
+            animate={{ y: [0, -10, 0] }}
+            transition={floatTransitionDelayed}
             className="absolute -right-4 sm:-right-8 top-1/4 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 p-3 hidden sm:flex items-center gap-3"
           >
             <div className="w-8 h-8 bg-violet-100 rounded-lg flex items-center justify-center">

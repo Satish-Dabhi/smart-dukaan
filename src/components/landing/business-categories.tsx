@@ -3,14 +3,34 @@
 import { motion } from "framer-motion";
 
 const categories = [
-  { emoji: "🛒", name: "Grocery Store", description: "Kirana & supermarkets", count: "3.2K+" },
-  { emoji: "☕", name: "Cafe & Coffee", description: "Cafes & tea stalls", count: "1.8K+" },
-  { emoji: "🍕", name: "Restaurant", description: "Dhabas & restaurants", count: "2.1K+" },
-  { emoji: "🥐", name: "Bakery", description: "Bakers & sweet shops", count: "980+" },
-  { emoji: "💊", name: "Medical Store", description: "Pharmacies & clinics", count: "750+" },
-  { emoji: "✂️", name: "Salon & Spa", description: "Beauty & wellness", count: "640+" },
-  { emoji: "👗", name: "Fashion Retail", description: "Clothing & accessories", count: "1.1K+" },
-  { emoji: "🔧", name: "Hardware Store", description: "Tools & supplies", count: "420+" },
+  {
+    emoji: "🛒",
+    name: "Grocery Store",
+    description: "Kirana & supermarkets",
+    theme: "Grocery theme",
+  },
+  { emoji: "☕", name: "Cafe & Coffee", description: "Cafes & tea stalls", theme: "Cafe theme" },
+  {
+    emoji: "🍕",
+    name: "Restaurant",
+    description: "Dhabas & restaurants",
+    theme: "Restaurant theme",
+  },
+  { emoji: "🥐", name: "Bakery", description: "Bakers & sweet shops", theme: "Bakery theme" },
+  {
+    emoji: "💊",
+    name: "Medical Store",
+    description: "Pharmacies & clinics",
+    theme: "Medical theme",
+  },
+  { emoji: "✂️", name: "Salon & Spa", description: "Beauty & wellness", theme: "Salon theme" },
+  {
+    emoji: "👗",
+    name: "Fashion Retail",
+    description: "Clothing & accessories",
+    theme: "Retail theme",
+  },
+  { emoji: "🔧", name: "Hardware Store", description: "Tools & supplies", theme: "Minimal theme" },
 ];
 
 export function BusinessCategories() {
@@ -23,12 +43,15 @@ export function BusinessCategories() {
           viewport={{ once: true }}
           className="text-center mb-12"
         >
+          <div className="inline-flex items-center gap-2 bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 px-4 py-1.5 rounded-full text-sm font-medium mb-4">
+            8 tailored store themes included
+          </div>
           <h2 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
-            Built for{" "}
-            <span className="gradient-text">every business</span>
+            Built for <span className="gradient-text">every business</span>
           </h2>
-          <p className="text-gray-500 dark:text-gray-400 text-lg">
-            Join thousands of businesses across India already using SmartDukaan
+          <p className="text-gray-500 dark:text-gray-400 text-lg max-w-2xl mx-auto">
+            Each business type gets a dedicated storefront theme — so your online store looks and
+            feels exactly right for your industry.
           </p>
         </motion.div>
 
@@ -36,18 +59,25 @@ export function BusinessCategories() {
           {categories.map((cat, i) => (
             <motion.div
               key={cat.name}
-              initial={{ opacity: 0, scale: 0.9 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.05 }}
-              whileHover={{ y: -4, scale: 1.02 }}
-              className="bg-white dark:bg-gray-900 rounded-2xl p-5 border border-gray-100 dark:border-gray-800 shadow-sm hover:shadow-lg hover:border-violet-200 dark:hover:border-violet-800 transition-all duration-300 cursor-pointer text-center"
+              initial={{ opacity: 0, y: 20, scale: 0.95 }}
+              whileInView={{ opacity: 1, y: 0, scale: 1 }}
+              viewport={{ once: true, margin: "-30px" }}
+              transition={{ delay: i * 0.06, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+              whileHover={{ y: -6, scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              className="bg-white dark:bg-gray-900 rounded-2xl p-5 border border-gray-100 dark:border-gray-800 shadow-sm hover:shadow-lg hover:border-violet-200 dark:hover:border-violet-800 transition-[border-color,box-shadow] duration-300 cursor-pointer text-center"
             >
-              <div className="text-4xl mb-3">{cat.emoji}</div>
+              <motion.div
+                className="text-4xl mb-3"
+                whileHover={{ scale: 1.2, rotate: [-5, 5, 0] }}
+                transition={{ type: "spring", stiffness: 400 }}
+              >
+                {cat.emoji}
+              </motion.div>
               <h3 className="font-bold text-gray-900 dark:text-white text-sm mb-1">{cat.name}</h3>
-              <p className="text-xs text-gray-500 mb-2">{cat.description}</p>
-              <div className="inline-flex items-center bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400 px-2 py-0.5 rounded-full text-xs font-semibold">
-                {cat.count} shops
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">{cat.description}</p>
+              <div className="inline-flex items-center bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400 px-2 py-0.5 rounded-full text-xs font-medium">
+                {cat.theme}
               </div>
             </motion.div>
           ))}

@@ -3,20 +3,28 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
+import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { Menu, X, Globe, Sun, Moon, ExternalLink } from "lucide-react";
+import { Menu, X, Globe, Sun, Moon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "next-themes";
+
+type NavLink =
+  | { type: "anchor"; label: string; sectionId: string }
+  | { type: "page"; label: string; href: string };
 
 export function Navbar() {
   const t = useTranslations("nav");
   const locale = useLocale();
+  const pathname = usePathname();
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+
+  const isHomePage = pathname === `/${locale}` || pathname === `/${locale}/`;
 
   useEffect(() => {
     const timer = setTimeout(() => setMounted(true), 0);
@@ -28,12 +36,17 @@ export function Navbar() {
     };
   }, []);
 
-  const navLinks = [
-    { label: t("features"), href: "#features", external: false },
-    { label: "How It Works", href: "#how-it-works", external: false },
-    { label: t("pricing"), href: "#pricing", external: false },
-    { label: "Live Demo", href: `/${locale}/demo`, external: true },
+  const navLinks: NavLink[] = [
+    { type: "anchor", label: t("features"), sectionId: "features" },
+    { type: "anchor", label: "How It Works", sectionId: "how-it-works" },
+    { type: "anchor", label: t("pricing"), sectionId: "pricing" },
+    { type: "page", label: "Contact", href: `/${locale}/contact` },
   ];
+
+  function linkHref(link: NavLink): string {
+    if (link.type === "page") return link.href;
+    return isHomePage ? `#${link.sectionId}` : `/${locale}/#${link.sectionId}`;
+  }
 
   const otherLocale = locale === "en" ? "gu" : "en";
   const localePath = locale === "en" ? "/gu" : "/en";
@@ -42,7 +55,7 @@ export function Navbar() {
     <motion.header
       initial={{ y: -100, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
-      transition={{ duration: 0.5 }}
+      transition={{ duration: 0.5, ease: "easeOut" }}
       className={cn(
         "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
         isScrolled
@@ -68,26 +81,19 @@ export function Navbar() {
 
           {/* Desktop Nav */}
           <nav className="hidden md:flex items-center gap-1">
-            {navLinks.map((link) =>
-              link.external ? (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className="flex items-center gap-1 text-sm font-medium px-3 py-1.5 rounded-lg text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors"
-                >
-                  {link.label}
-                  <ExternalLink className="w-3 h-3 opacity-70" />
-                </Link>
-              ) : (
+            {navLinks.map((link) => {
+              const href = linkHref(link);
+              return (
                 <a
-                  key={link.href}
-                  href={link.href}
+                  key={link.type === "anchor" ? link.sectionId : link.href}
+                  href={href}
                   className="text-sm font-medium px-3 py-1.5 rounded-lg text-gray-600 dark:text-gray-300 hover:text-violet-600 dark:hover:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors"
+                  onClick={() => setIsMobileOpen(false)}
                 >
                   {link.label}
                 </a>
-              )
-            )}
+              );
+            })}
           </nav>
 
           {/* Desktop Actions */}
@@ -134,6 +140,7 @@ export function Navbar() {
           <button
             className="md:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
             onClick={() => setIsMobileOpen(!isMobileOpen)}
+            aria-label="Toggle menu"
           >
             {isMobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
@@ -147,31 +154,23 @@ export function Navbar() {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2 }}
             className="md:hidden bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-800"
           >
             <div className="px-4 py-4 space-y-1">
-              {navLinks.map((link) =>
-                link.external ? (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    className="flex items-center justify-between text-sm font-medium text-emerald-600 dark:text-emerald-400 py-2.5 px-3 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
-                    onClick={() => setIsMobileOpen(false)}
-                  >
-                    {link.label}
-                    <ExternalLink className="w-3.5 h-3.5 opacity-70" />
-                  </Link>
-                ) : (
+              {navLinks.map((link) => {
+                const href = linkHref(link);
+                return (
                   <a
-                    key={link.href}
-                    href={link.href}
+                    key={link.type === "anchor" ? link.sectionId : link.href}
+                    href={href}
                     className="block text-sm font-medium text-gray-600 dark:text-gray-300 py-2.5 px-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900"
                     onClick={() => setIsMobileOpen(false)}
                   >
                     {link.label}
                   </a>
-                )
-              )}
+                );
+              })}
               <div className="pt-3 border-t border-gray-100 dark:border-gray-800 flex flex-col gap-2 mt-2">
                 <div className="flex gap-2">
                   <Link href={localePath} className="flex-1" onClick={() => setIsMobileOpen(false)}>
@@ -206,12 +205,12 @@ export function Navbar() {
                     {!mounted && <div className="h-4 w-4" />}
                   </Button>
                 </div>
-                <Link href={`/${locale}/auth/login`}>
+                <Link href={`/${locale}/auth/login`} onClick={() => setIsMobileOpen(false)}>
                   <Button variant="outline" className="w-full">
                     {t("login")}
                   </Button>
                 </Link>
-                <Link href={`/${locale}/auth/register`}>
+                <Link href={`/${locale}/auth/register`} onClick={() => setIsMobileOpen(false)}>
                   <Button variant="gradient" className="w-full">
                     {t("signup")}
                   </Button>

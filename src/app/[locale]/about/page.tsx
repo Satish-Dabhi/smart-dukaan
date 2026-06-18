@@ -20,10 +20,10 @@ export const metadata = {
 };
 
 const stats = [
-  { value: "10,000+", label: "Businesses onboarded" },
-  { value: "8", label: "Business themes" },
-  { value: "₹50Cr+", label: "Revenue processed" },
-  { value: "2", label: "Languages supported" },
+  { value: "Free", label: "Always free to start" },
+  { value: "8", label: "Business storefront themes" },
+  { value: "12+", label: "Core features built-in" },
+  { value: "2", label: "Languages — English & Gujarati" },
 ];
 
 const features = [
@@ -224,36 +224,54 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* Tech Stack */}
+      {/* Why SmartDukaan */}
       <section className="py-20 bg-gray-50 dark:bg-gray-900/50">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
-            Built on modern tech
-          </h2>
-          <p className="text-gray-500 dark:text-gray-400 text-lg mb-10">
-            SmartDukaan is engineered for reliability, speed, and security.
-          </p>
-          <div className="flex flex-wrap justify-center gap-3">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-14">
+            <h2 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+              Why SmartDukaan?
+            </h2>
+            <p className="text-gray-500 dark:text-gray-400 text-lg max-w-2xl mx-auto">
+              We built SmartDukaan because Indian local businesses deserve tools that are fast,
+              affordable, and designed for how they actually work.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             {[
-              "Next.js 16 App Router",
-              "MongoDB + Mongoose",
-              "Auth.js v5",
-              "Tailwind CSS v4",
-              "Shadcn UI",
-              "TanStack Query",
-              "Recharts",
-              "next-intl",
-              "Cloudinary",
-              "Resend",
-              "Upstash Redis",
-              "React Hook Form + Zod",
-            ].map((tech) => (
-              <span
-                key={tech}
-                className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 text-sm px-4 py-2 rounded-full"
+              {
+                title: "India-first design",
+                body: "GST calculations, INR billing, Gujarati language support, and UPI-ready workflows — built from scratch for Indian businesses, not adapted from foreign tools.",
+              },
+              {
+                title: "One platform, not many apps",
+                body: "POS, storefront, invoicing, inventory, and analytics all live together. No switching between five different apps or copying data between spreadsheets.",
+              },
+              {
+                title: "Offline-first reliability",
+                body: "The POS runs as a Progressive Web App and keeps working during internet outages. All data syncs automatically when your connection is restored.",
+              },
+              {
+                title: "No technical knowledge needed",
+                body: "Sign up, add your products, and start billing — in under 5 minutes. SmartDukaan is designed for business owners, not IT teams.",
+              },
+              {
+                title: "Transparent, affordable pricing",
+                body: "Start free and grow at your own pace. Paid plans are priced fairly for Indian businesses, with no surprise fees or locked-in annual contracts.",
+              },
+              {
+                title: "Your data stays yours",
+                body: "Complete data isolation between businesses. Your products, customers, and invoices are never shared with or visible to any other business on the platform.",
+              },
+            ].map((item) => (
+              <div
+                key={item.title}
+                className="bg-white dark:bg-gray-900 rounded-2xl p-6 border border-gray-100 dark:border-gray-800 hover:border-violet-200 dark:hover:border-violet-800 hover:shadow-md transition-all duration-300"
               >
-                {tech}
-              </span>
+                <h3 className="font-bold text-gray-900 dark:text-white mb-2">{item.title}</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
+                  {item.body}
+                </p>
+              </div>
             ))}
           </div>
         </div>

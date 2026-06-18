@@ -25,10 +25,12 @@ import {
   Building2,
   ShieldCheck,
   CreditCard,
+  PackageCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
+import type { SubscriptionInfo } from "@/lib/subscription";
 
 interface SidebarProps {
   locale: string;
@@ -36,6 +38,7 @@ interface SidebarProps {
   setIsOpen?: (open: boolean) => void;
   role?: string;
   businessId?: string;
+  subscriptionInfo?: SubscriptionInfo | null;
 }
 
 const getBusinessNavItems = (locale: string, t: (key: string) => string) => [
@@ -89,6 +92,7 @@ const getAdminNavItems = (locale: string) => [
     items: [
       { icon: Users, label: "Users", href: `/${locale}/dashboard/super-admin/users` },
       { icon: Building2, label: "Businesses", href: `/${locale}/dashboard/super-admin/businesses` },
+      { icon: PackageCheck, label: "Plans", href: `/${locale}/dashboard/super-admin/plans` },
     ],
   },
 ];

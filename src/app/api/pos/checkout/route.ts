@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { connectDB } from "@/lib/db";
+import { checkInvoiceMonthlyLimit } from "@/lib/plan-enforcement";
 import Invoice from "@/models/Invoice";
 import Product from "@/models/Product";
 import Business from "@/models/Business";
@@ -52,6 +53,20 @@ export async function POST(req: NextRequest) {
     const businessId = sessionBusinessId;
 
     await connectDB();
+
+    const invoiceLimitCheck = await checkInvoiceMonthlyLimit(businessId);
+    if (!invoiceLimitCheck.allowed) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Monthly invoice limit reached. Your plan allows ${invoiceLimitCheck.limit} invoices per month (used: ${invoiceLimitCheck.current}). Upgrade your plan to continue.`,
+          limitReached: true,
+          limit: invoiceLimitCheck.limit,
+          current: invoiceLimitCheck.current,
+        },
+        { status: 403 }
+      );
+    }
 
     const business = await Business.findById(businessId)
       .select("name address phone gstNumber fssaiNumber settings status")

@@ -160,7 +160,7 @@ export default function PrivacyPage() {
               </ul>
               <p>
                 To exercise these rights, email us at{" "}
-                <a href="mailto:support@smartdukaan.com">support@smartdukaan.com</a>.
+                <a href="mailto:radhetech0911@gmail.com">radhetech0911@gmail.com</a>.
               </p>
             </Section>
 
@@ -200,7 +200,7 @@ export default function PrivacyPage() {
                 <br />
                 Ahmedabad, Gujarat, India
                 <br />
-                Email: <a href="mailto:support@smartdukaan.com">support@smartdukaan.com</a>
+                Email: <a href="mailto:radhetech0911@gmail.com">radhetech0911@gmail.com</a>
               </p>
             </Section>
           </div>

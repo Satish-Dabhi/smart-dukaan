@@ -9,6 +9,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { Sparkles, Building2, Package, Store, ArrowRight, Tag } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { getSubscriptionInfo } from "@/lib/subscription";
+import { SubscriptionContext } from "@/lib/subscription-context";
 
 interface DashboardShellProps {
   children: React.ReactNode;
@@ -174,31 +175,34 @@ export function DashboardShell({
   };
 
   return (
-    <div className="flex h-screen bg-muted/30 overflow-hidden relative w-full">
-      <DashboardSidebar
-        locale={locale}
-        isOpen={sidebarOpen}
-        setIsOpen={setSidebarOpen}
-        role={role}
-        businessId={businessId}
-      />
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <DashboardHeader
-          session={session}
+    <SubscriptionContext.Provider value={subscriptionInfo ?? null}>
+      <div className="flex h-screen bg-muted/30 overflow-hidden relative w-full">
+        <DashboardSidebar
           locale={locale}
-          onMenuClick={() => setSidebarOpen(true)}
+          isOpen={sidebarOpen}
+          setIsOpen={setSidebarOpen}
+          role={role}
+          businessId={businessId}
+          subscriptionInfo={subscriptionInfo ?? null}
         />
-        {subscriptionInfo && role !== "super_admin" && (
-          <SubscriptionBanner
-            plan={subscriptionInfo.plan}
-            status={subscriptionInfo.status}
-            daysRemaining={subscriptionInfo.daysRemaining}
+        <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+          <DashboardHeader
+            session={session}
             locale={locale}
+            onMenuClick={() => setSidebarOpen(true)}
           />
-        )}
-        {renderOnboardingBanner()}
-        <main className="flex-1 overflow-auto p-4 sm:p-6 page-transition">{children}</main>
+          {subscriptionInfo && role !== "super_admin" && (
+            <SubscriptionBanner
+              plan={subscriptionInfo.plan}
+              status={subscriptionInfo.status}
+              daysRemaining={subscriptionInfo.daysRemaining}
+              locale={locale}
+            />
+          )}
+          {renderOnboardingBanner()}
+          <main className="flex-1 overflow-auto p-4 sm:p-6 page-transition">{children}</main>
+        </div>
       </div>
-    </div>
+    </SubscriptionContext.Provider>
   );
 }

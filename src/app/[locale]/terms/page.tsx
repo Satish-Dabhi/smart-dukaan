@@ -69,7 +69,7 @@ export default function TermsPage() {
                 <li>You are responsible for all activity that occurs under your account.</li>
                 <li>
                   Notify us immediately at{" "}
-                  <a href="mailto:support@smartdukaan.com">support@smartdukaan.com</a> if you
+                  <a href="mailto:radhetech0911@gmail.com">radhetech0911@gmail.com</a> if you
                   suspect unauthorized access.
                 </li>
                 <li>
@@ -243,7 +243,7 @@ export default function TermsPage() {
                 <br />
                 Ahmedabad, Gujarat, India
                 <br />
-                Email: <a href="mailto:support@smartdukaan.com">support@smartdukaan.com</a>
+                Email: <a href="mailto:radhetech0911@gmail.com">radhetech0911@gmail.com</a>
               </p>
             </Section>
           </div>

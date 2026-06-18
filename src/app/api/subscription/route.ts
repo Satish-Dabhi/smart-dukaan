@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { connectDB } from "@/lib/db";
 import Business from "@/models/Business";
+import Plan from "@/models/Plan";
 import { getSubscriptionInfo } from "@/lib/subscription";
-import { PLANS } from "@/lib/plans";
+import { ensurePlansSeeded } from "@/lib/seed-plans";
 
 export async function GET() {
   try {
@@ -14,6 +15,8 @@ export async function GET() {
     }
 
     await connectDB();
+    await ensurePlansSeeded();
+
     const business = await Business.findById(businessId)
       .select("subscriptionPlan subscriptionExpiresAt trialStartedAt status")
       .lean();
@@ -22,13 +25,22 @@ export async function GET() {
       return NextResponse.json({ success: false, error: "Business not found" }, { status: 404 });
     }
 
-    const info = getSubscriptionInfo(business);
+    const dbPlan = await Plan.findOne({ slug: business.subscriptionPlan }).lean();
+    const info = getSubscriptionInfo(
+      business,
+      dbPlan?.features ?? undefined,
+      dbPlan?.name ?? undefined
+    );
+
+    const availablePlans = await Plan.find({ isActive: true, isTrial: false })
+      .sort({ sortOrder: 1 })
+      .lean();
 
     return NextResponse.json({
       success: true,
       data: {
         ...info,
-        availablePlans: Object.values(PLANS).filter((p) => p.id !== "trial"),
+        availablePlans,
       },
     });
   } catch {

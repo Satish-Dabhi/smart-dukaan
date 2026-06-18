@@ -54,7 +54,7 @@ export interface IBusinessDoc extends Document {
   primaryColor?: string;
   secondaryColor?: string;
   fontFamily?: string;
-  subscriptionPlan: "trial" | "starter" | "pro" | "enterprise";
+  subscriptionPlan: string;
   subscriptionExpiresAt?: Date;
   trialStartedAt?: Date;
   googleSiteVerification?: string;
@@ -133,7 +133,6 @@ const BusinessSchema = new Schema<IBusinessDoc>(
     fontFamily: { type: String, default: "Inter" },
     subscriptionPlan: {
       type: String,
-      enum: ["trial", "starter", "pro", "enterprise"],
       default: "trial",
     },
     subscriptionExpiresAt: { type: Date },

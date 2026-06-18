@@ -1,265 +1,161 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Star, Quote, ChevronLeft, ChevronRight } from "lucide-react";
+import { motion } from "framer-motion";
+import {
+  FileText,
+  Globe,
+  Package,
+  BarChart3,
+  MessageCircle,
+  Users,
+  AlertTriangle,
+  CheckCircle2,
+} from "lucide-react";
 
-const testimonials = [
+const painPoints = [
   {
-    name: "Rajesh Patel",
-    business: "Fresh Mart Grocery",
-    city: "Ahmedabad",
-    emoji: "🛒",
-    rating: 5,
-    text: "SmartDukaan transformed my grocery store. The POS billing is so fast and the inventory alerts save me from running out of stock. Revenue up 40% in 3 months!",
-    gradient: "from-violet-500 to-purple-600",
+    icon: FileText,
+    problem: "GST billing is slow and error-prone",
+    solution:
+      "Generate GST-compliant invoices with auto-calculated CGST & SGST in seconds. PDF export and sequential numbering included.",
+    gradient: "from-indigo-500 to-blue-600",
+    bg: "bg-indigo-50 dark:bg-indigo-900/20",
+    iconColor: "text-indigo-600 dark:text-indigo-400",
   },
   {
-    name: "Priya Sharma",
-    business: "Mocha Cafe",
-    city: "Surat",
-    emoji: "☕",
-    rating: 5,
-    text: "The WhatsApp ordering feature is amazing! Customers scan the QR code, select items, and order directly. My cafe is now getting 60+ WhatsApp orders daily.",
-    gradient: "from-pink-500 to-rose-600",
-  },
-  {
-    name: "Amit Desai",
-    business: "City Medical Store",
-    city: "Vadodara",
-    emoji: "💊",
-    rating: 5,
-    text: "GST invoicing used to take hours. Now I generate perfect GST bills in seconds. The Gujarati language support is a big plus for my customers.",
-    gradient: "from-emerald-500 to-teal-600",
-  },
-  {
-    name: "Sonal Shah",
-    business: "Taste of India Restaurant",
-    city: "Rajkot",
-    emoji: "🍕",
-    rating: 5,
-    text: "The table QR codes are brilliant! Customers scan, browse our full menu, and place orders. No more paper menus. Clean, modern, professional.",
-    gradient: "from-amber-500 to-orange-600",
-  },
-  {
-    name: "Mehul Joshi",
-    business: "Fashionista Boutique",
-    city: "Gandhinagar",
-    emoji: "👗",
-    rating: 5,
-    text: "Analytics helped me understand which products sell best. I was able to optimize my inventory and increase profit margin by 25%. Highly recommend!",
+    icon: Globe,
+    problem: "Your shop has no online presence",
+    solution:
+      "Get a beautiful public storefront instantly — share your link or QR code so customers can browse and order from anywhere.",
     gradient: "from-blue-500 to-cyan-600",
+    bg: "bg-blue-50 dark:bg-blue-900/20",
+    iconColor: "text-blue-600 dark:text-blue-400",
   },
   {
-    name: "Kavita Mehta",
-    business: "Golden Bakery",
-    city: "Bharuch",
-    emoji: "🥐",
-    rating: 5,
-    text: "The mobile app works like a charm even without internet. I can bill customers offline and everything syncs automatically when connected. Perfect for my bakery!",
-    gradient: "from-indigo-500 to-violet-600",
+    icon: Package,
+    problem: "Running out of stock unexpectedly",
+    solution:
+      "Real-time inventory tracking with low-stock alerts. Never miss a sale because you ran out of your best-selling product.",
+    gradient: "from-pink-500 to-rose-600",
+    bg: "bg-pink-50 dark:bg-pink-900/20",
+    iconColor: "text-pink-600 dark:text-pink-400",
+  },
+  {
+    icon: BarChart3,
+    problem: "No idea what's selling or when",
+    solution:
+      "Visual analytics show your top products, peak hours, revenue trends, and category breakdowns — all in one dashboard.",
+    gradient: "from-amber-500 to-orange-600",
+    bg: "bg-amber-50 dark:bg-amber-900/20",
+    iconColor: "text-amber-600 dark:text-amber-400",
+  },
+  {
+    icon: MessageCircle,
+    problem: "Customers can't place orders easily",
+    solution:
+      "Let customers browse your store and send their complete order via WhatsApp in one tap — zero friction ordering experience.",
+    gradient: "from-emerald-500 to-teal-600",
+    bg: "bg-emerald-50 dark:bg-emerald-900/20",
+    iconColor: "text-emerald-600 dark:text-emerald-400",
+  },
+  {
+    icon: Users,
+    problem: "Losing customers to bigger competitors",
+    solution:
+      "Build loyalty with customer profiles, complete purchase history, and reward points that bring customers back again and again.",
+    gradient: "from-violet-500 to-purple-600",
+    bg: "bg-violet-50 dark:bg-violet-900/20",
+    iconColor: "text-violet-600 dark:text-violet-400",
   },
 ];
 
-const VISIBLE = 3;
-
-function mod(n: number, m: number) {
-  return ((n % m) + m) % m;
-}
-
 export function Testimonials() {
-  const [activeIndex, setActiveIndex] = useState(0);
-  const [direction, setDirection] = useState(1);
-  const [paused, setPaused] = useState(false);
-
-  const goNext = useCallback(() => {
-    setDirection(1);
-    setActiveIndex((i) => mod(i + 1, testimonials.length));
-  }, []);
-
-  const goPrev = useCallback(() => {
-    setDirection(-1);
-    setActiveIndex((i) => mod(i - 1, testimonials.length));
-  }, []);
-
-  useEffect(() => {
-    if (paused) return;
-    const timer = setInterval(goNext, 4500);
-    return () => clearInterval(timer);
-  }, [paused, goNext]);
-
-  // Indices of the 3 visible cards
-  const visibleIndices = Array.from({ length: VISIBLE }, (_, i) =>
-    mod(activeIndex + i, testimonials.length)
-  );
-
   return (
     <section
       id="testimonials"
       className="py-24 bg-gradient-to-br from-gray-50 to-violet-50/30 dark:from-gray-950 dark:to-violet-950/20"
-      onMouseEnter={() => setPaused(true)}
-      onMouseLeave={() => setPaused(false)}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
+          transition={{
+            duration: 0.6,
+            ease: [0.22, 1, 0.36, 1] as [number, number, number, number],
+          }}
           className="text-center mb-14"
         >
+          <div className="inline-flex items-center gap-2 bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 px-4 py-1.5 rounded-full text-sm font-medium mb-4">
+            <AlertTriangle className="w-3.5 h-3.5" />
+            Common business challenges — solved
+          </div>
           <h2 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
-            Loved by <span className="gradient-text">business owners</span>
+            Problems we <span className="gradient-text">eliminate</span> for you
           </h2>
-          <p className="text-gray-500 dark:text-gray-400 text-lg">
-            Real stories from real businesses across Gujarat and India
+          <p className="text-gray-500 dark:text-gray-400 text-lg max-w-2xl mx-auto">
+            SmartDukaan replaces spreadsheets, paper registers, and disconnected apps with one
+            platform that handles your entire business.
           </p>
         </motion.div>
 
-        {/* Desktop carousel — 3 visible */}
-        <div className="hidden md:block relative">
-          <div className="overflow-hidden">
-            <AnimatePresence mode="popLayout" initial={false} custom={direction}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {painPoints.map((item, i) => {
+            const fromLeft = i % 2 === 0;
+            return (
               <motion.div
-                key={activeIndex}
-                custom={direction}
-                variants={{
-                  enter: (d: number) => ({ x: d * 80, opacity: 0 }),
-                  center: { x: 0, opacity: 1 },
-                  exit: (d: number) => ({ x: d * -80, opacity: 0 }),
+                key={item.problem}
+                initial={{ opacity: 0, x: fromLeft ? -30 : 30 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true, margin: "-40px" }}
+                transition={{
+                  delay: i * 0.07,
+                  duration: 0.55,
+                  ease: [0.22, 1, 0.36, 1] as [number, number, number, number],
                 }}
-                initial="enter"
-                animate="center"
-                exit="exit"
-                transition={{ duration: 0.45, ease: "easeInOut" }}
-                className="grid grid-cols-3 gap-6"
+                whileHover={{ y: -4 }}
+                className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 overflow-hidden hover:shadow-xl hover:shadow-violet-500/8 hover:border-violet-200 dark:hover:border-violet-800 transition-all duration-300"
               >
-                {visibleIndices.map((idx, pos) => (
-                  <TestimonialCard
-                    key={`${idx}-${pos}`}
-                    testimonial={testimonials[idx]}
-                    featured={pos === 1}
-                  />
-                ))}
+                {/* Problem header */}
+                <div className="px-6 pt-6 pb-4 border-b border-gray-100 dark:border-gray-800">
+                  <div className="flex items-start gap-3">
+                    <div className="w-5 h-5 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center shrink-0 mt-0.5">
+                      <AlertTriangle className="w-3 h-3 text-red-500" />
+                    </div>
+                    <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                      {item.problem}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Solution */}
+                <div className="px-6 py-5">
+                  <div className="flex items-start gap-3">
+                    <motion.div
+                      className={`w-9 h-9 rounded-xl ${item.bg} flex items-center justify-center shrink-0 mt-0.5`}
+                      whileHover={{ scale: 1.15, rotate: 8 }}
+                      transition={{ type: "spring", stiffness: 400 }}
+                    >
+                      <item.icon className={`w-4 h-4 ${item.iconColor}`} />
+                    </motion.div>
+                    <div>
+                      <div className="flex items-center gap-1.5 mb-1.5">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                        <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wide">
+                          SmartDukaan solves this
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+                        {item.solution}
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </motion.div>
-            </AnimatePresence>
-          </div>
-
-          {/* Arrows */}
-          <button
-            onClick={goPrev}
-            className="absolute -left-5 top-1/2 -translate-y-1/2 w-10 h-10 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full flex items-center justify-center shadow-md hover:shadow-lg hover:border-violet-300 dark:hover:border-violet-700 transition-all z-10"
-          >
-            <ChevronLeft className="w-5 h-5 text-gray-600 dark:text-gray-300" />
-          </button>
-          <button
-            onClick={goNext}
-            className="absolute -right-5 top-1/2 -translate-y-1/2 w-10 h-10 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full flex items-center justify-center shadow-md hover:shadow-lg hover:border-violet-300 dark:hover:border-violet-700 transition-all z-10"
-          >
-            <ChevronRight className="w-5 h-5 text-gray-600 dark:text-gray-300" />
-          </button>
-        </div>
-
-        {/* Mobile carousel — 1 visible */}
-        <div className="md:hidden relative">
-          <div className="overflow-hidden">
-            <AnimatePresence mode="wait" initial={false} custom={direction}>
-              <motion.div
-                key={activeIndex}
-                custom={direction}
-                variants={{
-                  enter: (d: number) => ({ x: d > 0 ? "100%" : "-100%", opacity: 0 }),
-                  center: { x: 0, opacity: 1 },
-                  exit: (d: number) => ({ x: d > 0 ? "-100%" : "100%", opacity: 0 }),
-                }}
-                initial="enter"
-                animate="center"
-                exit="exit"
-                transition={{ duration: 0.4, ease: "easeInOut" }}
-              >
-                <TestimonialCard testimonial={testimonials[activeIndex]} featured />
-              </motion.div>
-            </AnimatePresence>
-          </div>
-
-          {/* Mobile arrows */}
-          <div className="flex items-center justify-center gap-4 mt-6">
-            <button
-              onClick={goPrev}
-              className="w-9 h-9 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full flex items-center justify-center shadow-sm"
-            >
-              <ChevronLeft className="w-4 h-4 text-gray-600 dark:text-gray-300" />
-            </button>
-            <button
-              onClick={goNext}
-              className="w-9 h-9 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full flex items-center justify-center shadow-sm"
-            >
-              <ChevronRight className="w-4 h-4 text-gray-600 dark:text-gray-300" />
-            </button>
-          </div>
-        </div>
-
-        {/* Dot indicators */}
-        <div className="flex items-center justify-center gap-2 mt-8">
-          {testimonials.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => {
-                setDirection(i > activeIndex ? 1 : -1);
-                setActiveIndex(i);
-              }}
-              className={`rounded-full transition-all duration-300 ${
-                i === activeIndex
-                  ? "w-6 h-2 bg-violet-600"
-                  : "w-2 h-2 bg-gray-300 dark:bg-gray-700 hover:bg-violet-400"
-              }`}
-            />
-          ))}
+            );
+          })}
         </div>
       </div>
     </section>
-  );
-}
-
-function TestimonialCard({
-  testimonial,
-  featured,
-}: {
-  testimonial: (typeof testimonials)[number];
-  featured?: boolean;
-}) {
-  return (
-    <div
-      className={`bg-white dark:bg-gray-900 rounded-2xl p-6 border transition-all duration-300 relative h-full ${
-        featured
-          ? "border-violet-200 dark:border-violet-800 shadow-lg shadow-violet-500/10"
-          : "border-gray-100 dark:border-gray-800 shadow-sm"
-      }`}
-    >
-      <Quote className="absolute top-4 right-4 w-8 h-8 text-violet-100 dark:text-violet-900/50" />
-
-      <div className="flex items-center gap-3 mb-4">
-        <div
-          className={`w-12 h-12 rounded-xl bg-gradient-to-br ${testimonial.gradient} flex items-center justify-center text-2xl shrink-0`}
-        >
-          {testimonial.emoji}
-        </div>
-        <div>
-          <div className="font-bold text-gray-900 dark:text-white text-sm">{testimonial.name}</div>
-          <div className="text-xs text-gray-500">
-            {testimonial.business} • {testimonial.city}
-          </div>
-        </div>
-      </div>
-
-      <div className="flex items-center gap-0.5 mb-3">
-        {[...Array(testimonial.rating)].map((_, i) => (
-          <Star key={i} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-        ))}
-      </div>
-
-      <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
-        &quot;{testimonial.text}&quot;
-      </p>
-    </div>
   );
 }

@@ -84,10 +84,9 @@ export async function GET(req: NextRequest) {
         Business.aggregate([{ $group: { _id: "$status", count: { $sum: 1 } } }]),
       ]);
 
-    const subscriptionsBreakdown = { trial: 0, starter: 0, pro: 0, enterprise: 0 };
+    const subscriptionsBreakdown: Record<string, number> = {};
     planStats.forEach((p) => {
-      if (p._id in subscriptionsBreakdown)
-        subscriptionsBreakdown[p._id as keyof typeof subscriptionsBreakdown] = p.count;
+      if (p._id) subscriptionsBreakdown[p._id as string] = p.count;
     });
 
     const statusBreakdown = { active: 0, inactive: 0, suspended: 0 };
@@ -96,7 +95,13 @@ export async function GET(req: NextRequest) {
         statusBreakdown[s._id as keyof typeof statusBreakdown] = s.count;
     });
 
-    const stats = { totalUsers, totalVerifiedUsers, totalBusinesses, subscriptionsBreakdown, statusBreakdown };
+    const stats = {
+      totalUsers,
+      totalVerifiedUsers,
+      totalBusinesses,
+      subscriptionsBreakdown,
+      statusBreakdown,
+    };
 
     if (tab === "users") {
       const query: Record<string, unknown> = {};
@@ -226,8 +231,13 @@ export async function PATCH(req: NextRequest) {
         { $set: { role: data.role } },
         { new: true, select: USER_SAFE_PROJECTION }
       );
-      if (!user) return NextResponse.json({ success: false, error: "User not found" }, { status: 404 });
-      return NextResponse.json({ success: true, message: "User role updated successfully", data: user });
+      if (!user)
+        return NextResponse.json({ success: false, error: "User not found" }, { status: 404 });
+      return NextResponse.json({
+        success: true,
+        message: "User role updated successfully",
+        data: user,
+      });
     }
 
     if (data.action === "update_subscription") {
@@ -243,8 +253,13 @@ export async function PATCH(req: NextRequest) {
         },
         { new: true }
       );
-      if (!business) return NextResponse.json({ success: false, error: "Business not found" }, { status: 404 });
-      return NextResponse.json({ success: true, message: "Subscription updated successfully", data: business });
+      if (!business)
+        return NextResponse.json({ success: false, error: "Business not found" }, { status: 404 });
+      return NextResponse.json({
+        success: true,
+        message: "Subscription updated successfully",
+        data: business,
+      });
     }
 
     if (data.action === "update_business_status") {
@@ -253,20 +268,29 @@ export async function PATCH(req: NextRequest) {
         { $set: { status: data.status } },
         { new: true }
       );
-      if (!business) return NextResponse.json({ success: false, error: "Business not found" }, { status: 404 });
+      if (!business)
+        return NextResponse.json({ success: false, error: "Business not found" }, { status: 404 });
 
       if (data.status === "suspended") {
         try {
           const owner = await User.findById(business.ownerId).select("email name");
           if (owner?.email) {
-            await sendBusinessSuspendedEmail(owner.email, owner.name || "Store Owner", business.name);
+            await sendBusinessSuspendedEmail(
+              owner.email,
+              owner.name || "Store Owner",
+              business.name
+            );
           }
         } catch (emailErr) {
           console.error("[SUPER_ADMIN_PATCH] Failed to send business suspended email:", emailErr);
         }
       }
 
-      return NextResponse.json({ success: true, message: "Business status updated successfully", data: business });
+      return NextResponse.json({
+        success: true,
+        message: "Business status updated successfully",
+        data: business,
+      });
     }
 
     return NextResponse.json({ success: false, error: "Invalid action" }, { status: 400 });
@@ -296,13 +320,15 @@ export async function DELETE(req: NextRequest) {
 
     if (type === "user") {
       const user = await User.findByIdAndDelete(id);
-      if (!user) return NextResponse.json({ success: false, error: "User not found" }, { status: 404 });
+      if (!user)
+        return NextResponse.json({ success: false, error: "User not found" }, { status: 404 });
       return NextResponse.json({ success: true, message: "User deleted successfully" });
     }
 
     if (type === "business") {
       const business = await Business.findByIdAndDelete(id);
-      if (!business) return NextResponse.json({ success: false, error: "Business not found" }, { status: 404 });
+      if (!business)
+        return NextResponse.json({ success: false, error: "Business not found" }, { status: 404 });
       return NextResponse.json({ success: true, message: "Business deleted successfully" });
     }
 

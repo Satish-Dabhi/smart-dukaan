@@ -1,15 +1,16 @@
-import type { PlanId } from "./plans";
-import { PLANS } from "./plans";
+import type { IPlanFeatures } from "@/models/Plan";
+import { DEFAULT_PLANS } from "./plans";
 
 export type SubscriptionStatus = "active" | "trial" | "expired" | "suspended";
 
 export interface SubscriptionInfo {
-  plan: PlanId;
+  plan: string;
+  planName: string;
   status: SubscriptionStatus;
   expiresAt: Date | null;
   daysRemaining: number | null;
   isExpired: boolean;
-  features: (typeof PLANS)[PlanId]["features"];
+  features: IPlanFeatures;
 }
 
 interface BusinessForSubscription {
@@ -18,9 +19,20 @@ interface BusinessForSubscription {
   status?: string;
 }
 
-export function getSubscriptionInfo(business: BusinessForSubscription): SubscriptionInfo {
-  const plan = (business.subscriptionPlan as PlanId) ?? "trial";
-  const planConfig = PLANS[plan] ?? PLANS.trial;
+const FALLBACK_FEATURES: IPlanFeatures = DEFAULT_PLANS[0].features;
+
+function getFallbackFeatures(slug: string): IPlanFeatures {
+  return DEFAULT_PLANS.find((p) => p.slug === slug)?.features ?? FALLBACK_FEATURES;
+}
+
+export function getSubscriptionInfo(
+  business: BusinessForSubscription,
+  planFeatures?: IPlanFeatures,
+  planName?: string
+): SubscriptionInfo {
+  const plan = business.subscriptionPlan ?? "trial";
+  const features = planFeatures ?? getFallbackFeatures(plan);
+  const resolvedPlanName = planName ?? DEFAULT_PLANS.find((p) => p.slug === plan)?.name ?? plan;
   const expiresAt = business.subscriptionExpiresAt ?? null;
   const now = new Date();
 
@@ -45,11 +57,12 @@ export function getSubscriptionInfo(business: BusinessForSubscription): Subscrip
 
   return {
     plan,
+    planName: resolvedPlanName,
     status,
     expiresAt,
     daysRemaining,
     isExpired,
-    features: planConfig.features,
+    features,
   };
 }
 

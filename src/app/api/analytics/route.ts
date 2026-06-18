@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { connectDB } from "@/lib/db";
+import { getAnalyticsHistoryDays } from "@/lib/plan-enforcement";
 import Invoice from "@/models/Invoice";
 import Order from "@/models/Order";
 import Customer from "@/models/Customer";
@@ -21,9 +22,14 @@ export async function GET(req: NextRequest) {
     await connectDB();
 
     const { searchParams } = req.nextUrl;
-    const period = searchParams.get("period") ?? "30"; // days
+    const requestedPeriod = parseInt(searchParams.get("period") ?? "30");
+
+    // Enforce analytics history limit from plan
+    const maxDays = await getAnalyticsHistoryDays(businessIdStr);
+    const period = maxDays === -1 ? requestedPeriod : Math.min(requestedPeriod, maxDays);
+
     const startDate = new Date();
-    startDate.setDate(startDate.getDate() - parseInt(period));
+    startDate.setDate(startDate.getDate() - period);
 
     const [
       revenueData,
