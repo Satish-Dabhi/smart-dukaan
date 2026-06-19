@@ -6,7 +6,7 @@ import User from "@/models/User";
 import { slugify } from "@/lib/utils";
 import { z } from "zod";
 import { BusinessSchema, BusinessUpdateSchema } from "@/lib/schemas";
-import { sendOnboardingEmail } from "@/lib/email";
+import { sendOnboardingEmail, sendNewBusinessAdminEmail } from "@/lib/email";
 import { trialExpiresAt } from "@/lib/subscription";
 
 export async function GET() {
@@ -78,6 +78,17 @@ export async function POST(req: NextRequest) {
         const storeUrl = `${appUrl}/en/business/${business.slug}`;
 
         await sendOnboardingEmail(email, ownerName, business.name, storeUrl);
+
+        // Notify admin of new business registration
+        await sendNewBusinessAdminEmail({
+          ownerName,
+          ownerEmail: email,
+          businessName: business.name,
+          city: business.city ?? "",
+          state: business.state ?? "",
+          phone: business.phone ?? "",
+          storeUrl,
+        });
       }
     } catch (emailErr) {
       console.error("[BUSINESS_POST] Failed to send business created email:", emailErr);

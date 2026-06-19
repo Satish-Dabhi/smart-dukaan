@@ -8,7 +8,12 @@ export const authConfig = {
       clientSecret: process.env.AUTH_GOOGLE_SECRET!,
     }),
   ],
-  session: { strategy: "jwt" as const },
+  // maxAge must be explicit — without it, NextAuth sets a session-only cookie
+  // that browsers delete on close, forcing re-login on every restart.
+  session: {
+    strategy: "jwt" as const,
+    maxAge: 30 * 24 * 60 * 60, // 30 days
+  },
   pages: {
     signIn: "/auth/login",
     error: "/auth/error",

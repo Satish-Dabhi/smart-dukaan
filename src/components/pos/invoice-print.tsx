@@ -34,8 +34,16 @@ export const InvoicePrint = React.forwardRef<HTMLDivElement, InvoicePrintProps>(
     const discountAmount = (invoice.discountAmount as number) ?? 0;
     const cgst = (invoice.cgst as number) ?? 0;
     const sgst = (invoice.sgst as number) ?? 0;
+    const igst = (invoice.igst as number) ?? 0;
     const roundOff = (invoice.roundOff as number) ?? 0;
     const total = (invoice.total as number) ?? 0;
+
+    const taxableAmount = subtotal - discountAmount;
+    const hasGst = cgst > 0 || sgst > 0 || igst > 0;
+
+    // Derive GST rate label from items (e.g. "@9%") when all items share one rate
+    const gstRates = [...new Set(items.map((i) => i.gstPercentage).filter((r) => r > 0))];
+    const singleRate = gstRates.length === 1 ? gstRates[0] : null;
 
     const hr = <div style={{ borderTop: "1px dashed #9ca3af", margin: "8px 0" }} />;
     const row = (label: string, value: string, bold = false, color?: string) => (
@@ -241,8 +249,27 @@ export const InvoicePrint = React.forwardRef<HTMLDivElement, InvoicePrintProps>(
           {row("Subtotal", formatCurrency(subtotal))}
           {discountAmount > 0 &&
             row("Discount", `-${formatCurrency(discountAmount)}`, false, "#16a34a")}
-          {cgst > 0 && row("CGST", formatCurrency(cgst))}
-          {sgst > 0 && row("SGST", formatCurrency(sgst))}
+          {/* Taxable amount separator — only when there's both a discount and tax */}
+          {discountAmount > 0 && hasGst && (
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                fontSize: "10px",
+                marginBottom: "3px",
+                color: "#9ca3af",
+                fontStyle: "italic",
+                borderTop: "1px dotted #d1d5db",
+                paddingTop: "3px",
+              }}
+            >
+              <span>Taxable Amt</span>
+              <span>{formatCurrency(taxableAmount)}</span>
+            </div>
+          )}
+          {cgst > 0 && row(singleRate ? `CGST @${singleRate / 2}%` : "CGST", formatCurrency(cgst))}
+          {sgst > 0 && row(singleRate ? `SGST @${singleRate / 2}%` : "SGST", formatCurrency(sgst))}
+          {igst > 0 && row(singleRate ? `IGST @${singleRate}%` : "IGST", formatCurrency(igst))}
           {roundOff !== 0 &&
             row(
               "Round Off",

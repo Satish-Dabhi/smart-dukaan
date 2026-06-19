@@ -22,6 +22,24 @@ type MailResult =
   | { success: true; mocked: true; otp?: string }
   | { success: false; error: string; otp?: string };
 
+// Strip HTML tags and decode common HTML entities for plain-text alternative
+function htmlToPlain(html: string): string {
+  return html
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#8377;/g, "₹")
+    .replace(/&rarr;/g, "→")
+    .replace(/&mdash;/g, "—")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&#10003;/g, "✓")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
 async function sendMail(
   to: string,
   subject: string,
@@ -34,13 +52,27 @@ async function sendMail(
   }
   try {
     const transporter = createTransport();
+
     const info = await transporter.sendMail({
       from: FROM,
       to,
       replyTo: REPLY_TO,
       subject,
       html,
-      text: text ?? subject,
+      // Proper plain-text version improves deliverability significantly
+      text: text ?? htmlToPlain(html),
+      headers: {
+        // Identifies the email as transactional — not bulk/marketing
+        Precedence: "transactional",
+        // Marks normal priority (avoids spam-filter flags for unsolicited 'urgent' mail)
+        "X-Priority": "3",
+        Importance: "Normal",
+        // One-click unsubscribe satisfies Gmail and Outlook deliverability requirements
+        "List-Unsubscribe": `<mailto:${REPLY_TO}?subject=Unsubscribe>`,
+        "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+        // Identifies the sender application — helps postmasters trace delivery issues
+        "X-Mailer": "SmartDukaan Mailer/1.0",
+      },
     });
     return { success: true, messageId: info.messageId };
   } catch (err) {
@@ -53,19 +85,31 @@ async function sendMail(
 
 function baseLayout(content: string) {
   return `<!DOCTYPE html>
-<html lang="en">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SmartDukaan</title></head>
-<body style="margin:0;padding:0;background:#f3f4f6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:32px 16px;">
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="x-apple-disable-message-reformatting">
+  <title>SmartDukaan</title>
+</head>
+<body style="margin:0;padding:0;background:#f3f4f6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:32px 16px;">
     <tr><td align="center">
-      <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.06);">
+      <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.06);">
         <!-- Header -->
         <tr>
           <td style="background:linear-gradient(135deg,#7c3aed 0%,#db2777 100%);padding:28px 32px;text-align:center;">
-            <div style="display:inline-flex;align-items:center;gap:12px;">
-              <div style="width:44px;height:44px;border-radius:10px;background:rgba(255,255,255,0.2);display:inline-flex;align-items:center;justify-content:center;font-weight:900;font-size:22px;color:#fff;line-height:44px;text-align:center;">S</div>
-              <span style="color:#fff;font-size:22px;font-weight:800;letter-spacing:-0.5px;">SmartDukaan</span>
-            </div>
+            <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto;">
+              <tr>
+                <td style="width:44px;height:44px;border-radius:10px;background:rgba(255,255,255,0.2);text-align:center;vertical-align:middle;">
+                  <span style="font-weight:900;font-size:22px;color:#fff;line-height:44px;">S</span>
+                </td>
+                <td style="padding-left:12px;vertical-align:middle;">
+                  <span style="color:#fff;font-size:22px;font-weight:800;letter-spacing:-0.5px;">SmartDukaan</span>
+                </td>
+              </tr>
+            </table>
           </td>
         </tr>
         <!-- Body -->
@@ -77,16 +121,19 @@ function baseLayout(content: string) {
         <!-- Footer -->
         <tr>
           <td style="background:#f9fafb;border-top:1px solid #e5e7eb;padding:24px 36px;text-align:center;">
-            <p style="margin:0 0 8px;font-size:13px;font-weight:700;color:#374151;">SmartDukaan</p>
-            <p style="margin:0 0 12px;font-size:12px;color:#6b7280;">Restaurant &amp; Business Management Platform</p>
+            <p style="margin:0 0 6px;font-size:13px;font-weight:700;color:#374151;">SmartDukaan</p>
+            <p style="margin:0 0 10px;font-size:12px;color:#6b7280;">Business Management Platform for Indian Retailers</p>
             <p style="margin:0 0 12px;">
               <a href="${APP_URL}" style="color:#7c3aed;font-size:12px;text-decoration:none;margin:0 8px;">smartdukaan.com</a>
               <span style="color:#d1d5db;">·</span>
               <a href="mailto:support@smartdukaan.com" style="color:#7c3aed;font-size:12px;text-decoration:none;margin:0 8px;">support@smartdukaan.com</a>
             </p>
-            <p style="margin:0;font-size:11px;color:#9ca3af;line-height:1.6;">
-              This email was sent automatically by SmartDukaan.<br/>
-              You received this because you have an account with us.
+            <p style="margin:0 0 6px;font-size:11px;color:#9ca3af;line-height:1.6;">
+              This is a transactional email sent by SmartDukaan because you have an account with us.<br/>
+              You cannot opt out of account-related emails.
+            </p>
+            <p style="margin:0;font-size:11px;color:#d1d5db;">
+              © SmartDukaan. All rights reserved.
             </p>
           </td>
         </tr>
@@ -107,7 +154,7 @@ function otpBox(otp: string) {
 
 function ctaButton(text: string, url: string, color = "linear-gradient(135deg,#7c3aed,#db2777)") {
   return `<div style="text-align:center;margin:28px 0;">
-    <a href="${url}" style="display:inline-block;padding:14px 32px;background:${color};color:#fff;font-weight:700;font-size:15px;text-decoration:none;border-radius:10px;box-shadow:0 4px 12px rgba(124,58,237,0.25);">${text}</a>
+    <a href="${url}" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:14px 32px;background:${color};color:#fff;font-weight:700;font-size:15px;text-decoration:none;border-radius:10px;">${text}</a>
   </div>`;
 }
 
@@ -121,7 +168,7 @@ function infoCard(items: Array<{ label: string; value: string }>) {
     </tr>`
     )
     .join("");
-  return `<table width="100%" style="border-collapse:collapse;border-radius:10px;overflow:hidden;border:1px solid #f3f4f6;margin:20px 0;">${rows}</table>`;
+  return `<table role="presentation" width="100%" style="border-collapse:collapse;border-radius:10px;overflow:hidden;border:1px solid #f3f4f6;margin:20px 0;">${rows}</table>`;
 }
 
 // ─── Email Verification OTP ─────────────────────────────────────────────────
@@ -140,11 +187,13 @@ export async function sendOtpEmail(email: string, name: string, otp: string): Pr
     </p>
     <div style="background:#fef3c7;border:1px solid #fde68a;border-radius:10px;padding:14px 16px;margin-top:20px;">
       <p style="margin:0;font-size:12px;color:#92400e;">
-        <strong>Security:</strong> SmartDukaan will never ask for this code via phone, chat, or email.
+        <strong>Security notice:</strong> SmartDukaan will never ask for this code via phone, chat, or email.
+        If you did not request this, please ignore.
       </p>
     </div>
   `);
-  return sendMail(email, `${otp} — Verify your SmartDukaan account`, html);
+  const text = `Hi ${name},\n\nYour SmartDukaan verification code is: ${otp}\n\nThis code is valid for 10 minutes. Do not share it with anyone.\n\nIf you did not request this, please ignore this email.\n\n— SmartDukaan`;
+  return sendMail(email, `${otp} — Verify your SmartDukaan account`, html, text);
 }
 
 // ─── Forgot Password OTP ────────────────────────────────────────────────────
@@ -171,10 +220,11 @@ export async function sendForgotPasswordEmail(
       </p>
     </div>
   `);
-  return sendMail(email, `${otp} — SmartDukaan password reset code`, html);
+  const text = `Hi ${name},\n\nYour SmartDukaan password reset code is: ${otp}\n\nThis code is valid for 10 minutes.\n\nIf you did not request this, please ignore this email — your password has not been changed.\n\n— SmartDukaan`;
+  return sendMail(email, `${otp} — SmartDukaan password reset code`, html, text);
 }
 
-// ─── Onboarding Email (merged Welcome + Business Created) ────────────────────
+// ─── Onboarding Email (Welcome + Business Created) ───────────────────────────
 
 export async function sendOnboardingEmail(
   email: string,
@@ -187,12 +237,13 @@ export async function sendOnboardingEmail(
   const safeBiz = escapeHtml(businessName);
   const html = baseLayout(`
     <div style="background:linear-gradient(135deg,#f5f3ff,#fdf2f8);border-radius:12px;padding:20px;text-align:center;margin-bottom:28px;">
-      <p style="margin:0 0 6px;font-size:12px;font-weight:700;color:#7c3aed;text-transform:uppercase;letter-spacing:1px;">Store is Live!</p>
+      <p style="margin:0 0 6px;font-size:12px;font-weight:700;color:#7c3aed;text-transform:uppercase;letter-spacing:1px;">Your Store is Live!</p>
       <h2 style="margin:0;font-size:26px;font-weight:900;color:#1f2937;">${safeBiz}</h2>
     </div>
 
     <p style="margin:0 0 20px;font-size:15px;color:#374151;line-height:1.7;">
-      Welcome aboard, <strong>${safeOwner}</strong>! Your SmartDukaan store is now active and ready to receive orders.
+      Welcome, <strong>${safeOwner}</strong>! Your SmartDukaan store is now active and ready to receive orders.
+      You have <strong>30 days free</strong> to explore all features — no credit card required.
     </p>
 
     <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:20px;margin-bottom:24px;">
@@ -201,14 +252,10 @@ export async function sendOnboardingEmail(
     </div>
 
     <p style="margin:0 0 16px;font-size:14px;font-weight:700;color:#1f2937;">Get started in 3 steps:</p>
-    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
       ${[
         ["1", "Add your products", "Upload photos, prices, and stock to your catalog"],
-        [
-          "2",
-          "Share your store",
-          "Send your store URL to customers on WhatsApp &amp; social media",
-        ],
+        ["2", "Share your store", "Send your store URL to customers on WhatsApp and social media"],
         ["3", "Manage from dashboard", "Track orders, invoices, and analytics in real-time"],
       ]
         .map(
@@ -226,13 +273,14 @@ export async function sendOnboardingEmail(
         .join("")}
     </table>
 
-    ${ctaButton("Go to Dashboard &rarr;", `${APP_URL}/dashboard`)}
+    ${ctaButton("Go to Dashboard →", `${APP_URL}/dashboard`)}
 
     <p style="margin:0;font-size:12px;color:#9ca3af;text-align:center;">
       Your 30-day free trial has started. No credit card required.
     </p>
   `);
-  return sendMail(email, `Your SmartDukaan store "${businessName}" is live!`, html);
+  const text = `Welcome to SmartDukaan, ${ownerName}!\n\nYour store "${businessName}" is now live.\n\nStore URL: ${storeUrl}\nDashboard: ${APP_URL}/dashboard\n\nGet started:\n1. Add your products\n2. Share your store URL with customers\n3. Track orders and analytics from the dashboard\n\nYour 30-day free trial has started. No credit card required.\n\n— SmartDukaan`;
+  return sendMail(email, `Your SmartDukaan store "${businessName}" is live!`, html, text);
 }
 
 // Keep old names as aliases for backward compatibility
@@ -244,6 +292,41 @@ export const sendBusinessCreatedEmail = (
   businessName: string,
   storeUrl: string
 ) => sendOnboardingEmail(email, ownerName, businessName, storeUrl);
+
+// ─── Admin: New Business Registration Notification ───────────────────────────
+
+export async function sendNewBusinessAdminEmail(details: {
+  ownerName: string;
+  ownerEmail: string;
+  businessName: string;
+  city: string;
+  state: string;
+  phone: string;
+  storeUrl: string;
+}): Promise<MailResult> {
+  const adminEmail = process.env.ADMIN_EMAIL || process.env.SMTP_USER || "admin@smartdukaan.com";
+  const html = baseLayout(`
+    <div style="background:linear-gradient(135deg,#ecfdf5,#f0fdf4);border-radius:12px;padding:20px;text-align:center;margin-bottom:28px;">
+      <p style="margin:0 0 4px;font-size:12px;font-weight:700;color:#059669;text-transform:uppercase;letter-spacing:1px;">New Business Registered</p>
+      <h2 style="margin:0;font-size:24px;font-weight:900;color:#1f2937;">${escapeHtml(details.businessName)}</h2>
+    </div>
+    ${infoCard([
+      { label: "Owner", value: details.ownerName },
+      { label: "Email", value: details.ownerEmail },
+      { label: "Phone", value: details.phone },
+      { label: "Location", value: `${details.city}, ${details.state}` },
+      { label: "Store URL", value: details.storeUrl },
+    ])}
+    ${ctaButton("View in Admin Panel →", `${APP_URL}/admin/businesses`)}
+  `);
+  const text = `New business registered on SmartDukaan:\n\nBusiness: ${details.businessName}\nOwner: ${details.ownerName}\nEmail: ${details.ownerEmail}\nPhone: ${details.phone}\nLocation: ${details.city}, ${details.state}\nStore: ${details.storeUrl}\n\n— SmartDukaan Notifications`;
+  return sendMail(
+    adminEmail,
+    `New business: ${details.businessName} (${details.ownerName})`,
+    html,
+    text
+  );
+}
 
 // ─── Order Confirmation — REMOVED (customers see success on screen) ──────────
 
@@ -273,23 +356,27 @@ export async function sendOrderDeliveredEmail(
     </p>
 
     <div style="background:#f9fafb;border-radius:10px;padding:18px;margin-bottom:20px;">
-      <div style="display:flex;justify-content:space-between;margin-bottom:12px;">
-        <span style="font-size:13px;color:#6b7280;">Order</span>
-        <span style="font-size:13px;font-weight:600;color:#374151;">${escapeHtml(orderNumber)}</span>
-      </div>
-      <div style="border-top:1px solid #e5e7eb;padding-top:12px;display:flex;justify-content:space-between;">
-        <span style="font-size:15px;font-weight:700;color:#1f2937;">Total Paid</span>
-        <span style="font-size:20px;font-weight:900;color:#7c3aed;">&#8377;${total.toLocaleString("en-IN")}</span>
-      </div>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td style="font-size:13px;color:#6b7280;">Order Number</td>
+          <td style="font-size:13px;font-weight:600;color:#374151;text-align:right;">${escapeHtml(orderNumber)}</td>
+        </tr>
+        <tr><td colspan="2" style="padding:8px 0;"><hr style="border:none;border-top:1px solid #e5e7eb;margin:0;"/></td></tr>
+        <tr>
+          <td style="font-size:15px;font-weight:700;color:#1f2937;">Total Paid</td>
+          <td style="font-size:20px;font-weight:900;color:#7c3aed;text-align:right;">&#8377;${total.toLocaleString("en-IN")}</td>
+        </tr>
+      </table>
     </div>
 
     ${invoiceUrl ? ctaButton("View &amp; Download Invoice", invoiceUrl, "#7c3aed") : ""}
 
     <p style="margin:0;font-size:13px;color:#6b7280;text-align:center;">
-      We look forward to serving you again!
+      We hope to serve you again soon!
     </p>
   `);
-  return sendMail(email, `Order ${orderNumber} delivered — SmartDukaan`, html);
+  const text = `Hi ${customerName},\n\nYour order ${orderNumber} has been delivered!\n\nTotal Paid: ₹${total.toLocaleString("en-IN")}\n${invoiceUrl ? `\nDownload Invoice: ${invoiceUrl}\n` : ""}\nThank you for your order!\n\n— SmartDukaan`;
+  return sendMail(email, `Order ${orderNumber} delivered — SmartDukaan`, html, text);
 }
 
 // ─── Business Suspended ────────────────────────────────────────────────────
@@ -305,14 +392,16 @@ export async function sendBusinessSuspendedEmail(
       <h2 style="margin:0;font-size:20px;font-weight:800;color:#b91c1c;">Store Suspended</h2>
     </div>
     <p style="margin:0 0 16px;font-size:15px;color:#374151;line-height:1.7;">
-      Hi <strong>${escapeHtml(ownerName)}</strong>, your store <strong>${escapeHtml(businessName)}</strong> has been suspended by administration.
+      Hi <strong>${escapeHtml(ownerName)}</strong>, your store <strong>${escapeHtml(businessName)}</strong> has been suspended by the SmartDukaan administration team.
     </p>
     <p style="margin:0 0 20px;font-size:14px;color:#4b5563;line-height:1.7;">
       During suspension, your storefront is offline and dashboard access is restricted.
+      Please contact support to resolve this.
     </p>
-    ${ctaButton("Contact Support", "mailto:support@smartdukaan.com?subject=Suspension Appeal", "#ef4444")}
+    ${ctaButton("Contact Support", "mailto:support@smartdukaan.com?subject=Suspension+Appeal", "#ef4444")}
   `);
-  return sendMail(email, `Important: Your SmartDukaan store has been suspended`, html);
+  const text = `Hi ${ownerName},\n\nYour SmartDukaan store "${businessName}" has been suspended.\n\nDuring suspension:\n- Your storefront is offline\n- Dashboard access is restricted\n\nPlease contact support@smartdukaan.com to appeal or resolve the issue.\n\n— SmartDukaan`;
+  return sendMail(email, `Important: Your SmartDukaan store has been suspended`, html, text);
 }
 
 // ─── Trial Expiring ────────────────────────────────────────────────────────
@@ -355,16 +444,18 @@ export async function sendTrialExpiringEmail(
         .join("")}
     </div>
 
-    ${ctaButton("Choose a Plan &rarr;", upgradeUrl)}
+    ${ctaButton("Choose a Plan →", upgradeUrl)}
 
     <p style="margin:0;font-size:12px;color:#9ca3af;text-align:center;">
       Reply to this email if you have questions about plans.
     </p>
   `);
+  const text = `Hi ${ownerName},\n\nYour SmartDukaan trial for "${businessName}" ends in ${daysLeft} day${daysLeft === 1 ? "" : "s"}.\n\nAvailable Plans:\n- Starter: ₹499/month\n- Pro: ₹999/month\n- Enterprise: ₹2,499/month\n\nUpgrade now: ${upgradeUrl}\n\nReply to this email if you have questions.\n\n— SmartDukaan`;
   return sendMail(
     email,
     `${daysLeft} day${daysLeft === 1 ? "" : "s"} left on your SmartDukaan trial — ${businessName}`,
-    html
+    html,
+    text
   );
 }
 
@@ -382,7 +473,7 @@ export async function sendTrialExpiredEmail(
       <h2 style="margin:0;font-size:20px;font-weight:800;color:#b91c1c;">Free Trial Ended</h2>
     </div>
     <p style="margin:0 0 16px;font-size:15px;color:#374151;line-height:1.7;">
-      Hi <strong>${escapeHtml(ownerName)}</strong>, your 30-day trial for <strong>${escapeHtml(businessName)}</strong> has expired.
+      Hi <strong>${escapeHtml(ownerName)}</strong>, your 30-day trial for <strong>${escapeHtml(businessName)}</strong> has ended.
       Your store dashboard is now restricted.
     </p>
     <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:16px;margin-bottom:24px;">
@@ -391,9 +482,10 @@ export async function sendTrialExpiredEmail(
         Your data is safe and will be fully restored when you upgrade.
       </p>
     </div>
-    ${ctaButton("Upgrade Now &mdash; from &#8377;499/mo", upgradeUrl, "#dc2626")}
+    ${ctaButton("Upgrade Now — from ₹499/mo", upgradeUrl, "#dc2626")}
   `);
-  return sendMail(email, `Your SmartDukaan trial has ended — ${businessName}`, html);
+  const text = `Hi ${ownerName},\n\nYour SmartDukaan trial for "${businessName}" has ended.\n\nRestricted features: adding products, invoices, analytics, and online orders.\nYour data is safe — everything restores when you upgrade.\n\nUpgrade now from ₹499/month: ${upgradeUrl}\n\n— SmartDukaan`;
+  return sendMail(email, `Your SmartDukaan trial has ended — ${businessName}`, html, text);
 }
 
 // ─── Subscription Activated ─────────────────────────────────────────────────
@@ -429,7 +521,13 @@ export async function sendSubscriptionActivatedEmail(
     ])}
     ${ctaButton("Go to Dashboard", `${APP_URL}/dashboard`)}
   `);
-  return sendMail(email, `You're on the ${planName} plan — SmartDukaan`, html);
+  const validUntil = expiresAt.toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
+  const text = `Hi ${ownerName},\n\nYour "${businessName}" is now on the ${planName} plan.\n\nPlan: ${planName}\nValid Until: ${validUntil}\n\nGo to your dashboard: ${APP_URL}/dashboard\n\n— SmartDukaan`;
+  return sendMail(email, `You're on the ${planName} plan — SmartDukaan`, html, text);
 }
 
 // ─── Payment Success ────────────────────────────────────────────────────────
@@ -452,18 +550,20 @@ export async function sendPaymentSuccessEmail(
       Hi <strong>${escapeHtml(ownerName)}</strong>, we've received your payment for <strong>${escapeHtml(businessName)}</strong>.
     </p>
     ${infoCard([
-      { label: "Amount", value: `₹${amount.toLocaleString("en-IN")}` },
+      { label: "Amount Paid", value: `₹${amount.toLocaleString("en-IN")}` },
       { label: "Plan", value: planName },
       { label: "Transaction ID", value: transactionId },
       { label: "Business", value: businessName },
     ])}
     ${ctaButton("Go to Dashboard", `${APP_URL}/dashboard`)}
-    <p style="margin:0;font-size:12px;color:#9ca3af;text-align:center;">Save this email as your payment confirmation.</p>
+    <p style="margin:0;font-size:12px;color:#9ca3af;text-align:center;">Please save this email as your payment confirmation.</p>
   `);
+  const text = `Hi ${ownerName},\n\nPayment received for "${businessName}".\n\nAmount: ₹${amount.toLocaleString("en-IN")}\nPlan: ${planName}\nTransaction ID: ${transactionId}\n\nPlease save this email as your payment confirmation.\n\nDashboard: ${APP_URL}/dashboard\n\n— SmartDukaan`;
   return sendMail(
     email,
     `Payment of ₹${amount.toLocaleString("en-IN")} received — SmartDukaan`,
-    html
+    html,
+    text
   );
 }
 
@@ -488,17 +588,23 @@ export async function sendEmployeeInvitationEmail(
       <strong>${escapeHtml(businessName)}</strong> on SmartDukaan.
     </p>
     ${infoCard([
-      { label: "Email", value: email },
+      { label: "Login Email", value: email },
       { label: "Temporary Password", value: tempPassword },
     ])}
     <div style="background:#fef3c7;border:1px solid #fde68a;border-radius:10px;padding:14px 16px;margin-bottom:24px;">
       <p style="margin:0;font-size:13px;color:#92400e;">
-        <strong>Important:</strong> Change your password immediately after your first login.
+        <strong>Important:</strong> Change your password immediately after your first login for security.
       </p>
     </div>
     ${ctaButton("Accept Invitation &amp; Login", loginUrl)}
   `);
-  return sendMail(email, `${ownerName} invited you to join ${businessName} on SmartDukaan`, html);
+  const text = `Hi ${employeeName},\n\n${ownerName} has invited you to manage "${businessName}" on SmartDukaan.\n\nLogin Email: ${email}\nTemporary Password: ${tempPassword}\n\nIMPORTANT: Please change your password immediately after first login.\n\nLogin here: ${loginUrl}\n\n— SmartDukaan`;
+  return sendMail(
+    email,
+    `${ownerName} invited you to join ${businessName} on SmartDukaan`,
+    html,
+    text
+  );
 }
 
 // ─── Demo Request (admin notification) ─────────────────────────────────────
@@ -511,7 +617,7 @@ export async function sendDemoRequestEmail(details: {
   businessType: string;
   notes?: string;
 }): Promise<MailResult> {
-  const adminEmail = process.env.SMTP_USER || process.env.ADMIN_EMAIL || "admin@smartdukaan.com";
+  const adminEmail = process.env.ADMIN_EMAIL || process.env.SMTP_USER || "admin@smartdukaan.com";
   const html = baseLayout(`
     <div style="background:linear-gradient(135deg,#f5f3ff,#fdf2f8);border-radius:12px;padding:20px;text-align:center;margin-bottom:28px;">
       <p style="margin:0 0 4px;font-size:12px;font-weight:700;color:#7c3aed;text-transform:uppercase;letter-spacing:1px;">New Demo Request</p>
@@ -526,7 +632,13 @@ export async function sendDemoRequestEmail(details: {
     ])}
     ${details.notes ? `<div style="background:#fefce8;border:1px solid #fde68a;border-radius:8px;padding:14px;"><p style="margin:0 0 4px;font-size:11px;font-weight:700;color:#92400e;text-transform:uppercase;">Message</p><p style="margin:0;font-size:13px;color:#78350f;">${escapeHtml(details.notes)}</p></div>` : ""}
   `);
-  return sendMail(adminEmail, `New Demo Request: ${details.businessName} (${details.name})`, html);
+  const text = `New demo request:\n\nName: ${details.name}\nBusiness: ${details.businessName}\nEmail: ${details.email}\nPhone: ${details.phone}\nBusiness Type: ${details.businessType}${details.notes ? `\nMessage: ${details.notes}` : ""}\n\n— SmartDukaan Notifications`;
+  return sendMail(
+    adminEmail,
+    `New Demo Request: ${details.businessName} (${details.name})`,
+    html,
+    text
+  );
 }
 
 export async function sendDemoRequestConfirmationEmail(
@@ -542,7 +654,7 @@ export async function sendDemoRequestConfirmationEmail(
       Our team will reach out within 24 hours to schedule a personalized walkthrough.
     </p>
     <div style="background:#f5f3ff;border:1px solid #ddd6fe;border-radius:12px;padding:20px;margin-bottom:24px;">
-      <p style="margin:0 0 12px;font-size:13px;font-weight:700;color:#374151;">What you'll see in the demo:</p>
+      <p style="margin:0 0 12px;font-size:13px;font-weight:700;color:#374151;">What you will see in the demo:</p>
       ${[
         "Custom storefront with QR ordering",
         "Cloud POS billing system",
@@ -558,7 +670,8 @@ export async function sendDemoRequestConfirmationEmail(
     </div>
     ${ctaButton("Explore SmartDukaan", APP_URL)}
   `);
-  return sendMail(email, `We received your SmartDukaan demo request — ${businessName}`, html);
+  const text = `Hi ${name},\n\nThank you for requesting a SmartDukaan demo for "${businessName}".\n\nOur team will reach out within 24 hours to schedule a personalized walkthrough.\n\nYou'll see:\n- Custom storefront with QR ordering\n- Cloud POS billing system\n- GST-compliant invoicing\n- Analytics dashboard\n- Multi-staff management\n\nExplore SmartDukaan: ${APP_URL}\n\n— SmartDukaan`;
+  return sendMail(email, `We received your SmartDukaan demo request — ${businessName}`, html, text);
 }
 
 // ─── Daily Sales Summary ────────────────────────────────────────────────────
@@ -584,7 +697,7 @@ export async function sendDailySummaryEmail(
     <p style="margin:0 0 20px;font-size:15px;color:#374151;">
       Hi <strong>${escapeHtml(ownerName)}</strong>, here is yesterday's summary for <strong>${escapeHtml(businessName)}</strong>:
     </p>
-    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
       <tr>
         ${[
           { label: "Orders", value: String(summary.totalOrders), color: "#7c3aed" },
@@ -609,9 +722,11 @@ export async function sendDailySummaryEmail(
     ${summary.topProduct ? `<p style="margin:0 0 20px;font-size:13px;color:#4b5563;text-align:center;">Top product: <strong>${escapeHtml(summary.topProduct)}</strong></p>` : ""}
     ${ctaButton("View Full Analytics", `${APP_URL}/dashboard/analytics`)}
   `);
+  const text = `Daily Sales Report for ${businessName}\nDate: ${summary.date}\n\nOrders: ${summary.totalOrders}\nRevenue: ₹${summary.totalRevenue.toLocaleString("en-IN")}\nNew Customers: ${summary.newCustomers}${summary.topProduct ? `\nTop Product: ${summary.topProduct}` : ""}\n\nView analytics: ${APP_URL}/dashboard/analytics\n\n— SmartDukaan`;
   return sendMail(
     email,
     `Daily Report: ${summary.totalOrders} orders, ₹${summary.totalRevenue.toLocaleString("en-IN")} revenue — ${businessName}`,
-    html
+    html,
+    text
   );
 }
