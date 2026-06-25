@@ -7,7 +7,6 @@ import Customer from "@/models/Customer";
 import InventoryLog from "@/models/InventoryLog";
 import Notification from "@/models/Notification";
 import Business from "@/models/Business";
-import { sendOrderConfirmationEmail } from "@/lib/email";
 import { escapeRegex } from "@/lib/utils";
 import mongoose from "mongoose";
 import { z } from "zod";
@@ -284,12 +283,6 @@ export async function POST(req: NextRequest) {
       } catch (cacheError) {
         console.error("Redis cache eviction error on new order:", cacheError);
       }
-    }
-
-    if (customerEmail) {
-      sendOrderConfirmationEmail().catch((err) =>
-        console.error("[EMAIL] Order confirmation failed:", err)
-      );
     }
 
     return NextResponse.json({ success: true, data: order });

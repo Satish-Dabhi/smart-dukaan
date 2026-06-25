@@ -104,7 +104,13 @@ export function RegisterForm() {
 
   const handleGoogle = async () => {
     setGoogleLoading(true);
-    await signIn("google", { callbackUrl: `/${locale}/dashboard` });
+    try {
+      await signIn("google", { callbackUrl: `/${locale}/dashboard` });
+    } catch {
+      toast.error("Failed to sign in with Google");
+    } finally {
+      setGoogleLoading(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

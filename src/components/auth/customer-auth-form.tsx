@@ -33,6 +33,7 @@ export function CustomerAuthForm() {
       await signIn("google", { callbackUrl });
     } catch {
       toast.error("Failed to sign in with Google");
+    } finally {
       setGoogleLoading(false);
     }
   };

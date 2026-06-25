@@ -86,6 +86,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         } = { isVerified: true, authProvider: "google" };
         if (isCustomerAuth && (!existingUser || existingUser.role === "business_owner")) {
           updateFields.role = "customer";
+        } else if (!existingUser?.role) {
+          // MongoDBAdapter creates users via raw driver — Mongoose schema defaults
+          // are never applied, so new Google users have no role. Set it explicitly.
+          updateFields.role = "business_owner";
         }
 
         // Google has already verified the email — always mark as verified and track provider.
@@ -95,17 +99,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           { new: true }
         );
         if (dbUser) {
-          token.role = dbUser.role;
+          token.role = dbUser.role ?? "business_owner";
           token.businessId = dbUser.businessId?.toString();
           token.isVerified = true;
           token.authProvider = "google";
         } else {
+          token.role = isCustomerAuth ? "customer" : "business_owner";
           token.isVerified = true;
           token.authProvider = "google";
         }
       }
-      // Re-fetch businessId if not in token (e.g. business created after sign-in)
-      if (!token.businessId && token.sub) {
+      // Re-fetch businessId if not in token (e.g. business created after sign-in).
+      // Skip for customers — they never have a businessId.
+      if (!token.businessId && token.sub && token.role !== "customer") {
         await connectDB();
         const dbUser = await User.findById(token.sub).select("businessId isVerified");
         if (dbUser) {

@@ -22,7 +22,10 @@ export async function GET(req: NextRequest) {
     await connectDB();
 
     const { searchParams } = req.nextUrl;
-    const requestedPeriod = parseInt(searchParams.get("period") ?? "30");
+    const requestedPeriod = Math.max(
+      1,
+      Math.min(365, parseInt(searchParams.get("period") ?? "30") || 30)
+    );
 
     // Enforce analytics history limit from plan
     const maxDays = await getAnalyticsHistoryDays(businessIdStr);
